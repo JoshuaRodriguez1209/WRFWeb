@@ -1,0 +1,471 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SMADSOT</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="./lib/ol/v5.3.0/ol.js"></script>
+<link rel="stylesheet" href="./lib/ol/v5.3.0/ol.css">
+
+<script src="./lib/jquery.min.js"></script>
+<script src="./lib/chart.min.js"></script>
+
+<!-- Bootstrap Core JavaScript --> 
+<script src="./bootstrap/bootstrap.min.js"></script> 
+<script src="./bootstrap/dropdowns/dropdowns-enhancement.js"></script> 
+<script src="./bootstrap/datepicker/bootstrap-datepicker.js"></script>
+<script src="./bootstrap/dialog/bootstrap-dialog.js"></script> 
+
+<!-- Bootstrap Core CSS -->
+<link rel="stylesheet" href="./bootstrap/bootstrap.min.css">
+<link rel="stylesheet" href="./bootstrap/dropdowns/dropdowns-enhancement.css">
+<link rel="stylesheet" href="./bootstrap/datepicker/bootstrap-datepicker.css">
+<link rel="stylesheet" href="./bootstrap/dialog/bootstrap-dialog.css">
+
+<link rel="stylesheet" href="./css/estilos.css">
+
+<script src="./lib/dom-to-image.js"></script>
+
+<!-- ol-ext -->
+<script type="text/javascript" src="./lib/ol-ext.js"></script>
+<link rel="stylesheet" href="./lib/ol-ext.css" />
+
+<script src="./lib/ol3-layerswitcher/ol3-layerswitcher.js"></script>
+<link rel="stylesheet" href="./lib/ol3-layerswitcher/ol3-layerswitcher.css">
+
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&amp;display=swap" rel="stylesheet">
+
+<style>
+.locate {
+  top:   5em;
+  left: .5em;
+}	
+
+.notificacion {
+  top:   5em;
+  left: .5em;
+}
+
+.slider-wrapper {
+  display: inline-block;
+  width: 150px;
+  height: 25px;
+  padding: 0;
+	padding-left: 5px;	
+}
+
+.navbar-brand, .navbar-header{
+	float: left;
+	height: 20px;
+	padding: 0px 0px;
+	font-size: 18px;
+	line-height: 20px;
+}
+
+@media all and (orientation:portrait) {
+	.navbar-right{
+		display: none;
+	}
+}
+
+.modal-dialog {
+		width: 800px;
+}
+
+table, th, td {
+  border: 1px solid white;
+  border-collapse: collapse;
+}
+
+th, td {
+  background-color: #f9f9f9;
+}
+
+/* ------ header ------ */
+
+        header {
+          background-image: url('./images/header/logo_2025_desarrollo_sustentable.jpeg');
+          background-repeat: no-repeat;
+          background-position: left center;
+          background-size: auto 100%;
+          background-color: #5a2132; /* fondo blanco por si no carga la imagen */
+          font: 400 20px Poppins;
+          color: #5a2132;
+          padding: 30px 20px;
+          overflow: auto;
+          overflow-x: hidden;
+          width: 100%;
+          height: auto;
+        }
+
+        .left-header {
+            /*background: url(https://smadsot.puebla.gob.mx/images/site/header-izq-gris.jpg) no-repeat right !important;*/
+            background-image:  url('./images/header/header-izq-gris.jpg') no-repeat right !important;
+        }
+
+        .left-header {
+            left: 0;
+            transform: translate(-640px);
+        }
+
+        .left-header,
+        .right-header {
+            position: absolute;
+            width: 50%;
+            min-height: 180px;
+        }
+
+        .right-header {
+            background-color: ;
+        }
+
+
+        .header-container {
+            background: url(https://smadsot.puebla.gob.mx/images/site/header-movil.jpg) left/cover no-repeat;
+        }
+
+        .icon-fb {
+            display: inline-block;
+            height: 20px;
+            width: 20px;
+            background-image: url('./images/facebook.svg');
+            background-repeat: round;
+            background-position: -18px 0px;
+        }
+
+        .icon-tw {
+            display: inline-block;
+            height: 20px;
+            width: 20px;
+            background-image: url('./images/twitter.svg');
+            background-repeat: round;
+            background-position: -18px 0px;
+        }
+
+        /* M UIKIT */
+        @media (min-width: 960px) {
+            .header-container {
+                background: url(https://smadsot.puebla.gob.mx/images/site/header-movil.jpg) left/cover no-repeat;
+            }
+        }
+
+        body {
+            font: 400 16px Poppins;
+            color: #6b6b6b;
+            overflow: auto;
+            overflow-x: hidden;
+        }
+
+        /* XS UIKIT */
+        @media (min-width: 320px) {
+        }
+
+        /* S UIKIT */
+        @media (min-width: 640px) {
+        }
+
+
+        /* L UIKIT */
+        @media (min-width: 1200px) {
+        }
+
+        /* XL UIKIT */
+        @media (min-width: 1600px) {
+        }
+
+        ul {
+            list-style-type: none;
+            margin-left: 200px;
+            padding: 0;
+            overflow: hidden;
+            background-color: transparent;
+            color: #8F1A42;
+        }
+
+        li {
+            float: right;
+            padding: 8px;
+            font-size: 12px;
+            
+        }
+
+        li a {
+            display: block;
+            color: #ffff;
+            text-align: center;
+            padding: 0px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 450;
+            
+        }
+
+        li a:hover {
+            text-decoration: none;
+            color: #c19862;
+        }
+        
+        .btn-group-sm>.btn, .btn-sm {
+             font-size: 16px;
+            line-height: 2;
+          
+        }
+        
+        .div-espacio {
+            margin-top: 15px;
+        }
+        
+        .close {
+            font-weight: 500;
+            opacity: .6;
+        }
+        
+        label {
+            font-weight: 400;
+            color: black;
+        }
+
+</style>
+
+</head>
+<body>
+<!-- --------------------------------------------------> 
+<header>
+  <div class="header">
+      <p style="text-align: right; color: #c19862;">
+          <a href="https://puebla.gob.mx/" style="text-decoration: none;color:#c19862;"><< Portal Gobierno</a>
+          <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/"><span
+                  class="icon-fb"></span></a>
+          <a href="https://twitter.com/AmbienteGobPue"><span class="icon-tw"></span></a>
+      </p>
+      <p style="text-align: right; color: black"></br></p>
+      <br>
+      <ul>
+          <b>
+              <li><a href="https://smadsot.puebla.gob.mx/verificacion">Verificación</a></li>
+              <li><a href="http://transparencia.puebla.gob.mx/" target="_blank">Transparencia</a></li>
+              <li><a href="https://ventanilladigital.puebla.gob.mx/" target="_blank">Trámites</a></li>
+              <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">Avisos de Privacidad</a></li>
+              <li><a href="https://smadsot.puebla.gob.mx/quienes-somos-1">Quienes Somos</a></li>
+          </b>
+      </ul>
+  </div>
+
+</header>
+
+ <!-- Banner de introducción -->
+
+<div class="row" id="pronostico" 
+     style="background: url('./images/header/banner-intro-inicio.jpg') center center / cover no-repeat; 
+            min-height: 75vh; 
+            position: relative; 
+            color: white;">
+    
+    <!-- Capa de superposición para oscurecer -->
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+                background: linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0)); 
+                z-index: 1;">
+    </div>
+
+    <!-- Contenido centrado -->
+    <div class="col-md-2"></div>
+    <div class="col-md-8" 
+         style="position: relative; z-index: 2; padding-top: 150px; padding-bottom: 150px;">
+        <h1 style="font-family: 'Poppins', sans-serif; font-size: 48px; font-weight: 700; margin-bottom: 10px;">
+            Pronóstico meteorológico
+        </h1>
+        <h1 style="font-family: 'Poppins', sans-serif; font-size: 48px; font-weight: 700; margin-bottom: 30px;">
+            y calidad del aire
+        </h1>
+        <p style="font-family: 'Poppins', sans-serif; font-size: 18px; max-width: 700px;">
+            Consulta las condiciones actuales y el pronóstico del clima y calidad del aire en el Estado de Puebla con datos confiables, actualizados y visuales.
+        </p>
+    </div>
+    <div class="col-md-2"></div>
+</div>
+
+ <!-- Tarjetas  -->
+
+<div class="row" style="margin: 50px;" id="botones1">
+    <div class="col-md-2 col-xs-1"></div>
+
+    <div class="col-md-4 col-xs-5 mx-auto">
+        <div class="card-btn" id="meteo">
+            <div class="card-btn-img" style="background-image: url('./images/tarjetas/tarjeta-calidad-aire.avif');"></div>
+            <div class="card-btn-text">
+                <p><b>Meteorología</b></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 col-xs-5">
+        <div class="card-btn" id="cali">
+            <div class="card-btn-img" style="background-image: url('./images/tarjetas/tarjeta-calidad-aire.avif');"></div>
+            <div class="card-btn-text">
+                <p><b>Calidad del aire</b></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 col-xs-1"></div>
+</div>
+
+
+<div class="row" style="margin-top: 20px; margin-bottom: 50px;"  id="mapa_derecha">
+	<!-- ---------------------------------Columna uno -->          
+	<div class="col-md-3 col-sm-4" id="col_controles">
+  
+  	<!-- ---------------------------------Fila uno -->          
+    <div class="row" style="margin-left: 35px; margin-right: 15px; margin-top:35px" id="botones2">
+
+      <div style="display: flex; justify-content: center;">
+        <button id="bt_atmos" type="button" class="btn btn-outline-secondary btn-block"
+                style="font-size: 29px; color: black;display: block;
+                width: 100%; font-weight: 400;"><b>Meteorología</b>
+        </button>
+      </div>
+
+      <div style="display: flex; justify-content: center;">
+        <button id="bt_chem" type="button" class="btn btn-outline-secondary btn-block"
+                style="font-size: 29px; color: black;display: block;
+                width: 100%; font-weight: 400;"><b>Calidad del aire
+        </b></button>
+      </div>
+
+    </div>
+    
+  	<!-- ---------------------------------Fila dos -->          
+	<div style=" margin-left: 25px;">
+    	<font size="4">
+      <div>
+        <div class="col-md-5 col-sm-6 div-espacio">
+            <span class="select_run" >Fecha: </span>
+        </div>
+        <div class="col-md-7 col-sm-6 div-espacio">
+            <span h3>
+            <select class="form-select" id="select_run" style="width: 100%;">
+                
+            </select>
+            </span>
+        </div>
+      </div>
+      
+      <div>
+          <div class="col-md-5 col-sm-6 div-espacio">
+            <span id="variable" class="select_run">Parametro: </span>
+          </div>
+        <div class="col-md-7 col-sm-6 div-espacio">
+        <span h3>
+        <select id="select_dat" class="form-select" aria-label="Default select example" style="width: 100%;">
+            <option value="quim">Contaminantes</option>
+            <option value="temp">Temperatura</option>
+            <option value="hum">Humedad</option>
+            <option value="prec">Precipitacion</option>            
+            <option value="rad">Radiacion</option>            
+            <option value="wind">Viento</option>            
+            <option value="psfc">Presión barométrica</option>            
+        </select>
+         </span>
+          </div>
+	  </div>
+      
+      <div>
+          <div class="col-md-5 col-sm-6 div-espacio">
+            <span id="variable2" class="select_run"></span>
+          </div>
+          <div class="col-md-7 col-sm-6 div-espacio">
+				<select class="form-select" aria-label="Default select example" id="select_var" style="width: 100%;"></select>
+		  </div>
+      </div>
+
+      <div>
+        <div class="col-md-8 col-sm-6 div-espacio">  
+		    <span class="select_run">Pronósticos a (horas): </span>
+		</div>
+		<div class="col-md-4 col-sm-6 div-espacio">  
+    	   <!--a id="btnAnt" class="btn btn-primary btn-sm"  
+                 style="padding-top: 0px;padding-bottom: 0px;margin-left: 5px;margin-right: 5px;">
+                <i class="glyphicon glyphicon-triangle-left"></i>
+              </a--> 
+              
+             <select id="selectHora" style="width: 100%;">
+            </select>
+            <!--a id="btnSig" class="btn btn-primary btn-sm"  
+                 style="padding-top: 0px;padding-bottom: 0px;margin-left: 5px;margin-right: 5px;">
+                <i class="glyphicon glyphicon-triangle-right"></i>
+              </a--> 
+        
+        </div>
+      </div>
+
+      <div>
+          <div class="col-md-6 col-sm-6 div-espacio"> 
+        <span > Animar: </span> 
+        </div>
+            <div class="col-md-6 col-sm-6 div-espacio" style="text-align: right;"> 
+                <span> 
+                  <a disabled id="btn_play_animation" class="btn btn-primary btn-sm"  
+                     style="padding-top: 0px;padding-bottom: 0px;margin-left: 5px;margin-right: 5px;">
+                    <i class="glyphicon glyphicon-play"></i>
+                  </a> 
+                   <a disabled id="btn_stop_animation" class="btn btn-primary btn-sm"  
+                     style="padding-top: 0px;padding-bottom: 0px;margin-left: 5px;">
+                    <i class="glyphicon glyphicon-stop"></i>
+                  </a> 
+                </span>
+            </div>
+        </div>
+        <div>
+            <div class="col-md-6 col-sm-6 div-espacio"> 
+                <span >Velocidad:</span> 
+            </div> 
+            <div class="col-md-6 col-sm-6 div-espacio"> 
+                <span> 
+                  <div class="slider-wrapper" style="padding-top: 6px; width: 100%;">
+                    <input id="btn_rango" type="range" min="150" max="1500" value="1400" step = "50">
+                  </div>
+                </span> 
+            </div>
+		</div>
+
+      <div> 
+        <div class="col-md-4 col-sm-12 div-espacio" style="text-align: left;" >
+          <span> 
+            <a onclick="location.reload();" id="btn_glo_quitar" class="btn btn-primary btn-sm">
+            <i class="glyphicon glyphicon-arrow-left"></i> ATRAS
+            </a> 
+          </span>
+        </div>
+        <div class="col-md-4 col-sm-12 div-espacio" style="text-align: center;">
+          <span> 
+            <a id="btn_glo" class="btn btn-primary btn-sm">
+              <i class="glyphicon glyphicon-book"></i> GLOSARIO
+            </a> 
+          </span>
+        </div>
+        <div class="col-md-4 col-sm-12 div-espacio" style="text-align: right;">
+          <span> 
+            <a id="btn_datos" class="btn btn-primary btn-sm">
+            <i class="glyphicon glyphicon-download"></i> DATOS
+            </a> 
+          </span>
+        </div>
+      </div>
+      </font>
+		</div>
+	</div>
+  
+	<!-- ---------------------------------Columna dos -->            
+  <div class="col-md-9 col-sm-4" id="col_mapa">
+    <div id="map" class="map" style="width: 95%; height: 100%; margin-top: 35px;"></div>
+  </div>
+</div>
+</body>
+
+<script src="./defines.js"></script>
+<script src="./lienzo.js"></script>
+<script src="./utils.js"></script>
+<script src="./app.js"></script>
+<script src="./menu.js"></script>
+</html>

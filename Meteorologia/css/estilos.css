@@ -1,0 +1,151 @@
+html,body {
+	height:100%; 
+	margin:0; 
+	padding:0; 
+	overflow:hidden;
+	font-family: sans-serif;	
+}
+
+h6{
+  -webkit-margin-before: 0px;
+  -webkit-margin-after: 0px;
+}
+
+/*--------------------------------------------------------------------*/
+/*Estilos para los dialog*/
+.table {
+	margin-bottom: 0px; 
+}
+
+img2 {
+	width: 75%;
+	height: auto;
+	margin: 0 auto 5px auto;
+}
+
+.navbar{
+	height: 25px;
+  min-height: 25px;
+	margin-bottom: 0px;
+	width: 100%;
+}
+
+.nav li a{
+	padding-top: 1px;
+	padding-bottom: 1px;
+}
+  
+.span-my{
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+.form-control {
+	height: 20px;
+  min-height: 20px;
+	min-width: 50px;
+  padding: 1px;
+  margin: 0px;
+	display: inline;	
+}
+
+#mouse_position{
+	width: 150px;
+}
+
+.ol-mouse-position{
+	top: 2px;
+}
+
+#ex1Slider .slider-selection {
+	background: #BABABA;
+}	
+
+.modal-header, .modal-footer, .btn.btn-primary{
+	padding-bottom: 2px;
+	padding-top: 2px;
+}
+
+.rotate-north {
+	top: 65px;
+	left: .5em;
+}
+
+.slidecontainer {
+  width: 100px;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 23px;
+  height: 24px;
+  border: 0;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 23px;
+  height: 24px;
+  border: 0;
+  cursor: pointer;
+}
+
+/*Tarjetas*/
+
+.card-btn {
+    position: relative;
+    width: 80%;
+    height: 600px; /* más alta que ancha */
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.card-btn:hover {
+    transform: scale(1.03);
+}
+
+.card-btn-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.7);
+}
+
+.card-btn-text {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0));
+    color: white;
+    font-family: 'Poppins', sans-serif;
+    font-size: 24px;
+    text-align: left;
+}
+
+

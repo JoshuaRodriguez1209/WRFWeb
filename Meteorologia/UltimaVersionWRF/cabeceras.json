@@ -1,0 +1,1523 @@
+{ "type": "FeatureCollection",
+  "features": [
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.95278, 19.10500]},
+      "properties": {
+        "nombre": "Acajete",
+        "clave": "001"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.21028, 20.13000]},
+      "properties": {
+        "nombre": "San José Acateno",
+        "clave": "002"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.04861, 18.20222]},
+      "properties": {
+        "nombre": "Acatlán de Osorio",
+        "clave": "003"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.78556, 18.97944]},
+      "properties": {
+        "nombre": "Acatzingo de Hidalgo",
+        "clave": "004"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.71528, 18.76500]},
+      "properties": {
+        "nombre": "Acteopan",
+        "clave": "005"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.86083, 20.00556]},
+      "properties": {
+        "nombre": "Ahuacatlán",
+        "clave": "006"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.25528, 18.57306]},
+      "properties": {
+        "nombre": "Ahuatlán",
+        "clave": "007"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.16222, 20.04611]},
+      "properties": {
+        "nombre": "Ahuazotepec",
+        "clave": "008"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.22139, 18.21083]},
+      "properties": {
+        "nombre": "Ahuehuetitla",
+        "clave": "009"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.25833, 18.37750]},
+      "properties": {
+        "nombre": "Ciudad de Ajalpan",
+        "clave": "010"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.54028, 18.01722]},
+      "properties": {
+        "nombre": "Acaxtlahuacán de Albino Zertuche",
+        "clave": "011"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.53139, 19.10028]},
+      "properties": {
+        "nombre": "Aljojuca",
+        "clave": "012"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.29917, 18.36667]},
+      "properties": {
+        "nombre": "Altepexi",
+        "clave": "013"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.79889, 20.04944]},
+      "properties": {
+        "nombre": "Amixtlán",
+        "clave": "014"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.04500, 19.04472]},
+      "properties": {
+        "nombre": "Amozoc de Mota",
+        "clave": "015"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.93667, 19.79667]},
+      "properties": {
+        "nombre": "Aquixtla",
+        "clave": "016"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.45917, 19.84000]},
+      "properties": {
+        "nombre": "Atempan",
+        "clave": "017"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.73694, 18.39833]},
+      "properties": {
+        "nombre": "San Martín Atexcal",
+        "clave": "018"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.62417, 20.01389]},
+      "properties": {
+        "nombre": "Atlequizayan",
+        "clave": "080"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.43417, 18.90889]},
+      "properties": {
+        "nombre": "Atlixco",
+        "clave": "019"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.91361, 18.82250]},
+      "properties": {
+        "nombre": "Atoyatempan",
+        "clave": "020"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.55417, 18.54472]},
+      "properties": {
+        "nombre": "Atzala",
+        "clave": "021"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.58278, 18.82361]},
+      "properties": {
+        "nombre": "Santiago Atzitzihuacán",
+        "clave": "022"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.32750, 18.89750]},
+      "properties": {
+        "nombre": "Atzitzintla",
+        "clave": "023"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.38944, 18.18861]},
+      "properties": {
+        "nombre": "Axutla",
+        "clave": "024"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.41056, 20.09722]},
+      "properties": {
+        "nombre": "Ayotoxco de Guerrero",
+        "clave": "025"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.45917, 19.10806]},
+      "properties": {
+        "nombre": "San Andrés Calpan",
+        "clave": "026"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.47944, 18.18222]},
+      "properties": {
+        "nombre": "Caltepec",
+        "clave": "027"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.75778, 20.03861]},
+      "properties": {
+        "nombre": "Camocuautla",
+        "clave": "028"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.42222, 18.73694]},
+      "properties": {
+        "nombre": "Morelos Cañada",
+        "clave": "099"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.60667, 20.06389]},
+      "properties": {
+        "nombre": "Caxhuacan",
+        "clave": "029"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.44861, 18.98833]},
+      "properties": {
+        "nombre": "Ciudad Serdán",
+        "clave": "045"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.41111, 18.62056]},
+      "properties": {
+        "nombre": "Chapulco",
+        "clave": "046"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.60278, 18.29972]},
+      "properties": {
+        "nombre": "Ciudad de Chiautla de Tapia",
+        "clave": "047"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.46833, 19.20278]},
+      "properties": {
+        "nombre": "San Lorenzo Chiautzingo",
+        "clave": "048"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.06778, 19.20028]},
+      "properties": {
+        "nombre": "Chichiquila",
+        "clave": "050"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.93972, 20.09472]},
+      "properties": {
+        "nombre": "Chiconcuautla",
+        "clave": "049"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.57833, 18.51944]},
+      "properties": {
+        "nombre": "Chietla",
+        "clave": "051"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.07556, 18.64556]},
+      "properties": {
+        "nombre": "Chigmecatitlán",
+        "clave": "052"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.03111, 19.83833]},
+      "properties": {
+        "nombre": "Ciudad de Chignahuapan",
+        "clave": "053"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.38972, 19.81389]},
+      "properties": {
+        "nombre": "Chignautla",
+        "clave": "054"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.86167, 17.97000]},
+      "properties": {
+        "nombre": "Chila",
+        "clave": "055"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.48444, 18.10917]},
+      "properties": {
+        "nombre": "Chila de la Sal",
+        "clave": "056"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.18389, 19.25528]},
+      "properties": {
+        "nombre": "Rafael J. García",
+        "clave": "058"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.26306, 18.20056]},
+      "properties": {
+        "nombre": "Chinantla",
+        "clave": "059"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.73222, 20.06222]},
+      "properties": {
+        "nombre": "Coatepec",
+        "clave": "030"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.17417, 18.61528]},
+      "properties": {
+        "nombre": "Coatzingo",
+        "clave": "031"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.80583, 18.20639]},
+      "properties": {
+        "nombre": "Santa María Cohetzala",
+        "clave": "032"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.72056, 18.78333]},
+      "properties": {
+        "nombre": "Cohuecan",
+        "clave": "033"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.30806, 19.13111]},
+      "properties": {
+        "nombre": "Santa María Coronango",
+        "clave": "034"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.14722, 18.26667]},
+      "properties": {
+        "nombre": "Coxcatlán",
+        "clave": "035"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-96.99250, 18.28361]},
+      "properties": {
+        "nombre": "Santa María Coyomeapan",
+        "clave": "036"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.83083, 18.40444]},
+      "properties": {
+        "nombre": "San Vicente Coyotepec",
+        "clave": "037"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.82528, 18.91694]},
+      "properties": {
+        "nombre": "Cuapiaxtla de Madero",
+        "clave": "038"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.79611, 19.91250]},
+      "properties": {
+        "nombre": "San Esteban Cuautempan",
+        "clave": "039"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.01611, 18.95583]},
+      "properties": {
+        "nombre": "Cuautinchán",
+        "clave": "040"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.27333, 19.08944]},
+      "properties": {
+        "nombre": "San Juan Cuautlancingo",
+        "clave": "041"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.18389, 18.48667]},
+      "properties": {
+        "nombre": "San Pedro Cuayuca",
+        "clave": "042"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.52083, 20.01861]},
+      "properties": {
+        "nombre": "Ciudad de Cuetzalan",
+        "clave": "043"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.62194, 19.60528]},
+      "properties": {
+        "nombre": "Cuyoaco",
+        "clave": "044"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.45750, 19.14194]},
+      "properties": {
+        "nombre": "Domingo Arenas",
+        "clave": "060"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-96.95472, 18.49889]},
+      "properties": {
+        "nombre": "Eloxochitlán",
+        "clave": "061"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.37083, 18.64167]},
+      "properties": {
+        "nombre": "San Juan Epatlán",
+        "clave": "062"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.37500, 18.85833]},
+      "properties": {
+        "nombre": "Esperanza",
+        "clave": "063"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.85222, 20.73361]},
+      "properties": {
+        "nombre": "Metlaltoyuca",
+        "clave": "064"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.70889, 18.99333]},
+      "properties": {
+        "nombre": "San Pablo de las Tunas",
+        "clave": "065"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.12056, 18.09139]},
+      "properties": {
+        "nombre": "Guadalupe",
+        "clave": "066"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.34278, 19.28972]},
+      "properties": {
+        "nombre": "Guadalupe Victoria",
+        "clave": "067"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.74472, 20.12167]},
+      "properties": {
+        "nombre": "Bienvenido",
+        "clave": "068"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.21222, 20.23917]},
+      "properties": {
+        "nombre": "Honey",
+        "clave": "057"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.54167, 18.77083]},
+      "properties": {
+        "nombre": "Huaquechula",
+        "clave": "069"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.05083, 18.67889]},
+      "properties": {
+        "nombre": "Huatlatlauca",
+        "clave": "070"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.05139, 20.17472]},
+      "properties": {
+        "nombre": "Huauchinango",
+        "clave": "071"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.62500, 20.10417]},
+      "properties": {
+        "nombre": "Huehuetla",
+        "clave": "072"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.68806, 18.37306]},
+      "properties": {
+        "nombre": "Huehuetlán el Chico",
+        "clave": "073"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.16778, 18.73833]},
+      "properties": {
+        "nombre": "Santo Domingo Huehuetlán",
+        "clave": "150"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.40806, 19.15889]},
+      "properties": {
+        "nombre": "Huejotzingo",
+        "clave": "074"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.44583, 19.88250]},
+      "properties": {
+        "nombre": "Hueyapan",
+        "clave": "075"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.28917, 19.93944]},
+      "properties": {
+        "nombre": "Hueytamalco",
+        "clave": "076"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.69861, 20.02583]},
+      "properties": {
+        "nombre": "Hueytlalpan",
+        "clave": "077"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.69361, 19.96611]},
+      "properties": {
+        "nombre": "Huitzilan",
+        "clave": "078"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.88083, 18.76944]},
+      "properties": {
+        "nombre": "Santa Clara Huitziltepec",
+        "clave": "079"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.69667, 18.02694]},
+      "properties": {
+        "nombre": "Ixcamilpa",
+        "clave": "081"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.83222, 18.46000]},
+      "properties": {
+        "nombre": "San Juan Ixcaquixtla",
+        "clave": "082"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.81667, 19.62361]},
+      "properties": {
+        "nombre": "Ixtacamaxtitlán",
+        "clave": "083"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.64667, 20.02500]},
+      "properties": {
+        "nombre": "Ixtepec",
+        "clave": "084"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.46528, 18.60222]},
+      "properties": {
+        "nombre": "Izúcar de Matamoros",
+        "clave": "085"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.94250, 20.48000]},
+      "properties": {
+        "nombre": "Jalpan",
+        "clave": "086"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.84417, 18.32056]},
+      "properties": {
+        "nombre": "Jolalpan",
+        "clave": "087"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.57500, 20.03028]},
+      "properties": {
+        "nombre": "Jonotla",
+        "clave": "088"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.69306, 20.16278]},
+      "properties": {
+        "nombre": "Jopala",
+        "clave": "089"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.32917, 19.11083]},
+      "properties": {
+        "nombre": "Cuanalá",
+        "clave": "090"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.00222, 20.21194]},
+      "properties": {
+        "nombre": "Nuevo Necaxa",
+        "clave": "091"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.77222, 18.54000]},
+      "properties": {
+        "nombre": "Atenayuca",
+        "clave": "092"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.29889, 19.29667]},
+      "properties": {
+        "nombre": "Saltillo",
+        "clave": "093"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.10083, 18.75861]},
+      "properties": {
+        "nombre": "La Magdalena Tlatlauquitepec",
+        "clave": "095"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.68778, 19.46472]},
+      "properties": {
+        "nombre": "Ciudad de Libres",
+        "clave": "094"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.81306, 18.94667]},
+      "properties": {
+        "nombre": "Los Reyes de Juárez",
+        "clave": "118"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.70361, 19.11917]},
+      "properties": {
+        "nombre": "Mazapiltepec de Juárez",
+        "clave": "096"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.89556, 18.90306]},
+      "properties": {
+        "nombre": "San Francisco Mixtla",
+        "clave": "097"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.91194, 18.73778]},
+      "properties": {
+        "nombre": "Molcaxac",
+        "clave": "098"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.10972, 20.22833]},
+      "properties": {
+        "nombre": "Naupan",
+        "clave": "100"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.60306, 19.95917]},
+      "properties": {
+        "nombre": "Nauzontla",
+        "clave": "101"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.42778, 19.05083]},
+      "properties": {
+        "nombre": "San Buenaventura Nealtican",
+        "clave": "102"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.30556, 18.61333]},
+      "properties": {
+        "nombre": "Nicolás Bravo",
+        "clave": "103"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.82361, 19.21611]},
+      "properties": {
+        "nombre": "Nopalucan de la Granja",
+        "clave": "104"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.64917, 19.55556]},
+      "properties": {
+        "nombre": "Ocotepec",
+        "clave": "105"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.30250, 18.97694]},
+      "properties": {
+        "nombre": "Santa Clara Ocoyucan",
+        "clave": "106"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.68472, 20.10167]},
+      "properties": {
+        "nombre": "Olintla",
+        "clave": "107"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.61944, 19.37583]},
+      "properties": {
+        "nombre": "Oriental",
+        "clave": "108"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.15000, 20.27583]},
+      "properties": {
+        "nombre": "Ciudad de Pahuatlán de Valle",
+        "clave": "109"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.54750, 18.83583]},
+      "properties": {
+        "nombre": "Palmar de Bravo",
+        "clave": "110"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.93861, 20.52194]},
+      "properties": {
+        "nombre": "Pantepec",
+        "clave": "111"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.91778, 18.08222]},
+      "properties": {
+        "nombre": "Petlalcingo",
+        "clave": "112"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.26028, 18.19889]},
+      "properties": {
+        "nombre": "Piaxtla",
+        "clave": "113"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.19750, 19.04389]},
+      "properties": {
+        "nombre": "Heroica Puebla de Zaragoza",
+        "clave": "114"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.66056, 18.95500]},
+      "properties": {
+        "nombre": "Quecholac",
+        "clave": "115"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.13556, 19.25333]},
+      "properties": {
+        "nombre": "Quimixtlán",
+        "clave": "116"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.80444, 19.22528]},
+      "properties": {
+        "nombre": "Ciudad de Rafael Lara",
+        "clave": "117"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.30056, 19.05083]},
+      "properties": {
+        "nombre": "San Andrés Cholula",
+        "clave": "119"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.29000, 18.49722]},
+      "properties": {
+        "nombre": "San Antonio Cañada",
+        "clave": "120"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.33139, 18.80972]},
+      "properties": {
+        "nombre": "Tochimiltzingo",
+        "clave": "121"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.49556, 19.23583]},
+      "properties": {
+        "nombre": "San Felipe Teotlalcingo",
+        "clave": "122"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.79611, 20.09139]},
+      "properties": {
+        "nombre": "San Felipe Tepatlán",
+        "clave": "123"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.34806, 18.32639]},
+      "properties": {
+        "nombre": "San Gabriel Chilac",
+        "clave": "124"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.34583, 19.02667]},
+      "properties": {
+        "nombre": "San Gregorio Atzompa",
+        "clave": "125"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.40083, 19.01444]},
+      "properties": {
+        "nombre": "San Jerónimo Tecuanipan",
+        "clave": "126"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.91444, 18.22139]},
+      "properties": {
+        "nombre": "San Jerónimo Xayacatlán",
+        "clave": "127"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.76889, 19.24194]},
+      "properties": {
+        "nombre": "San José Chiapa",
+        "clave": "128"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.28778, 18.29028]},
+      "properties": {
+        "nombre": "San José Miahuatlán",
+        "clave": "129"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.54083, 19.09000]},
+      "properties": {
+        "nombre": "San Juan Atenco",
+        "clave": "130"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.02444, 18.74611]},
+      "properties": {
+        "nombre": "San Juan Atzompa",
+        "clave": "131"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.43556, 19.28278]},
+      "properties": {
+        "nombre": "San Martín Texmelucan de Labastida",
+        "clave": "132"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.34639, 18.64917]},
+      "properties": {
+        "nombre": "San Martín Totoltepec",
+        "clave": "133"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.49806, 19.32444]},
+      "properties": {
+        "nombre": "San Matías Tlalancaleca",
+        "clave": "134"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.77333, 17.99944]},
+      "properties": {
+        "nombre": "San Miguel Ixitlán",
+        "clave": "135"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.30972, 19.16833]},
+      "properties": {
+        "nombre": "San Miguel Xoxtla",
+        "clave": "136"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.54833, 19.16194]},
+      "properties": {
+        "nombre": "San Nicolás Buenos Aires",
+        "clave": "137"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.48583, 19.07250]},
+      "properties": {
+        "nombre": "San Nicolás de los Ranchos",
+        "clave": "138"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.08417, 18.12444]},
+      "properties": {
+        "nombre": "San Pablo Anicano",
+        "clave": "139"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.30750, 19.06250]},
+      "properties": {
+        "nombre": "Cholula de Rivadavia",
+        "clave": "140"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.07806, 18.11722]},
+      "properties": {
+        "nombre": "San Pedro Yeloixtlahuaca",
+        "clave": "141"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.64278, 19.13472]},
+      "properties": {
+        "nombre": "San Salvador el Seco",
+        "clave": "142"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.51722, 19.26889]},
+      "properties": {
+        "nombre": "San Salvador el Verde",
+        "clave": "143"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.77167, 18.92056]},
+      "properties": {
+        "nombre": "San Salvador Huixcolotla",
+        "clave": "144"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-96.85056, 18.40472]},
+      "properties": {
+        "nombre": "Tlacotepec de Porfirio Díaz",
+        "clave": "145"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.08000, 18.61417]},
+      "properties": {
+        "nombre": "Santa Catarina Tlaltempan",
+        "clave": "146"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.01778, 18.41278]},
+      "properties": {
+        "nombre": "Santa Inés Ahuatempan",
+        "clave": "147"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.37917, 18.99444]},
+      "properties": {
+        "nombre": "Santa Isabel Cholula",
+        "clave": "148"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.44194, 18.55306]},
+      "properties": {
+        "nombre": "Santiago Miahuatlán",
+        "clave": "149"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.86722, 18.89111]},
+      "properties": {
+        "nombre": "Santo Tomás Hueyotlipan",
+        "clave": "151"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.70833, 19.11917]},
+      "properties": {
+        "nombre": "Soltepec",
+        "clave": "152"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.96917, 18.90111]},
+      "properties": {
+        "nombre": "Tecali de Herrera",
+        "clave": "153"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.72833, 18.88472]},
+      "properties": {
+        "nombre": "Tecamachalco",
+        "clave": "154"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.31444, 18.11083]},
+      "properties": {
+        "nombre": "Tecomatlán",
+        "clave": "155"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.39194, 18.46222]},
+      "properties": {
+        "nombre": "Tehuacán",
+        "clave": "156"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.27611, 18.33167]},
+      "properties": {
+        "nombre": "Tehuitzingo",
+        "clave": "157"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.40528, 20.17139]},
+      "properties": {
+        "nombre": "Tenampulco",
+        "clave": "158"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.26250, 18.71333]},
+      "properties": {
+        "nombre": "Teopantlán",
+        "clave": "159"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.77833, 18.46972]},
+      "properties": {
+        "nombre": "Teotlalco",
+        "clave": "160"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.56139, 18.55500]},
+      "properties": {
+        "nombre": "Tepanco de López",
+        "clave": "161"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.79639, 20.00278]},
+      "properties": {
+        "nombre": "Tepango de Rodríguez",
+        "clave": "162"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.96667, 19.07722]},
+      "properties": {
+        "nombre": "Tepatlaxco de Hidalgo",
+        "clave": "163"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.90556, 18.96611]},
+      "properties": {
+        "nombre": "Tepeaca",
+        "clave": "164"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.62917, 18.73556]},
+      "properties": {
+        "nombre": "San Felipe Tepemaxalco",
+        "clave": "165"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.45028, 18.72250]},
+      "properties": {
+        "nombre": "Tepeojuma",
+        "clave": "166"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.84111, 19.96722]},
+      "properties": {
+        "nombre": "Tepetzintla",
+        "clave": "167"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.69056, 18.64167]},
+      "properties": {
+        "nombre": "Tepexco",
+        "clave": "168"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.92611, 18.58111]},
+      "properties": {
+        "nombre": "Tepexi de Rodríguez",
+        "clave": "169"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.49222, 19.49194]},
+      "properties": {
+        "nombre": "Tepeyahualco",
+        "clave": "170"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.87806, 18.81306]},
+      "properties": {
+        "nombre": "Tepeyahualco de Cuauhtémoc",
+        "clave": "171"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.80611, 19.81667]},
+      "properties": {
+        "nombre": "Ciudad de Tetela de Ocampo",
+        "clave": "172"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.45722, 19.85833]},
+      "properties": {
+        "nombre": "Teteles de Ávila Castillo",
+        "clave": "173"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.36083, 19.81806]},
+      "properties": {
+        "nombre": "Teziutlán",
+        "clave": "174"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.44833, 18.97778]},
+      "properties": {
+        "nombre": "Tianguismanalco",
+        "clave": "175"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.55639, 18.59167]},
+      "properties": {
+        "nombre": "Tilapa",
+        "clave": "176"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.41917, 19.11556]},
+      "properties": {
+        "nombre": "Tlachichuca",
+        "clave": "179"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.65361, 18.68278]},
+      "properties": {
+        "nombre": "Tlacotepec de Benito Juárez",
+        "clave": "177"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.06889, 20.32639]},
+      "properties": {
+        "nombre": "Tlacuilotepec",
+        "clave": "178"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.58250, 19.33056]},
+      "properties": {
+        "nombre": "Santa Rita Tlahuapan",
+        "clave": "180"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.34444, 19.17000]},
+      "properties": {
+        "nombre": "Tlaltenango",
+        "clave": "181"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.88750, 18.86528]},
+      "properties": {
+        "nombre": "Tlanepantla",
+        "clave": "182"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.92417, 20.13694]},
+      "properties": {
+        "nombre": "Tlaola",
+        "clave": "183"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.85139, 20.12306]},
+      "properties": {
+        "nombre": "Tlapacoya",
+        "clave": "184"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.53778, 18.69611]},
+      "properties": {
+        "nombre": "Tlapanalá",
+        "clave": "185"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.49667, 19.85139]},
+      "properties": {
+        "nombre": "Ciudad de Tlatlauquitepec",
+        "clave": "186"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.02861, 20.42389]},
+      "properties": {
+        "nombre": "Tlaxco",
+        "clave": "187"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.57222, 18.89306]},
+      "properties": {
+        "nombre": "Tochimilco",
+        "clave": "188"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.82583, 18.84000]},
+      "properties": {
+        "nombre": "Tochtepec",
+        "clave": "189"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.85500, 18.22250]},
+      "properties": {
+        "nombre": "Totoltepec de Guerrero",
+        "clave": "190"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.44139, 18.04500]},
+      "properties": {
+        "nombre": "Tulcingo de Valle",
+        "clave": "191"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.57500, 20.06556]},
+      "properties": {
+        "nombre": "Tuzamapan de Galeana",
+        "clave": "192"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.04806, 18.84111]},
+      "properties": {
+        "nombre": "Tzicatlacoyan",
+        "clave": "193"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.66944, 20.50500]},
+      "properties": {
+        "nombre": "Venustiano Carranza",
+        "clave": "194"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.20250, 18.53778]},
+      "properties": {
+        "nombre": "Santa María del Monte",
+        "clave": "195"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.97556, 18.23556]},
+      "properties": {
+        "nombre": "Xayacatlán de Bravo",
+        "clave": "196"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.95806, 20.27611]},
+      "properties": {
+        "nombre": "Xicotepec de Juárez",
+        "clave": "197"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.52500, 18.05861]},
+      "properties": {
+        "nombre": "Xicotlán",
+        "clave": "198"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.32639, 19.79611]},
+      "properties": {
+        "nombre": "San Juan Xiutetelco",
+        "clave": "199"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.65861, 19.82111]},
+      "properties": {
+        "nombre": "Cinco de Mayo",
+        "clave": "200"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.34361, 18.65000]},
+      "properties": {
+        "nombre": "Xochiltepec",
+        "clave": "201"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.63000, 19.96833]},
+      "properties": {
+        "nombre": "Xochitlán de Vicente Suárez",
+        "clave": "202"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.77500, 18.70556]},
+      "properties": {
+        "nombre": "Xochitlán",
+        "clave": "203"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.46639, 19.87083]},
+      "properties": {
+        "nombre": "Yaonáhuac",
+        "clave": "204"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.66278, 18.79333]},
+      "properties": {
+        "nombre": "Yehualtepec",
+        "clave": "205"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.06528, 18.59056]},
+      "properties": {
+        "nombre": "Zacapala",
+        "clave": "206"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.58944, 19.87306]},
+      "properties": {
+        "nombre": "Zacapoaxtla",
+        "clave": "207"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.96028, 19.93250]},
+      "properties": {
+        "nombre": "Zacatlán",
+        "clave": "208"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.47556, 18.32972]},
+      "properties": {
+        "nombre": "Zapotitlán Salinas",
+        "clave": "209"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.71500, 20.00222]},
+      "properties": {
+        "nombre": "Zapotitlán de Méndez",
+        "clave": "210"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.55556, 19.77139]},
+      "properties": {
+        "nombre": "Zaragoza",
+        "clave": "211"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.67222, 19.71500]},
+      "properties": {
+        "nombre": "Santiago Zautla",
+        "clave": "212"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.88639, 20.24972]},
+      "properties": {
+        "nombre": "Zihuateutla",
+        "clave": "213"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.24528, 18.33333]},
+      "properties": {
+        "nombre": "San Sebastián Zinacatepec",
+        "clave": "214"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.72667, 19.97861]},
+      "properties": {
+        "nombre": "Zongozotla",
+        "clave": "215"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.59556, 20.00972]},
+      "properties": {
+        "nombre": "Zoquiapan",
+        "clave": "216"
+      }
+    },
+{ "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.01722, 18.33583]},
+      "properties": {
+        "nombre": "Zoquitlán",
+        "clave": "217"
+      }
+    }
+  ]
+}
