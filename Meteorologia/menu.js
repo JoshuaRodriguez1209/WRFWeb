@@ -177,3 +177,96 @@ $("#btn_datos").click(function(){
 	make_transaction(mUrl_api + 'api.php?tipo_solicitud=cabeceras', 'fecha', show_datos, showDialog_Error);
 });
 
+$("#btn_recarga").click(function(){
+	m_map.removeLayer(window.filtered_layer)
+	if (m_dlayer.layer) m_dlayer.layer.setVisible(true);
+	filter_color = null;
+	hideInfo();
+})
+
+// Función para mostrar y ocultar el menú
+function toggleMenu() {
+  const navLinks = document.getElementById('nav-links');
+  navLinks.classList.toggle('active');
+}
+
+// Cerrar el menú si el usuario hace clic fuera de él
+window.onclick = function(event) {
+  const menu = document.getElementById("nav-links");
+  const hamburger = document.getElementsByClassName("hamburger-menu")[0];
+
+  // Verifica si el clic fue fuera del menú o del botón hamburguesa
+  if (!menu.contains(event.target) && !hamburger.contains(event.target)) {
+    menu.classList.remove('active'); // Cierra el menú
+  }
+}
+
+$("#controls-toggle").click(function (e) {
+  e.stopPropagation();
+  $(".controls-panel").addClass("expanded").removeClass("collapsed");
+  $(this).hide();
+});
+
+$(document).click(function (e) {
+  const panel = $(".controls-panel");
+  const toggle = $("#controls-toggle");
+  if (
+    !panel.is(e.target) && panel.has(e.target).length === 0 &&
+    !toggle.is(e.target) && toggle.has(e.target).length === 0
+  ) {
+    panel.removeClass("expanded").addClass("collapsed");
+    toggle.show();
+  }
+});
+$(document).on("click", "#btn_atmos", function () {
+  $("#app").show();
+  $("#map").show();
+  $("#banner, #botones1").hide();
+  $("#panel-header-text").text("Pronóstico meteorológico para el Estado de Puebla");
+  m_glosario = "gatmos.html";
+  m_map.updateSize();
+  set_atmos();
+});
+
+$(document).on("click", "#btn_aire", function () {
+  $("#app").show();
+  $("#map").show();
+  $("#banner, #botones1").hide();
+  $("#panel-header-text").text("Calidad del aire para el Estado de Puebla");
+  m_glosario = "gchem.html";
+  m_map.updateSize();
+  set_chem();
+});
+
+$(document).on("click", "#btn_hist", function () {
+  $("#app").show();
+  $("#banner, #botones1").hide();
+  $("#map").hide();
+  $("#hist").hide();
+});
+
+
+const sideMenu = document.getElementById("side-menu");
+
+// Solo en escritorio
+if (window.innerWidth > 768) {
+  // Expandir al pasar el mouse
+  sideMenu.addEventListener("mouseenter", () => {
+    sideMenu.classList.add("expanded");
+  });
+
+  // Contraer al salir el mouse del menú
+  sideMenu.addEventListener("mouseleave", () => {
+    sideMenu.classList.remove("expanded");
+  });
+
+  // Clic en botones del menú => contraer
+  ["btn_atmos", "btn_aire", "btn_hist"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("click", () => {
+        sideMenu.classList.remove("expanded");
+      });
+    }
+  });
+}

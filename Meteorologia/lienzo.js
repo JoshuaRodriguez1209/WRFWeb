@@ -14,7 +14,7 @@ function CLienzo(img){
 	this.canvas.width  = this.img.width;
 	this.canvas.height = this.img.height;
 
-	this.context = this.canvas.getContext('2d');
+	this.context = this.canvas.getContext('2d',{willReadFrequently: true});
 	this.context.drawImage(this.img, 0, 0);
 	
 	this.setScale();
