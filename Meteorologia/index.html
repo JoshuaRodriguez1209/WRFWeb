@@ -1,260 +1,563 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="es">
+<head>
     <meta charset="utf-8" />
-    <title>SMADSOT</title>
-
+    <title>SMADSOT - Sistema Meteorológico y Calidad del Aire</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <script src="./lib/ol/v5.3.0/ol.js"></script>
-    <link rel="stylesheet" href="./lib/ol/v5.3.0/ol.css" />
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
 
-    <script src="./lib/jquery.min.js"></script>
-    <script src="./lib/chart.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <!-- Bootstrap Core JavaScript -->
-    <script src="./bootstrap/bootstrap.min.js"></script>
-    <script src="./bootstrap/dropdowns/dropdowns-enhancement.js"></script>
-    <script src="./bootstrap/datepicker/bootstrap-datepicker.js"></script>
-    <script src="./bootstrap/dialog/bootstrap-dialog.js"></script>
-
-    <!-- Bootstrap Core CSS -->
-    <link rel="stylesheet" href="./bootstrap/bootstrap.min.css" />
-    <link
-      rel="stylesheet"
-      href="./bootstrap/dropdowns/dropdowns-enhancement.css"
-    />
-    <link
-      rel="stylesheet"
-      href="./bootstrap/datepicker/bootstrap-datepicker.css"
-    />
-    <link rel="stylesheet" href="./bootstrap/dialog/bootstrap-dialog.css" />
-
-    <link rel="stylesheet" href="./css/estilos.css" />
-
-    <script src="./lib/dom-to-image.js"></script>
-
-    <!-- ol-ext -->
-    <script type="text/javascript" src="./lib/ol-ext.js"></script>
-    <link rel="stylesheet" href="./lib/ol-ext.css" />
-
-    <script src="./lib/ol3-layerswitcher/ol3-layerswitcher.js"></script>
-    <link
-      rel="stylesheet"
-      href="./lib/ol3-layerswitcher/ol3-layerswitcher.css"
-    />
-
-    <link
-      href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&amp;display=swap"
-      rel="stylesheet"
-    />
-  </head>
-  <body>
-    <!-- Barra de navegación -->
-    <!-- Updated Navigation Structure -->
-<nav class="navbar">
-  <div class="navbar-container">
-    <!-- Back Button (visible only when in app view) -->
-    <button class="back-button" id="back-to-home" style="display: none;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Regresar</span>
-    </button>
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet" />
     
-    <!-- Logo -->
-    <a class="navbar-logo" href="#">
-      <img src="./images/header/SMADSOTlogo.jpg" alt="SMADSOT" class="navbar-icon"/>
-    </a>
+    <style>
+        :root {
+            --primary-brand-color: #5a1b30;
+            --secondary-brand-color: #c19862;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #6c757d;
+            --text-color: #333;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-color: #ddd;
+        }
 
-    <!-- Hamburger Menu -->
-    <div class="hamburger-menu" onclick="toggleMenu()">
-      <div class="bar"></div>
-      <div class="bar"></div>
-      <div class="bar"></div>
-    </div>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    <!-- Navigation Links -->
-    <ul class="nav-links" id="nav-links">
-      <li><a href="https://smadsot.puebla.gob.mx/quienes-somos-1">Quienes Somos</a></li>
-      <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">Avisos de Privacidad</a></li>
-      <li><a href="https://ventanilladigital.puebla.gob.mx/">Trámites</a></li>
-      <li><a href="http://transparencia.puebla.gob.mx/">Transparencia</a></li>
-      <li><a href="https://smadsot.puebla.gob.mx/verificacion">Verificación</a></li>
-      
-      <!-- Mobile only options -->
-      <li class="mobile-only"><a href="#" id="mobile-meteo">Meteorología</a></li>
-      <li class="mobile-only"><a href="#" id="mobile-aire">Calidad del aire</a></li>
-      
-      <!-- Social Icons -->
-      <li class="social-icons">
-        <a href="https://twitter.com/AmbienteGobPue" target="_blank">
-          <img src="./images/twitter.svg" alt="Twitter"/>
-        </a>
-      </li>
-      <li class="social-icons">
-        <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/" target="_blank">
-          <img src="./images/facebook.svg" alt="Facebook"/>
-        </a>
-      </li>
-    </ul>
-  </div>
-</nav>
-    <!-- Banner -->
-    <section class="banner" id="banner">
-      <div class="banner-content">
-        <h1 class="banner-title">
-          Pronóstico meteorológico y de calidad del aire para el Estado de
-          Puebla
-        </h1>
-        <p class="banner-subtitle">
-          En esta página encontrarás datos sobre la calidad del aire y el
-          pronóstico del clima obtneidos a tráves del modelo WRF.
-        </p>
-      </div>
-    </section>
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--light-gray);
+        }
 
-    <!-- Tarjetas -->
+        /* --- NAVBAR STYLES --- */
+        .navbar {
+            background-color: #fff;
+            padding: 10px 2rem;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            flex-shrink: 0;
+            z-index: 1020;
+            border-bottom: 3px solid var(--primary-brand-color);
+        }
+        .navbar-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        .navbar-logo img {
+            height: 60px; /* Adjusted for the wider logo */
+        }
+        .nav-links {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        .nav-links li {
+            padding: 0 12px;
+        }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 500;
+            transition: color 0.3s ease;
+            font-size: 0.95rem;
+        }
+        .nav-links a:hover {
+            color: var(--primary-brand-color);
+        }
+        .social-icons a {
+            font-size: 1.5rem;
+            color: var(--dark-gray);
+            transition: color 0.3s ease;
+        }
+        .social-icons a:hover {
+            color: var(--primary-brand-color);
+        }
+        .hamburger-menu {
+            display: none;
+            cursor: pointer;
+        }
+        .bar {
+            width: 25px;
+            height: 3px;
+            background-color: var(--text-color);
+            margin: 5px 0;
+            transition: 0.4s;
+        }
+        .mobile-only { display: none; }
 
-    <div class="row" style="margin: 50px" id="botones1">
-      <div class="col-12 col-md-6 mb-4" id="meteo">
-        <div class="card">
-          <a href="#" class="card-link">
-            <div
-              class="card-img"
-              style="
-                background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');
-              "
-            >
-              <div class="card-text">
-                <h3>Metereología</h3>
-              </div>
+        /* --- Main App Layout --- */
+        #app {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        /* --- Left Side Menu --- */
+        .side-menu {
+            background-color: #fff;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            border-right: 1px solid var(--border-color);
+            z-index: 1010;
+            flex-shrink: 0;
+        }
+        .menu-btn {
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            width: 90px;
+            text-align: center;
+            transition: all 0.3s ease;
+            color: var(--primary-brand-color);
+        }
+        .menu-btn:hover {
+            background-color: var(--light-gray);
+            border-color: var(--secondary-brand-color);
+            transform: translateY(-2px);
+        }
+        .menu-btn .icon { font-size: 24px; display: block; margin: 0 auto 5px auto; }
+        .menu-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-color); }
+        
+        /* --- Main Content & Map Area --- */
+        #main-content { flex-grow: 1; position: relative; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        
+        #map-watermark {
+            position: absolute;
+            bottom: 20px;
+            left: 325px;
+            z-index: 1000;
+            height: 40px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        
+        #toggle-controls-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: white;
+            color: var(--primary-brand-color);
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            cursor: pointer;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+        }
+        #toggle-controls-btn:hover { background-color: var(--primary-brand-color); color: white; transform: scale(1.1); }
+
+        /* --- Collapsible Controls Panel --- */
+        .weather-controls {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 340px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 25px var(--shadow-color);
+            z-index: 1002;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .weather-controls.is-open { transform: translateX(0); }
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 20px 10px 20px;
+            border-bottom: 2px solid var(--secondary-brand-color);
+        }
+        .controls-header h3 { color: var(--primary-brand-color); font-size: 1.2rem; margin: 0; }
+        .controls-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; flex-grow: 1; }
+        .close-btn { background: none; border: none; font-size: 2rem; color: var(--dark-gray); cursor: pointer; line-height: 1; padding: 0 5px; transition: color 0.3s ease; }
+        .close-btn:hover { color: var(--primary-brand-color); }
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 500; font-size: 14px; }
+        .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
+        .control-group select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
+        .layer-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
+        .layer-btn { padding: 12px 5px; border: 2px solid var(--medium-gray); background: white; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 12px; font-weight: 500; color: #666; }
+        .layer-btn:hover { border-color: var(--secondary-brand-color); color: var(--secondary-brand-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(193, 152, 98, 0.2); }
+        .layer-btn.active { background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color)); color: white; border-color: transparent; }
+        .layer-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
+        .animation-controls { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
+        .play-btn { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color)); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3); flex-shrink: 0; font-size: 20px; }
+        .play-btn:hover { transform: scale(1.1); box-shadow: 0 8px 20px rgba(90, 27, 48, 0.4); }
+        .speed-slider { flex: 1; }
+        .speed-slider input[type="range"] { width: 100%; }
+
+        /* --- On-Map Data Panels --- */
+        .data-panel { position: absolute; bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px var(--shadow-color); width: 300px; z-index: 1000; }
+        .data-panel h4 { margin-bottom: 10px; color: var(--primary-brand-color); }
+        .data-value { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .data-value:last-child { border-bottom: none; }
+        .data-label { color: var(--dark-gray); }
+        .data-number { font-weight: 600; color: var(--text-color); }
+        .legend { position: absolute; bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border-radius: 10px; padding: 15px; box-shadow: 0 5px 20px var(--shadow-color); z-index: 1000; width: 250px; }
+        .legend-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-color); text-align: center; }
+        .legend-gradient { width: 100%; height: 20px; border-radius: 5px; }
+        .legend-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--dark-gray); }
+        .legend-labels span { flex: 1; text-align: center; }
+        .legend-labels span:first-child { text-align: left; }
+        .legend-labels span:last-child { text-align: right; }
+
+        /* --- RESPONSIVE STYLES --- */
+        @media (max-width: 1200px) {
+            .nav-links li { padding: 0 8px; }
+            .nav-links a { font-size: 0.9rem; }
+            .navbar-logo img { height: 50px; }
+        }
+
+        @media (max-width: 992px) {
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                position: absolute;
+                top: 83px; /* Height of navbar */
+                left: 0;
+                background-color: #fff;
+                box-shadow: 0 4px 12px var(--shadow-color);
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .nav-links li {
+                text-align: center;
+                padding: 15px 0;
+                width: 100%;
+                border-top: 1px solid var(--border-color);
+            }
+            .hamburger-menu {
+                display: block;
+            }
+            .weather-controls { width: 300px; }
+        }
+
+        @media (max-width: 768px) {
+            #app { flex-direction: column; }
+            .side-menu { flex-direction: row; width: 100%; justify-content: space-around; border-right: none; border-bottom: 1px solid var(--border-color); padding: 5px; gap: 5px; }
+            .menu-btn { width: auto; flex: 1; margin: 0 2px; }
+            .weather-controls { width: 100%; border-radius: 0; }
+            #toggle-controls-btn { top: 10px; right: 10px; }
+            .data-panel, #map-watermark { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a class="navbar-logo" href="#">
+              <img
+              src="./images/header/SMADSOTlogo.jpg"
+              alt="Logos"
+              class="navbar-icon"
+            />
+            </a>
+            <div class="hamburger-menu" onclick="toggleMenu()">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
             </div>
-          </a>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#">Inicio</a></li>
+                <li><a href="#">Quienes Somos</a></li>
+                <li><a href="#">Avisos de Privacidad</a></li>
+                <li><a href="#">Trámites</a></li>
+                <li><a href="#">Transparencia</a></li>
+                <li><a href="#">Verificación</a></li>
+                <li class="social-icons">
+                    <a href="https://twitter.com/AmbienteGobPue" target="_blank" title="Twitter">
+                        <i class="fa-brands fa-twitter"></i>
+                    </a>
+                </li>
+                <li class="social-icons">
+                    <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/" target="_blank" title="Facebook">
+                        <i class="fa-brands fa-facebook"></i>
+                    </a>
+                </li>
+            </ul>
         </div>
-      </div>
-
-      <div class="col-12 col-md-6 mb-4" id="cali">
-        <div class="card">
-          <a href="#" class="card-link">
-            <div
-              class="card-img"
-              style="
-                background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');
-              "
-            >
-              <div class="card-text">
-                <h3>Calidad del aire</h3>
-              </div>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- Mapa y controles -->
+    </nav>
+    
     <div id="app">
-      <div id="side-menu" class="side-menu">
-        <button class="menu-btn" id="btn_atmos" title="Atmósfera">
-          🌦️ <span class="menu-label">Meteorología</span>
-        </button>
-        <button class="menu-btn" id="btn_aire" title="Calidad del aire">
-          🌫️ <span class="menu-label">Calidad del aire</span>
-        </button>
-        <button class="menu-btn" id="btn_hist" title="Historial">
-          📊 <span class="menu-label">Historial</span>
-        </button>
-      </div>
-      <div id="map">
-        <!-- ICONO TIPO FLECHA PARA MOSTRAR CONTROLES -->
-        <div id="controls-toggle">
-          <i class="glyphicon glyphicon-chevron-left"></i>
+        <div id="side-menu" class="side-menu">
+            <button class="menu-btn" title="Meteorología">
+                <i class="fa-solid fa-cloud-sun-rain icon"></i>
+                <span class="menu-label">Meteorología</span>
+            </button>
+            <button class="menu-btn" title="Calidad del aire">
+                <i class="fa-solid fa-smog icon"></i>
+                <span class="menu-label">Calidad Aire</span>
+            </button>
+            <button class="menu-btn" title="Historial">
+                <i class="fa-solid fa-chart-simple icon"></i>
+                <span class="menu-label">Historial</span>
+            </button>
+            <button class="menu-btn" title="Regresar" onclick="history.back()">
+                <i class="fa-solid fa-arrow-left icon"></i>
+                <span class="menu-label">Regresar</span>
+            </button>
         </div>
 
-        <!-- Panel de controles -->
-        <div class="controls-panel">
-          <!-- Encabezado -->
-          <div class="panel-header"><p id="panel-header-text"></p></div>
+        <div id="main-content">
+            <div id="map"></div>
+            <img id="map-watermark" src="https://smadsot.puebla.gob.mx/images/headers/2022/logo-puebla-contigo-blanco-2022.png" alt="Puebla Gobierno" />
+            
+            <button id="toggle-controls-btn" title="Control de Capas"><i class="fa-solid fa-layer-group"></i></button>
 
-          <!-- Fecha -->
-          <label for="select_run">Fecha</label>
-          <select id="select_run">
-            <!-- opciones dinámicas -->
-          </select>
-
-          <!-- Parámetro -->
-          <label for="select_dat">Parámetro</label>
-          <select id="select_dat">
-            <option value="temp">Temperatura</option>
-            <option value="hum">Humedad</option>
-          </select>
-
-          <!-- Sub-parámetro -->
-          <label for="select_var">Sub-parámetro</label>
-          <select id="select_var"></select>
-
-          <!-- Pronósticos -->
-          <label for="selectHora">Pronósticos a (horas)</label>
-          <select id="selectHora">
-            <option>12</option>
-            <option>24</option>
-            <option>48</option>
-          </select>
-
-          <!-- Controles de animación -->
-          <div class="anim-controls">
-            <label>Animar</label>
-            <button id="btn_toggle_animation" title="Reproducir">
-              <i class="glyphicon glyphicon-play"></i>
-            </button>
-          </div>
-
-          <!-- Velocidad -->
-          <label for="btn_rango">Velocidad</label>
-          <input id="btn_rango" type="range" min="150" max="1500" step="50" />
-
-          <!-- Pie de panel -->
-          <div class="controls-footer">
-            <button onclick="location.reload()" id="btn_glo_quitar">
-              <i class="glyphicon glyphicon-arrow-left"></i> ATRÁS
-            </button>
-            <button id="btn_glo">
-              <i class="glyphicon glyphicon-book"></i> GLOSARIO
-            </button>
-            <button id="btn_datos">
-              <i class="glyphicon glyphicon-download"></i> DATOS
-            </button>
-            <button id="btn_recarga">
-              <i class="glyphicon glyphicon-reload"></i> RECARGAR
-            </button>
-          </div>
+            <div class="weather-controls" id="weather-controls">
+                <div class="controls-header">
+                    <h3>Control de Capas</h3>
+                    <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
+                </div>
+                <div class="controls-body">
+                    <div class="control-group">
+                        <label for="forecastDate">Fecha del Pronóstico</label>
+                        <input type="datetime-local" id="forecastDate" value="2025-08-20T13:00">
+                    </div>
+                    <div class="control-group">
+                        <label for="forecastHours">Horas de Pronóstico</label>
+                        <select id="forecastHours">
+                            <option value="12">12 horas</option>
+                            <option value="24" selected>24 horas</option>
+                            <option value="48">48 horas</option>
+                            <option value="72">72 horas</option>
+                        </select>
+                    </div>
+                    <div class="layer-buttons">
+                        <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
+                        <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
+                        <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
+                        <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
+                        <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
+                        <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
+                        <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
+                        <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
+                        <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>
+                        <button class="layer-btn" data-layer="pm25"><i class="fa-solid fa-smog"></i> PM2.5</button>
+                    </div>
+                    <div class="animation-controls">
+                        <button class="play-btn" id="playBtn"><i class="fa-solid fa-play" id="playIcon"></i></button>
+                        <div class="speed-slider">
+                            <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
+                            <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="data-panel" id="dataPanel">
+                <h4>Datos Actuales (Punto Central)</h4>
+                <div class="data-value"><span class="data-label">Temperatura</span><span class="data-number" id="tempValue">--°C</span></div>
+                <div class="data-value"><span class="data-label">Humedad</span><span class="data-number" id="humidityValue">--%</span></div>
+                <div class="data-value"><span class="data-label">Viento</span><span class="data-number" id="windValue">-- km/h</span></div>
+                <div class="data-value"><span class="data-label">Presión</span><span class="data-number" id="pressureValue">-- hPa</span></div>
+            </div>
+            
+            <div class="legend" id="legend" style="display: none;">
+                <div class="legend-title">Escala</div>
+                <div class="legend-gradient"></div>
+                <div class="legend-labels"></div>
+            </div>
         </div>
-        <div id="gradient-container" class="vertical">
-          <div class="gradient-title">
-            <span id="gradient-title">Variable</span>
-            <span id="gradient-units">Unidades</span>
-          </div>
-          <div class="gradient-scale-wrapper">
-            <canvas
-              id="dynamic-gradient-canvas"
-              class="gradient-bar"
-              width="22"
-              height="640"
-            ></canvas>
-            <div class="gradient-values" id="gradient-values"></div>
-          </div>
-        </div>
-        <div id="filter-info">
-          <div class="permanent-date"></div>
-        </div>
-      </div>
-      <div id="hist"></div>
     </div>
-  </body>
-  <canvas id="filter-canvas" style="display: none"></canvas>
-  <script src="./defines.js"></script>
-  <script src="./lienzo.js"></script>
-  <script src="./utils.js"></script>
-  <script src="./app.js"></script>
-  <script src="./menu.js"></script>
+
+    <script>
+        // Function to toggle mobile menu
+        function toggleMenu() {
+            const navLinks = document.getElementById('nav-links');
+            navLinks.classList.toggle('active');
+        }
+
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/dark-v11',
+            center: [-97.9, 19.0],
+            zoom: 8,
+            pitch: 45,
+            bearing: 0
+        });
+        
+        const weatherLayers = {
+            temperature: { name: 'Temperatura', unit: '°C', gradient: 'linear-gradient(to right, #3b4cc0, #67adcc, #f0f921, #f89540, #a52c60)', range: [-10, 40] },
+            humidity: { name: 'Humedad', unit: '%', gradient: 'linear-gradient(to right, #f2f2f2, #999999, #404040)', range: [0, 100] },
+            precipitation: { name: 'Precipitación', unit: 'mm', gradient: 'linear-gradient(to right, #ffffff, #a6d9ff, #4292c6, #08306b)', range: [0, 100] },
+            wind: { name: 'Viento', unit: 'km/h', gradient: 'linear-gradient(to right, #ffffff, #ffffb2, #fecc5c, #fd8d3c, #e31a1c)', range: [0, 150] },
+            pressure: { name: 'Presión', unit: 'hPa', gradient: 'linear-gradient(to right, #7b3294, #c2a5cf, #f7f7f7, #a6dba0, #008837)', range: [980, 1040] },
+            radiation: { name: 'Radiación', unit: 'W/m²', gradient: 'linear-gradient(to right, #000000, #4b0082, #ff0000, #ffff00, #ffffff)', range: [0, 1000] },
+            co: { name: 'Monóxido de Carbono', unit: 'ppm', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 10] },
+            no2: { name: 'Dióxido de Nitrógeno', unit: 'ppb', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 200] },
+            o3: { name: 'Ozono', unit: 'ppb', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 150] },
+            pm25: { name: 'PM2.5', unit: 'μg/m³', gradient: 'linear-gradient(to right, #ffffcc, #fed976, #feb24c, #fd8d3c, #f03b20, #bd0026)', range: [0, 200] }
+        };
+        let activeLayer = null;
+        let animationInterval = null;
+        let isPlaying = false;
+
+        function generateWeatherData(type) {
+            const data = [];
+            const gridSize = 25;
+            const range = weatherLayers[type].range;
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const lat = 17.8 + (i / gridSize) * 2.4;
+                    const lng = -99.0 + (j / gridSize) * 2.3;
+                    const value = range[0] + Math.random() * (range[1] - range[0]);
+                    data.push({
+                        type: 'Feature',
+                        geometry: { type: 'Point', coordinates: [lng, lat] },
+                        properties: { value: value }
+                    });
+                }
+            }
+            return { type: 'FeatureCollection', features: data };
+        }
+        
+        function addWeatherLayer(type) {
+            if (activeLayer) {
+                if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
+                if (map.getSource(activeLayer)) map.removeSource(activeLayer);
+            }
+            
+            const layerConfig = weatherLayers[type];
+            const data = generateWeatherData(type);
+            
+            map.addSource(type, { type: 'geojson', data: data });
+            
+            map.addLayer({
+                id: type,
+                type: 'heatmap',
+                source: type,
+                paint: {
+                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'value'], layerConfig.range[0], 0, layerConfig.range[1], 1],
+                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 7, 1, 12, 3],
+                    'heatmap-color': [ 'interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 0.2, '#3b4cc0', 0.4, '#67adcc', 0.6, '#f0f921', 0.8, '#f89540', 1, '#a52c60' ],
+                    'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 7, 25, 12, 60],
+                    'heatmap-opacity': 0.75
+                }
+            });
+            
+            activeLayer = type;
+            updateLegend(layerConfig);
+            updateDataPanel();
+        }
+        
+        function updateLegend(config) {
+            const legend = document.getElementById('legend');
+            legend.style.display = 'block';
+            legend.querySelector('.legend-title').textContent = `${config.name}`;
+            legend.querySelector('.legend-gradient').style.background = config.gradient;
+            
+            const labels = legend.querySelector('.legend-labels');
+            labels.innerHTML = '';
+            const steps = 4;
+            for (let i = 0; i <= steps; i++) {
+                const value = config.range[0] + (config.range[1] - config.range[0]) * (i / steps);
+                const span = document.createElement('span');
+                span.textContent = `${value.toFixed(0)}${i === steps ? " "+config.unit : ''}`;
+                labels.appendChild(span);
+            }
+        }
+        
+        function updateDataPanel() {
+            document.getElementById('tempValue').textContent = `${(15 + Math.random() * 15).toFixed(1)}°C`;
+            document.getElementById('humidityValue').textContent = `${(40 + Math.random() * 40).toFixed(0)}%`;
+            document.getElementById('windValue').textContent = `${(Math.random() * 30).toFixed(1)} km/h`;
+            document.getElementById('pressureValue').textContent = `${(1000 + Math.random() * 30).toFixed(0)} hPa`;
+        }
+
+        function startAnimation() {
+            if (isPlaying || !activeLayer) return;
+            isPlaying = true;
+            document.getElementById('playIcon').classList.replace('fa-play', 'fa-pause');
+            
+            const speed = 2100 - document.getElementById('speedSlider').value;
+            
+            animationInterval = setInterval(() => {
+                const data = generateWeatherData(activeLayer);
+                if(map.getSource(activeLayer)) {
+                    map.getSource(activeLayer).setData(data);
+                }
+                updateDataPanel();
+            }, speed);
+        }
+        
+        function stopAnimation() {
+            isPlaying = false;
+            document.getElementById('playIcon').classList.replace('fa-pause', 'fa-play');
+            clearInterval(animationInterval);
+            animationInterval = null;
+        }
+
+        // --- Event Listeners ---
+        const controlsPanel = document.getElementById('weather-controls');
+
+        document.querySelectorAll('.layer-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const layerType = this.getAttribute('data-layer');
+                addWeatherLayer(layerType);
+            });
+        });
+        
+        document.getElementById('playBtn').addEventListener('click', () => isPlaying ? stopAnimation() : startAnimation());
+        
+        document.getElementById('speedSlider').addEventListener('input', () => {
+            if (isPlaying) {
+                stopAnimation();
+                startAnimation();
+            }
+        });
+        
+        document.getElementById('toggle-controls-btn').addEventListener('click', () => {
+            controlsPanel.classList.add('is-open');
+        });
+        
+        document.getElementById('close-controls-btn').addEventListener('click', () => {
+            controlsPanel.classList.remove('is-open');
+        });
+
+        map.on('load', () => {
+            map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
+            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
+            map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
+            
+            map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+            map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+
+            document.querySelector('[data-layer="temperature"]').click();
+        });
+    </script>
+</body>
 </html>
