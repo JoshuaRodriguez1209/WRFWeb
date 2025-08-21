@@ -322,7 +322,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 15px;
-  z-index: 1000;
+  z-index: 3000;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -710,4 +710,39 @@
 .dynamic-range {
   color: #333;
   font-size: 0.9em;
+}
+
+/* Escala/gradiente vertical */
+#gradient-container.vertical{
+  position: fixed;          
+  left: 90px;               
+  top: 150px;              
+  width: 250px;
+  height: calc(100vh - 170px);      
+  max-height: calc(100vh - 170px);  
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  font-family: "Poppins", sans-serif;
+}
+
+.gradient-scale-wrapper{ height: 100%; }
+.gradient-bar{ width: 22px; height: 100%; }   /* quita alturas fijas */
+.gradient-values{ height: 100%; }
+
+/* Ajuste en móvil: navbar y panel usan ~56 px */
+@media (max-width:768px){
+  #gradient-container.vertical{
+    left: 8px;
+    top: 120 px;                           /* debajo del header móvil */
+    width: 120px;
+    height: calc(100vh - 170px);          /* sin exceder viewport */
+    max-height: calc(100vh - 170px);
+    background-color: rgba(255,255,255,0.6);
+  }
+  .gradient-bar{ width: 16px; }
+  .gradient-title{ font-size: 16px; }
+  .gradient-values{ font-size: 12px; font-weight: 800; }
 }
