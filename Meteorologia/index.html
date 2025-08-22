@@ -110,9 +110,9 @@
         }
         
         /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
-                .map-controls {
+        .map-controls {
             position: absolute;
-            top: 180px; /* Reduced from 100px for better padding */
+            top: 180px;
             right: 20px;
             display: flex;
             flex-direction: column;
@@ -170,10 +170,10 @@
 
         .weather-controls {
             position: absolute;
-            top: 180px; /* Reduced from 100px for better padding */
+            top: 180px;
             right: 0;
-            width: 340px;
-            height: calc(100% - 320px); /* Adjust height to account for new top/bottom padding */
+            width: 380px;
+            height: calc(100% - 340px);
             background: white;
             border-radius: 8px;
             box-shadow: -5px 0 25px var(--shadow-color);
@@ -211,6 +211,79 @@
         .speed-slider { flex: 1; }
         .speed-slider input[type="range"] { width: 100%; }
 
+        /* Control footer buttons */
+        .controls-footer {
+            padding: 15px 0;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .footer-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 12px;
+            border: 1px solid var(--primary-brand-color);
+            background: white;
+            color: var(--primary-brand-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .footer-btn:hover {
+            background: var(--primary-brand-color);
+            color: white;
+        }
+
+        /* Enhanced Gradient Scale */
+        .legend { 
+            position: absolute; 
+            bottom: 20px; 
+            right: 20px; 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            border-radius: 10px; 
+            padding: 15px; 
+            box-shadow: 0 5px 20px var(--shadow-color); 
+            z-index: 1000; 
+            width: 250px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .legend-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-color); text-align: center; }
+        .legend-gradient { 
+            width: 100%; 
+            height: 20px; 
+            border-radius: 5px; 
+            position: relative;
+            cursor: pointer;
+        }
+        .legend-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--dark-gray); }
+        .legend-labels span { flex: 1; text-align: center; }
+        .legend-labels span:first-child { text-align: left; }
+        .legend-labels span:last-child { text-align: right; }
+
+        /* Filter indicator */
+        .filter-indicator {
+            position: absolute;
+            top: -5px;
+            left: 0;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid white;
+            border-radius: 3px;
+            pointer-events: none;
+            display: none;
+        }
+
         /* On-Map Data Panels */
         .data-panel { 
             position: absolute; 
@@ -229,25 +302,6 @@
         .data-value:last-child { border-bottom: none; }
         .data-label { color: var(--dark-gray); }
         .data-number { font-weight: 600; color: var(--text-color); }
-        
-        .legend { 
-            position: absolute; 
-            bottom: 20px; 
-            right: 20px; 
-            background: rgba(255, 255, 255, 0.95); 
-            backdrop-filter: blur(10px); 
-            border-radius: 10px; 
-            padding: 15px; 
-            box-shadow: 0 5px 20px var(--shadow-color); 
-            z-index: 1000; 
-            width: 250px; 
-        }
-        .legend-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-color); text-align: center; }
-        .legend-gradient { width: 100%; height: 20px; border-radius: 5px; }
-        .legend-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--dark-gray); }
-        .legend-labels span { flex: 1; text-align: center; }
-        .legend-labels span:first-child { text-align: left; }
-        .legend-labels span:last-child { text-align: right; }
 
         /* Side menu when map is active */
         .side-menu {
@@ -284,7 +338,6 @@
         }
 
         .menu-btn:hover {
-
             color: var(--primary-brand-color);
             border-color: var(--secondary-brand-color);
             background: var(--secondary-brand-color);
@@ -302,17 +355,118 @@
             display: none;
         }
 
-        /* Weather animation effects */
-        .weather-particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            animation: float 3s ease-in-out infinite;
+        /* Municipality Data Modal */
+        .municipality-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.8; }
-            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--secondary-brand-color);
+        }
+
+        .modal-title {
+            color: var(--primary-brand-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--dark-gray);
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--primary-brand-color);
+        }
+
+        .pollutant-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .pollutant-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--light-gray);
+        }
+
+        .pollutant-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .pollutant-info {
+            flex: 1;
+        }
+
+        .pollutant-name {
+            font-size: 12px;
+            color: var(--dark-gray);
+            margin-bottom: 2px;
+        }
+
+        .pollutant-value {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+
+        .download-btn {
+            position: absolute;
+            top: -5px;
+            right: 0;
+            padding: 8px 15px;
+            background: var(--secondary-brand-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: var(--primary-brand-color);
         }
 
         /* Responsive adjustments */
@@ -325,8 +479,8 @@
                 display: flex !important;
                 flex-grow: 1;
                 overflow: hidden;
-                margin-top: 80px; /* Added: Pushes the container below the navbar */
-                height: calc(100vh - 80px); /* Changed: Adjusts height to fill remaining space */
+                margin-top: 80px;
+                height: calc(100vh - 80px);
             }
             
             body.map-active .side-menu { 
@@ -353,12 +507,13 @@
                 font-size: 20px;
             }
             
-                        .weather-controls {
+            .weather-controls {
                 position: absolute;
-                top: 20px; /* Reduced from 100px for better padding */
-                right: 0PX;
-                width: 340px;
-                height: calc(100% - 40px); /* Adjust height to account for new top/bottom padding */
+                top: 20px;
+                right: 0px;
+                width: calc(100% - 40px);
+                max-width: 380px;
+                height: calc(100% - 40px);
                 background: white;
                 box-shadow: -5px 0 25px var(--shadow-color);
                 z-index: 1002;
@@ -370,7 +525,7 @@
             
             .map-controls {
                 position: absolute;
-                top: 20px; /* Reduced from 100px for better padding */
+                top: 20px;
                 right: 20px;
                 display: flex;
                 flex-direction: column;
@@ -386,6 +541,12 @@
             
             #map-watermark { 
                 display: none; 
+            }
+
+            .modal-content {
+                margin: 20px;
+                max-width: calc(100% - 40px);
+                max-height: calc(100% - 40px);
             }
         }
     </style>
@@ -516,16 +677,36 @@
           </div>
           <div class="controls-body">
             <div class="control-group">
-              <label for="forecastDate">Fecha del Pronóstico</label>
-              <input type="datetime-local" id="forecastDate" value="2025-08-20T13:00">
+              <label for="select_run">Fecha del Pronóstico</label>
+              <select id="select_run">
+                <option value="2025-08-20">20 Agosto 2025</option>
+                <option value="2025-08-21">21 Agosto 2025</option>
+                <option value="2025-08-22" selected>22 Agosto 2025</option>
+              </select>
             </div>
             <div class="control-group">
-              <label for="forecastHours">Horas de Pronóstico</label>
-              <select id="forecastHours">
+              <label for="selectHora">Pronósticos a (horas)</label>
+              <select id="selectHora">
                 <option value="12">12 horas</option>
                 <option value="24" selected>24 horas</option>
                 <option value="48">48 horas</option>
                 <option value="72">72 horas</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="select_dat">Parámetro</label>
+              <select id="select_dat">
+                <option value="meteorologia">Meteorología</option>
+                <option value="calidad">Calidad del aire</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="select_var">Sub-parámetro</label>
+              <select id="select_var">
+                <option value="temperature">Temperatura</option>
+                <option value="humidity">Humedad</option>
+                <option value="precipitation">Precipitación</option>
+                <option value="wind">Viento</option>
               </select>
             </div>
             <div class="layer-buttons">
@@ -547,6 +728,17 @@
                 <input type="range" min="100" max="2000" value="1000" id="speedSlider">
               </div>
             </div>
+            <div class="controls-footer">
+              <button class="footer-btn" id="btn_glosario">
+                <i class="fa-solid fa-book"></i> Glosario
+              </button>
+              <button class="footer-btn" id="btn_datos">
+                <i class="fa-solid fa-download"></i> Datos
+              </button>
+              <button class="footer-btn" id="btn_recarga">
+                <i class="fa-solid fa-reload"></i> Recargar
+              </button>
+            </div>
           </div>
         </div>
         
@@ -560,12 +752,70 @@
         
         <div class="legend" id="legend" style="display: none;">
           <div class="legend-title">Escala</div>
-          <div class="legend-gradient"></div>
+          <div class="legend-gradient" id="legend-gradient">
+            <div class="filter-indicator" id="filter-indicator"></div>
+          </div>
           <div class="legend-labels"></div>
+          <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+            Haz clic en la escala para filtrar
+          </div>
         </div>
       </div>
 
       <div id="hist"></div>
+    </div>
+
+    <!-- Municipality Data Modal -->
+    <div class="municipality-modal" id="municipalityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" id="modalTitle">Ciudad de Rafael Lara</h2>
+            <button class="download-btn" id="downloadCsvBtn">
+              <i class="fa-solid fa-download"></i> Descargar (.CSV)
+            </button>
+          </div>
+          <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <h4>Resumen de Promedios</h4>
+          <div class="pollutant-summary" id="pollutantSummary">
+            <!-- Dynamic pollutant data will be inserted here -->
+          </div>
+          
+          <div class="chart-container">
+            <canvas id="pollutantChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Glossary Modal -->
+    <div class="municipality-modal" id="glossaryModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Glosario de Términos</h2>
+          <button class="modal-close" id="glossaryClose">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+          <div style="max-height: 400px; overflow-y: auto;">
+            <h4>Parámetros Meteorológicos</h4>
+            <p><strong>Temperatura:</strong> Medida del grado de calor en la atmósfera, expresada en grados Celsius (°C).</p>
+            <p><strong>Humedad:</strong> Cantidad de vapor de agua presente en el aire, expresada como porcentaje (%).</p>
+            <p><strong>Precipitación:</strong> Cantidad de agua caída en forma de lluvia, nieve o granizo, medida en milímetros (mm).</p>
+            <p><strong>Viento:</strong> Movimiento del aire en la atmósfera, medido en kilómetros por hora (km/h).</p>
+            <p><strong>Presión:</strong> Fuerza ejercida por el aire sobre la superficie terrestre, medida en hectopascales (hPa).</p>
+            
+            <h4>Contaminantes del Aire</h4>
+            <p><strong>CO (Monóxido de Carbono):</strong> Gas incoloro e inodoro producido por la combustión incompleta, medido en partes por millón (ppm).</p>
+            <p><strong>NO₂ (Dióxido de Nitrógeno):</strong> Gas rojizo con olor acre, principalmente de vehículos, medido en partes por billón (ppb).</p>
+            <p><strong>O₃ (Ozono):</strong> Gas formado por reacciones fotoquímicas en la atmósfera, medido en partes por billón (ppb).</p>
+            <p><strong>PM2.5:</strong> Partículas finas menores a 2.5 micrómetros, medidas en microgramos por metro cúbico (μg/m³).</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -599,6 +849,7 @@
         let map = null;
         const initialCenter = [-98.2063, 19.0414]; // Puebla center
         const initialZoom = 8.5;
+        let colorFilter = null;
 
         function initializeMap() {
             if (mapInitialized) return;
@@ -668,59 +919,119 @@
             };
         }
 
-        // Sample municipalities of Puebla with accurate coordinates
+        // Sample municipalities of Puebla with enhanced data
         function getPueblaMunicipalities() {
             return {
                 "type": "FeatureCollection",
                 "features": [
                     {
                         "type": "Feature",
-                        "properties": { "name": "Puebla de Zaragoza", "population": 1576259 },
+                        "properties": { 
+                            "name": "Puebla de Zaragoza", 
+                            "population": 1576259,
+                            "airQuality": {
+                                "co": 2.6, "no2": 0.5, "o3": 14.7, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.2063, 19.0414] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Tehuacán", "population": 274906 },
+                        "properties": { 
+                            "name": "Tehuacán", 
+                            "population": 274906,
+                            "airQuality": {
+                                "co": 1.8, "no2": 0.3, "o3": 12.1, "so2": 0.0, "pm10": 0.2, "pm25": 0.1
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-97.3953, 18.4622] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Atlixco", "population": 127062 },
+                        "properties": { 
+                            "name": "Atlixco", 
+                            "population": 127062,
+                            "airQuality": {
+                                "co": 1.2, "no2": 0.2, "o3": 10.5, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.4307, 18.9117] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "San Martín Texmelucan", "population": 141112 },
+                        "properties": { 
+                            "name": "San Martín Texmelucan", 
+                            "population": 141112,
+                            "airQuality": {
+                                "co": 2.1, "no2": 0.4, "o3": 13.2, "so2": 0.0, "pm10": 0.2, "pm25": 0.1
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.4342, 19.2806] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Cholula", "population": 120459 },
+                        "properties": { 
+                            "name": "Cholula", 
+                            "population": 120459,
+                            "airQuality": {
+                                "co": 1.9, "no2": 0.3, "o3": 11.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.3019, 19.0631] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Amozoc", "population": 98744 },
+                        "properties": { 
+                            "name": "Amozoc", 
+                            "population": 98744,
+                            "airQuality": {
+                                "co": 1.5, "no2": 0.2, "o3": 9.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-97.9764, 19.0364] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Cuautlancingo", "population": 82197 },
+                        "properties": { 
+                            "name": "Cuautlancingo", 
+                            "population": 82197,
+                            "airQuality": {
+                                "co": 1.4, "no2": 0.2, "o3": 9.2, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.1667, 19.0667] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Zacatlán", "population": 76296 },
+                        "properties": { 
+                            "name": "Zacatlán", 
+                            "population": 76296,
+                            "airQuality": {
+                                "co": 0.8, "no2": 0.1, "o3": 7.5, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-97.9578, 19.9311] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Huauchinango", "population": 59375 },
+                        "properties": { 
+                            "name": "Huauchinango", 
+                            "population": 59375,
+                            "airQuality": {
+                                "co": 0.9, "no2": 0.1, "o3": 8.1, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.0556, 20.1747] }
                     },
                     {
                         "type": "Feature",
-                        "properties": { "name": "Izúcar de Matamoros", "population": 69413 },
+                        "properties": { 
+                            "name": "Izúcar de Matamoros", 
+                            "population": 69413,
+                            "airQuality": {
+                                "co": 1.1, "no2": 0.2, "o3": 8.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
+                            }
+                        },
                         "geometry": { "type": "Point", "coordinates": [-98.4667, 18.6] }
                     }
                 ]
@@ -822,24 +1133,10 @@
                 }
             });
 
-            // Enhanced click interaction
+            // Enhanced click interaction - Show municipality data modal
             map.on('click', 'municipality-points', (e) => {
-                const name = e.features[0].properties.name;
-                const population = e.features[0].properties.population;
-                
-                new mapboxgl.Popup({
-                    closeButton: true,
-                    closeOnClick: true,
-                    className: 'custom-popup'
-                })
-                    .setLngLat(e.lngLat)
-                    .setHTML(`
-                        <div style="padding: 10px;">
-                            <h4 style="margin: 0 0 8px 0; color: #5a1b30;">${name}</h4>
-                            <p style="margin: 0; font-size: 14px;">Población: <strong>${population.toLocaleString()}</strong></p>
-                        </div>
-                    `)
-                    .addTo(map);
+                const properties = e.features[0].properties;
+                showMunicipalityModal(properties);
             });
 
             // Enhanced hover effects
@@ -850,6 +1147,154 @@
             map.on('mouseleave', 'municipality-points', () => {
                 map.getCanvas().style.cursor = '';
             });
+        }
+
+        // Municipality Modal Functions
+        function showMunicipalityModal(properties) {
+            const modal = document.getElementById('municipalityModal');
+            const title = document.getElementById('modalTitle');
+            const summary = document.getElementById('pollutantSummary');
+            
+            title.textContent = properties.name;
+            
+            // Clear previous data
+            summary.innerHTML = '';
+            
+            // Add pollutant data
+            const airQuality = properties.airQuality;
+            const pollutants = [
+                { key: 'co', name: 'Monóxido de Carbono (ppm)', color: '#8B4513', value: airQuality.co },
+                { key: 'no2', name: 'Dióxido de Nitrógeno (ppb)', color: '#6A5ACD', value: airQuality.no2 },
+                { key: 'o3', name: 'Ozono (ppb)', color: '#32CD32', value: airQuality.o3 },
+                { key: 'so2', name: 'Dióxido de Azufre (ppb)', color: '#4169E1', value: airQuality.so2 },
+                { key: 'pm10', name: 'PM 10 (μg/m³)', color: '#2F4F4F', value: airQuality.pm10 },
+                { key: 'pm25', name: 'PM 2.5 (μg/m³)', color: '#556B2F', value: airQuality.pm25 }
+            ];
+            
+            pollutants.forEach(pollutant => {
+                const item = document.createElement('div');
+                item.className = 'pollutant-item';
+                item.innerHTML = `
+                    <div class="pollutant-color" style="background-color: ${pollutant.color}"></div>
+                    <div class="pollutant-info">
+                        <div class="pollutant-name">${pollutant.name}</div>
+                        <div class="pollutant-value">${pollutant.value}</div>
+                    </div>
+                `;
+                summary.appendChild(item);
+            });
+            
+            // Create chart
+            createPollutantChart(pollutants, properties.name);
+            
+            modal.style.display = 'flex';
+        }
+
+        function createPollutantChart(pollutants, cityName) {
+            const ctx = document.getElementById('pollutantChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.pollutantChart) {
+                window.pollutantChart.destroy();
+            }
+            
+            // Generate time series data (simulated)
+            const timeLabels = [];
+            const datasets = [];
+            
+            // Generate 24 hours of data
+            for (let i = 0; i < 24; i++) {
+                const hour = i.toString().padStart(2, '0') + ':00';
+                timeLabels.push(hour);
+            }
+            
+            // Create dataset for each pollutant
+            pollutants.forEach(pollutant => {
+                const data = [];
+                const baseValue = pollutant.value;
+                
+                for (let i = 0; i < 24; i++) {
+                    // Add some realistic variation
+                    const variation = (Math.sin(i * 0.5) + Math.random() * 0.4 - 0.2) * baseValue * 0.3;
+                    data.push(Math.max(0, baseValue + variation));
+                }
+                
+                datasets.push({
+                    label: pollutant.name,
+                    data: data,
+                    borderColor: pollutant.color,
+                    backgroundColor: pollutant.color + '20',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.4
+                });
+            });
+            
+            window.pollutantChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Niveles de Contaminantes - ${cityName}`,
+                            font: { size: 16, weight: 'bold' }
+                        },
+                        legend: {
+                            display: true,
+                            position: 'bottom'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Concentración'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Hora del día'
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // CSV Download functionality
+        function downloadMunicipalityCSV(properties) {
+            const airQuality = properties.airQuality;
+            const csvContent = [
+                ['Contaminante', 'Concentración', 'Unidad'],
+                ['Monóxido de Carbono', airQuality.co, 'ppm'],
+                ['Dióxido de Nitrógeno', airQuality.no2, 'ppb'],
+                ['Ozono', airQuality.o3, 'ppb'],
+                ['Dióxido de Azufre', airQuality.so2, 'ppb'],
+                ['PM 10', airQuality.pm10, 'μg/m³'],
+                ['PM 2.5', airQuality.pm25, 'μg/m³']
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `calidad_aire_${properties.name.replace(/\s+/g, '_')}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // Enhanced weather layers with Apple-like styling
@@ -1031,6 +1476,11 @@
                         let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
                         value = Math.max(range[0], Math.min(range[1], value));
                         
+                        // Apply color filter if active
+                        if (colorFilter && !isValueInColorFilter(value, range)) {
+                            continue; // Skip this point if it doesn't match the filter
+                        }
+                        
                         data.push({
                             type: 'Feature',
                             geometry: { type: 'Point', coordinates: [lng, lat] },
@@ -1044,6 +1494,14 @@
                 }
             }
             return { type: 'FeatureCollection', features: data };
+        }
+
+        // Check if a value matches the current color filter
+        function isValueInColorFilter(value, range) {
+            if (!colorFilter) return true;
+            
+            const normalizedValue = (value - range[0]) / (range[1] - range[0]);
+            return normalizedValue >= colorFilter.min && normalizedValue <= colorFilter.max;
         }
 
         // Generate smoother, more realistic weather values
@@ -1239,6 +1697,77 @@
                 labels.appendChild(span);
             }
         }
+
+        // Enhanced legend click functionality for color filtering
+        function setupLegendClickFilter() {
+            const legendGradient = document.getElementById('legend-gradient');
+            const filterIndicator = document.getElementById('filter-indicator');
+            
+            let isSelecting = false;
+            let startX = 0;
+            
+            legendGradient.addEventListener('mousedown', (e) => {
+                isSelecting = true;
+                startX = e.offsetX;
+                filterIndicator.style.left = startX + 'px';
+                filterIndicator.style.width = '2px';
+                filterIndicator.style.display = 'block';
+                e.preventDefault();
+            });
+            
+            legendGradient.addEventListener('mousemove', (e) => {
+                if (!isSelecting) return;
+                
+                const currentX = e.offsetX;
+                const width = Math.abs(currentX - startX);
+                const left = Math.min(startX, currentX);
+                
+                filterIndicator.style.left = left + 'px';
+                filterIndicator.style.width = width + 'px';
+            });
+            
+            legendGradient.addEventListener('mouseup', (e) => {
+                if (!isSelecting) return;
+                isSelecting = false;
+                
+                const endX = e.offsetX;
+                const gradientWidth = legendGradient.offsetWidth;
+                
+                // Calculate filter range
+                const minPercent = Math.min(startX, endX) / gradientWidth;
+                const maxPercent = Math.max(startX, endX) / gradientWidth;
+                
+                // Apply filter
+                if (Math.abs(endX - startX) > 5) { // Minimum selection width
+                    colorFilter = { min: minPercent, max: maxPercent };
+                    applyColorFilter();
+                } else {
+                    // Single click - remove filter
+                    colorFilter = null;
+                    filterIndicator.style.display = 'none';
+                    applyColorFilter();
+                }
+            });
+            
+            // Handle mouse leave
+            legendGradient.addEventListener('mouseleave', () => {
+                if (isSelecting) {
+                    isSelecting = false;
+                    if (!colorFilter) {
+                        filterIndicator.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function applyColorFilter() {
+            if (activeLayer) {
+                const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
+                if (map && map.getSource(activeLayer)) {
+                    map.getSource(activeLayer).setData(data);
+                }
+            }
+        }
         
         function updateDataPanel(type = 'temperature') {
             const config = weatherLayers[type] || weatherLayers.temperature;
@@ -1389,6 +1918,8 @@
                 this.classList.add('active');
                 const layerType = this.getAttribute('data-layer');
                 currentTimeStep = 0; // Reset animation
+                colorFilter = null; // Reset color filter
+                document.getElementById('filter-indicator').style.display = 'none';
                 addEnhancedWeatherLayer(layerType);
             });
         });
@@ -1412,6 +1943,80 @@
             controlsPanel.classList.remove('is-open');
         });
 
+        // Modal event listeners
+        document.getElementById('modalClose').addEventListener('click', () => {
+            document.getElementById('municipalityModal').style.display = 'none';
+        });
+
+        document.getElementById('glossaryClose').addEventListener('click', () => {
+            document.getElementById('glossaryModal').style.display = 'none';
+        });
+
+        document.getElementById('downloadCsvBtn').addEventListener('click', () => {
+            // Get current municipality data and download CSV
+            const modal = document.getElementById('municipalityModal');
+            const cityName = document.getElementById('modalTitle').textContent;
+            
+            // Find the municipality data
+            const municipalities = getPueblaMunicipalities();
+            const municipality = municipalities.features.find(f => f.properties.name === cityName);
+            
+            if (municipality) {
+                downloadMunicipalityCSV(municipality.properties);
+            }
+        });
+
+        // Footer button event listeners
+        document.getElementById('btn_glosario').addEventListener('click', () => {
+            document.getElementById('glossaryModal').style.display = 'flex';
+        });
+
+        document.getElementById('btn_datos').addEventListener('click', () => {
+            // Download current layer data as CSV
+            if (activeLayer) {
+                downloadLayerData(activeLayer);
+            } else {
+                alert('Selecciona una capa primero para descargar los datos.');
+            }
+        });
+
+        document.getElementById('btn_recarga').addEventListener('click', () => {
+            // Reload current layer
+            if (activeLayer) {
+                currentTimeStep = 0;
+                colorFilter = null;
+                document.getElementById('filter-indicator').style.display = 'none';
+                addEnhancedWeatherLayer(activeLayer);
+            }
+        });
+
+        // Download layer data functionality
+        function downloadLayerData(layerType) {
+            const config = weatherLayers[layerType];
+            const data = generateSmoothWeatherData(layerType, currentTimeStep);
+            
+            const csvRows = [
+                ['Latitud', 'Longitud', config.name + ' (' + config.unit + ')']
+            ];
+            
+            data.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
+                const value = feature.properties.value;
+                csvRows.push([coords[1].toFixed(4), coords[0].toFixed(4), value.toFixed(2)]);
+            });
+            
+            const csvContent = csvRows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${layerType}_puebla.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // Back button functionality
         document.getElementById('btn_back').addEventListener('click', () => {
             document.body.classList.remove('map-active');
@@ -1420,7 +2025,9 @@
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             stopAnimation();
             currentTimeStep = 0;
+            colorFilter = null;
             document.getElementById('legend').style.display = 'none';
+            document.getElementById('filter-indicator').style.display = 'none';
             controlsPanel.classList.remove('is-open');
         });
 
@@ -1474,6 +2081,7 @@
         // Initialize map controls when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
             setupMapControls();
+            setupLegendClickFilter();
         });
 
         // Enhanced keyboard shortcuts
@@ -1484,6 +2092,10 @@
                 case 'Escape':
                     if (controlsPanel.classList.contains('is-open')) {
                         controlsPanel.classList.remove('is-open');
+                    } else if (document.getElementById('municipalityModal').style.display === 'flex') {
+                        document.getElementById('municipalityModal').style.display = 'none';
+                    } else if (document.getElementById('glossaryModal').style.display === 'flex') {
+                        document.getElementById('glossaryModal').style.display = 'none';
                     } else {
                         document.getElementById('btn_back').click();
                     }
@@ -1504,6 +2116,20 @@
                     break;
                 case '-':
                     document.getElementById('zoom-out-btn').click();
+                    break;
+                case 'c':
+                    // Clear color filter
+                    colorFilter = null;
+                    document.getElementById('filter-indicator').style.display = 'none';
+                    applyColorFilter();
+                    break;
+                case 'g':
+                    // Open glossary
+                    document.getElementById('btn_glosario').click();
+                    break;
+                case 'd':
+                    // Download data
+                    document.getElementById('btn_datos').click();
                     break;
             }
         });
@@ -1540,6 +2166,19 @@
                     // Swipe left to open panel
                     controlsPanel.classList.add('is-open');
                 }
+            }
+        });
+
+        // Close modals when clicking outside
+        document.getElementById('municipalityModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                e.currentTarget.style.display = 'none';
+            }
+        });
+
+        document.getElementById('glossaryModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                e.currentTarget.style.display = 'none';
             }
         });
 
@@ -1613,6 +2252,202 @@
                 }, 300);
             }
         }
+
+        // Enhanced data export functionality
+        function exportAllMunicipalityData() {
+            const municipalities = getPueblaMunicipalities();
+            const csvRows = [
+                ['Municipio', 'Población', 'Latitud', 'Longitud', 'CO (ppm)', 'NO₂ (ppb)', 'O₃ (ppb)', 'SO₂ (ppb)', 'PM10 (μg/m³)', 'PM2.5 (μg/m³)']
+            ];
+            
+            municipalities.features.forEach(feature => {
+                const props = feature.properties;
+                const coords = feature.geometry.coordinates;
+                const aq = props.airQuality;
+                
+                csvRows.push([
+                    props.name,
+                    props.population,
+                    coords[1].toFixed(4),
+                    coords[0].toFixed(4),
+                    aq.co,
+                    aq.no2,
+                    aq.o3,
+                    aq.so2,
+                    aq.pm10,
+                    aq.pm25
+                ]);
+            });
+            
+            const csvContent = csvRows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'municipios_puebla_calidad_aire.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Update parameter selection functionality
+        document.getElementById('select_dat').addEventListener('change', function() {
+            const parameter = this.value;
+            const subParamSelect = document.getElementById('select_var');
+            
+            // Clear existing options
+            subParamSelect.innerHTML = '';
+            
+            if (parameter === 'meteorologia') {
+                const meteorologicalParams = [
+                    { value: 'temperature', text: 'Temperatura' },
+                    { value: 'humidity', text: 'Humedad' },
+                    { value: 'precipitation', text: 'Precipitación' },
+                    { value: 'wind', text: 'Viento' },
+                    { value: 'pressure', text: 'Presión' },
+                    { value: 'radiation', text: 'Radiación' }
+                ];
+                
+                meteorologicalParams.forEach(param => {
+                    const option = document.createElement('option');
+                    option.value = param.value;
+                    option.textContent = param.text;
+                    subParamSelect.appendChild(option);
+                });
+            } else if (parameter === 'calidad') {
+                const airQualityParams = [
+                    { value: 'co', text: 'Monóxido de Carbono (CO)' },
+                    { value: 'no2', text: 'Dióxido de Nitrógeno (NO₂)' },
+                    { value: 'o3', text: 'Ozono (O₃)' },
+                    { value: 'pm25', text: 'Partículas PM2.5' }
+                ];
+                
+                airQualityParams.forEach(param => {
+                    const option = document.createElement('option');
+                    option.value = param.value;
+                    option.textContent = param.text;
+                    subParamSelect.appendChild(option);
+                });
+            }
+        });
+
+        // Update sub-parameter selection
+        document.getElementById('select_var').addEventListener('change', function() {
+            const selectedParam = this.value;
+            if (selectedParam && weatherLayers[selectedParam]) {
+                // Automatically activate the selected layer
+                const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
+                if (layerBtn) {
+                    layerBtn.click();
+                }
+            }
+        });
+
+        // Initialize parameter dropdowns
+        document.getElementById('select_dat').dispatchEvent(new Event('change'));
+
+        // Add help tooltips
+        function addTooltips() {
+            const tooltips = {
+                'zoom-in-btn': 'Acercar (Tecla: +)',
+                'zoom-out-btn': 'Alejar (Tecla: -)',
+                'reset-north-btn': 'Orientar al Norte (Tecla: N)',
+                'reset-position-btn': 'Posición Inicial (Tecla: R)',
+                'playBtn': 'Reproducir/Pausar animación (Tecla: Espacio)',
+                'btn_glosario': 'Ver glosario de términos (Tecla: G)',
+                'btn_datos': 'Descargar datos actuales (Tecla: D)',
+                'btn_recarga': 'Recargar capa actual'
+            };
+
+            Object.entries(tooltips).forEach(([id, text]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.setAttribute('title', text);
+                }
+            });
+        }
+
+        // Initialize tooltips
+        addTooltips();
+
+        // Add notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                background: ${type === 'error' ? '#d63031' : type === 'success' ? '#00b894' : '#0984e3'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                z-index: 3000;
+                max-width: 300px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 14px;
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // Auto remove
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Add notification for filter usage
+        let filterNotificationShown = false;
+        document.getElementById('legend-gradient').addEventListener('mouseenter', () => {
+            if (!filterNotificationShown) {
+                showNotification('Haz clic y arrastra para filtrar por rangos de color. Presiona C para limpiar filtros.', 'info');
+                filterNotificationShown = true;
+            }
+        });
+
+        // Error handling for missing resources
+        window.addEventListener('error', (e) => {
+            console.error('Error loading resource:', e.filename, e.message);
+            if (e.filename && (e.filename.includes('images/') || e.filename.includes('.svg'))) {
+                showNotification('Algunas imágenes no se pudieron cargar', 'error');
+            }
+        });
+
+        // Add print functionality
+        function printMap() {
+            if (!map) return;
+            
+            showNotification('Preparando mapa para impresión...', 'info');
+            
+            // You would implement actual map export here
+            // For now, just show a placeholder
+            setTimeout(() => {
+                showNotification('Funcionalidad de impresión en desarrollo', 'info');
+            }, 1000);
+        }
+
+        // Add keyboard shortcut for print
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'p' && document.body.classList.contains('map-active')) {
+                e.preventDefault();
+                printMap();
+            }
+        });
     </script>
   </body>
   <canvas id="filter-canvas" style="display: none"></canvas>
