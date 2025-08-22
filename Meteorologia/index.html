@@ -1,17 +1,39 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
+<html>
+  <head>
     <meta charset="utf-8" />
-    <title>SMADSOT - Sistema Meteorológico y Calidad del Aire</title>
+    <title>SMADSOT</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
+    <!-- Original libraries -->
+    <script src="./lib/jquery.min.js"></script>
+    <script src="./lib/chart.min.js"></script>
+
+    <!-- Bootstrap Core JavaScript -->
+    <script src="./bootstrap/bootstrap.min.js"></script>
+    <script src="./bootstrap/dropdowns/dropdowns-enhancement.js"></script>
+    <script src="./bootstrap/datepicker/bootstrap-datepicker.js"></script>
+    <script src="./bootstrap/dialog/bootstrap-dialog.js"></script>
+
+    <!-- Bootstrap Core CSS -->
+    <link rel="stylesheet" href="./bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="./bootstrap/dropdowns/dropdowns-enhancement.css" />
+    <link rel="stylesheet" href="./bootstrap/datepicker/bootstrap-datepicker.css" />
+    <link rel="stylesheet" href="./bootstrap/dialog/bootstrap-dialog.css" />
+
+    <link rel="stylesheet" href="./css/estilos.css" />
+
+    <script src="./lib/dom-to-image.js"></script>
+
+    <!-- Mapbox GL JS (replacing OpenLayers) -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
 
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet" />
-    
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&amp;display=swap" rel="stylesheet" />
+
     <style>
         :root {
             --primary-brand-color: #5a1b30;
@@ -22,6 +44,7 @@
             --text-color: #333;
             --shadow-color: rgba(0, 0, 0, 0.1);
             --border-color: #ddd;
+            --sidebar-width: 80px;
         }
 
         * {
@@ -32,125 +55,66 @@
 
         body {
             font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            background-color: var(--light-gray);
+        }
+
+        /* Hide landing page when map is active */
+        body.map-active #banner,
+        body.map-active #botones1 {
+            display: none;
+        }
+
+        body.map-active {
             overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: var(--light-gray);
         }
 
-        /* --- NAVBAR STYLES --- */
-        .navbar {
-            background-color: #fff;
-            padding: 10px 2rem;
-            box-shadow: 0 4px 12px var(--shadow-color);
-            flex-shrink: 0;
-            z-index: 1020;
-            border-bottom: 3px solid var(--primary-brand-color);
-        }
-        .navbar-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-        .navbar-logo img {
-            height: 60px; /* Adjusted for the wider logo */
-        }
-        .nav-links {
-            list-style: none;
-            display: flex;
-            align-items: center;
-            margin: 0;
-            padding: 0;
-        }
-        .nav-links li {
-            padding: 0 12px;
-        }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--text-color);
-            font-weight: 500;
-            transition: color 0.3s ease;
-            font-size: 0.95rem;
-        }
-        .nav-links a:hover {
-            color: var(--primary-brand-color);
-        }
-        .social-icons a {
-            font-size: 1.5rem;
-            color: var(--dark-gray);
-            transition: color 0.3s ease;
-        }
-        .social-icons a:hover {
-            color: var(--primary-brand-color);
-        }
-        .hamburger-menu {
-            display: none;
-            cursor: pointer;
-        }
-        .bar {
-            width: 25px;
-            height: 3px;
-            background-color: var(--text-color);
-            margin: 5px 0;
-            transition: 0.4s;
-        }
-        .mobile-only { display: none; }
-
-        /* --- Main App Layout --- */
-        #app {
-            display: flex;
+        body.map-active #app {
+            display: flex !important;
             flex-grow: 1;
             overflow: hidden;
+            height: 100%;
         }
 
-        /* --- Left Side Menu --- */
-        .side-menu {
-            background-color: #fff;
-            padding: 15px 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            border-right: 1px solid var(--border-color);
-            z-index: 1010;
-            flex-shrink: 0;
+        /* Map-specific styles from second code */
+        #main-content { 
+            flex-grow: 1; 
+            position: relative; /* Ensure this is the positioning context */
+            display: none;
+            width: calc(100% - var(--sidebar-width));
         }
-        .menu-btn {
-            background-color: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
-            cursor: pointer;
-            width: 90px;
-            text-align: center;
-            transition: all 0.3s ease;
-            color: var(--primary-brand-color);
+
+        body.map-active #main-content {
+            display: block;
         }
-        .menu-btn:hover {
-            background-color: var(--light-gray);
-            border-color: var(--secondary-brand-color);
-            transform: translateY(-2px);
+
+        #map { 
+            position: absolute; 
+            top: 0; 
+            bottom: 0; 
+            width: 100%; 
+            height: 100%;
         }
-        .menu-btn .icon { font-size: 24px; display: block; margin: 0 auto 5px auto; }
-        .menu-label { display: block; font-size: 12px; font-weight: 500; color: var(--text-color); }
-        
-        /* --- Main Content & Map Area --- */
-        #main-content { flex-grow: 1; position: relative; }
-        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
         
         #map-watermark {
             position: absolute;
             bottom: 20px;
-            left: 325px;
+            left: 20px;
             z-index: 1000;
             height: 40px;
             opacity: 0.8;
             pointer-events: none;
         }
         
-        #toggle-controls-btn {
+        /* Controls positioned relative to map container */
+        #main-content {
+            position: relative; /* This ensures absolute positioning works relative to this container */
+        }
+        
+        #main-content #toggle-controls-btn {
             position: absolute;
             top: 20px;
             right: 20px;
@@ -169,9 +133,39 @@
             font-size: 20px;
             transition: all 0.3s ease;
         }
-        #toggle-controls-btn:hover { background-color: var(--primary-brand-color); color: white; transform: scale(1.1); }
+        #toggle-controls-btn:hover { 
+            background-color: var(--primary-brand-color); 
+            color: white; 
+            transform: scale(1.1); 
+        }
 
-        /* --- Collapsible Controls Panel --- */
+        /* Back button styles */
+        .back-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--primary-brand-color);
+            background: var(--primary-brand-color);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            text-decoration: none;
+            margin: 5px 0;
+        }
+
+        .back-btn:hover {
+            background: white;
+            color: var(--primary-brand-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3);
+        }
+
+        /* Collapsible Controls Panel */
         .weather-controls {
             position: absolute;
             top: 0;
@@ -213,8 +207,19 @@
         .speed-slider { flex: 1; }
         .speed-slider input[type="range"] { width: 100%; }
 
-        /* --- On-Map Data Panels --- */
-        .data-panel { position: absolute; bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border-radius: 15px; padding: 15px; box-shadow: 0 10px 30px var(--shadow-color); width: 300px; z-index: 1000; }
+        /* On-Map Data Panels */
+        .data-panel { 
+            position: absolute; 
+            bottom: 20px; 
+            left: calc(var(--sidebar-width) + 20px); /* Moved to not overlap with sidebar */
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(5px); 
+            border-radius: 15px; 
+            padding: 15px; 
+            box-shadow: 0 10px 30px var(--shadow-color); 
+            width: 300px; 
+            z-index: 1000; 
+        }
         .data-panel h4 { margin-bottom: 10px; color: var(--primary-brand-color); }
         .data-value { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .data-value:last-child { border-bottom: none; }
@@ -228,166 +233,272 @@
         .legend-labels span:first-child { text-align: left; }
         .legend-labels span:last-child { text-align: right; }
 
-        /* --- RESPONSIVE STYLES --- */
-        @media (max-width: 1200px) {
-            .nav-links li { padding: 0 8px; }
-            .nav-links a { font-size: 0.9rem; }
-            .navbar-logo img { height: 50px; }
+        /* Side menu when map is active - FIXED */
+        .side-menu {
+            width: var(--sidebar-width);
+            background-color: #fff;
+            padding: 15px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            border-right: 1px solid var(--border-color);
+            z-index: 1010;
+            flex-shrink: 0;
+            height: 100%;
         }
 
-        @media (max-width: 992px) {
-            .nav-links {
-                display: none;
-                flex-direction: column;
-                width: 100%;
-                position: absolute;
-                top: 83px; /* Height of navbar */
-                left: 0;
-                background-color: #fff;
-                box-shadow: 0 4px 12px var(--shadow-color);
-            }
-            .nav-links.active {
-                display: flex;
-            }
-            .nav-links li {
-                text-align: center;
-                padding: 15px 0;
-                width: 100%;
-                border-top: 1px solid var(--border-color);
-            }
-            .hamburger-menu {
-                display: block;
-            }
-            .weather-controls { width: 300px; }
+        /* Menu button styles - FIXED */
+        .menu-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--medium-gray);
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--dark-gray);
+            text-decoration: none;
+            margin: 5px 0;
         }
 
+        .menu-btn:hover {
+            border-color: var(--secondary-brand-color);
+            color: var(--secondary-brand-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(193, 152, 98, 0.2);
+        }
+
+        .menu-btn.active {
+            background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color));
+            color: white;
+            border-color: transparent;
+        }
+
+        .menu-label {
+            display: none; /* Hide labels by default for compact sidebar */
+        }
+
+        /* Responsive adjustments */
         @media (max-width: 768px) {
-            #app { flex-direction: column; }
-            .side-menu { flex-direction: row; width: 100%; justify-content: space-around; border-right: none; border-bottom: 1px solid var(--border-color); padding: 5px; gap: 5px; }
-            .menu-btn { width: auto; flex: 1; margin: 0 2px; }
-            .weather-controls { width: 100%; border-radius: 0; }
-            #toggle-controls-btn { top: 10px; right: 10px; }
-            .data-panel, #map-watermark { display: none; }
+            :root {
+                --sidebar-width: 100%;
+            }
+            
+            body.map-active #app { 
+                flex-direction: column; 
+            }
+            
+            body.map-active .side-menu { 
+                flex-direction: row; 
+                width: 100%; 
+                height: auto;
+                justify-content: space-around; 
+                border-right: none; 
+                border-bottom: 1px solid var(--border-color); 
+                padding: 10px 5px; 
+                gap: 5px; 
+            }
+            
+            #main-content {
+                width: 100%;
+                height: calc(100% - 80px); /* Account for mobile sidebar height */
+            }
+            
+            .menu-btn { 
+                width: auto; 
+                flex: 1; 
+                margin: 0 2px; 
+                height: 50px;
+                font-size: 20px;
+            }
+            
+            .weather-controls { 
+                width: 100%; 
+                border-radius: 0; 
+            }
+            
+            #toggle-controls-btn { 
+                top: 10px; 
+                right: 10px; 
+            }
+            
+            .data-panel { 
+                left: 20px;
+                width: calc(100% - 40px);
+                max-width: 300px;
+            }
+            
+            #map-watermark { 
+                display: none; 
+            }
         }
     </style>
-</head>
-<body>
+  </head>
+  <body>
+    <!-- Original Navbar -->
     <nav class="navbar">
-        <div class="navbar-container">
-            <a class="navbar-logo" href="#">
-              <img
-              src="./images/header/SMADSOTlogo.jpg"
-              alt="Logos"
-              class="navbar-icon"
-            />
+      <div class="navbar-container">
+        <a class="navbar-logo">
+          <img src="./images/header/SMADSOTlogo.jpg" alt="Logos" class="navbar-icon" />
+        </a>
+
+        <div class="hamburger-menu" onclick="toggleMenu()">
+          <div class="bar"></div>
+          <div class="bar"></div>
+          <div class="bar"></div>
+        </div>
+
+        <ul class="nav-links" id="nav-links">
+          <li><a onclick="location.reload()">Inicio</a></li>
+          <li><a href="https://smadsot.puebla.gob.mx/quienes-somos-1">Quienes Somos</a></li>
+          <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">Avisos de Privacidad</a></li>
+          <li><a href="https://ventanilladigital.puebla.gob.mx/">Trámites</a></li>
+          <li><a href="http://transparencia.puebla.gob.mx/">Transparencia</a></li>
+          <li><a href="https://smadsot.puebla.gob.mx/verificacion">Verificación</a></li>
+          <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Atmósfera</a></li>
+          <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
+          <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
+          <li class="social-icons">
+            <a href="https://twitter.com/AmbienteGobPue" target="_blank">
+              <img src="./images/twitter.svg" alt="Twitter" />
             </a>
-            <div class="hamburger-menu" onclick="toggleMenu()">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-            </div>
-            <ul class="nav-links" id="nav-links">
-                <li><a href="#">Inicio</a></li>
-                <li><a href="#">Quienes Somos</a></li>
-                <li><a href="#">Avisos de Privacidad</a></li>
-                <li><a href="#">Trámites</a></li>
-                <li><a href="#">Transparencia</a></li>
-                <li><a href="#">Verificación</a></li>
-                <li class="social-icons">
-                    <a href="https://twitter.com/AmbienteGobPue" target="_blank" title="Twitter">
-                        <i class="fa-brands fa-twitter"></i>
-                    </a>
-                </li>
-                <li class="social-icons">
-                    <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/" target="_blank" title="Facebook">
-                        <i class="fa-brands fa-facebook"></i>
-                    </a>
-                </li>
-            </ul>
-        </div>
+          </li>
+          <li class="social-icons">
+            <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/" target="_blank">
+              <img src="./images/facebook.svg" alt="Facebook" />
+            </a>
+          </li>
+        </ul>
+      </div>
     </nav>
-    
-    <div id="app">
-        <div id="side-menu" class="side-menu">
-            <button class="menu-btn" title="Meteorología">
-                <i class="fa-solid fa-cloud-sun-rain icon"></i>
-                <span class="menu-label">Meteorología</span>
-            </button>
-            <button class="menu-btn" title="Calidad del aire">
-                <i class="fa-solid fa-smog icon"></i>
-                <span class="menu-label">Calidad Aire</span>
-            </button>
-            <button class="menu-btn" title="Historial">
-                <i class="fa-solid fa-chart-simple icon"></i>
-                <span class="menu-label">Historial</span>
-            </button>
-            <button class="menu-btn" title="Regresar" onclick="history.back()">
-                <i class="fa-solid fa-arrow-left icon"></i>
-                <span class="menu-label">Regresar</span>
-            </button>
-        </div>
 
-        <div id="main-content">
-            <div id="map"></div>
-            <img id="map-watermark" src="https://smadsot.puebla.gob.mx/images/headers/2022/logo-puebla-contigo-blanco-2022.png" alt="Puebla Gobierno" />
-            
-            <button id="toggle-controls-btn" title="Control de Capas"><i class="fa-solid fa-layer-group"></i></button>
+    <!-- Original Landing Page -->
+    <section class="banner" id="banner">
+      <div class="banner-content">
+        <h1 class="banner-title">
+          Pronóstico meteorológico y de calidad del aire para el Estado de Puebla
+        </h1>
+        <p class="banner-subtitle">
+          En esta página encontrarás datos sobre la calidad del aire y el pronóstico del clima obtneidos a tráves del modelo WRF.
+        </p>
+      </div>
+    </section>
 
-            <div class="weather-controls" id="weather-controls">
-                <div class="controls-header">
-                    <h3>Control de Capas</h3>
-                    <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
-                </div>
-                <div class="controls-body">
-                    <div class="control-group">
-                        <label for="forecastDate">Fecha del Pronóstico</label>
-                        <input type="datetime-local" id="forecastDate" value="2025-08-20T13:00">
-                    </div>
-                    <div class="control-group">
-                        <label for="forecastHours">Horas de Pronóstico</label>
-                        <select id="forecastHours">
-                            <option value="12">12 horas</option>
-                            <option value="24" selected>24 horas</option>
-                            <option value="48">48 horas</option>
-                            <option value="72">72 horas</option>
-                        </select>
-                    </div>
-                    <div class="layer-buttons">
-                        <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
-                        <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
-                        <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
-                        <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
-                        <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
-                        <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
-                        <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
-                        <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
-                        <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>
-                        <button class="layer-btn" data-layer="pm25"><i class="fa-solid fa-smog"></i> PM2.5</button>
-                    </div>
-                    <div class="animation-controls">
-                        <button class="play-btn" id="playBtn"><i class="fa-solid fa-play" id="playIcon"></i></button>
-                        <div class="speed-slider">
-                            <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
-                            <input type="range" min="100" max="2000" value="1000" id="speedSlider">
-                        </div>
-                    </div>
-                </div>
+    <!-- Original Cards -->
+    <div class="row" style="margin: 50px" id="botones1">
+      <div class="col-12 col-md-6 mb-4" id="meteo">
+        <div class="card">
+          <a href="#" class="card-link" onclick="activateMap('meteorologia'); return false;">
+            <div class="card-img" style="background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');">
+              <div class="card-text">
+                <h3>Metereología</h3>
+              </div>
             </div>
-            
-            <div class="data-panel" id="dataPanel">
-                <h4>Datos Actuales (Punto Central)</h4>
-                <div class="data-value"><span class="data-label">Temperatura</span><span class="data-number" id="tempValue">--°C</span></div>
-                <div class="data-value"><span class="data-label">Humedad</span><span class="data-number" id="humidityValue">--%</span></div>
-                <div class="data-value"><span class="data-label">Viento</span><span class="data-number" id="windValue">-- km/h</span></div>
-                <div class="data-value"><span class="data-label">Presión</span><span class="data-number" id="pressureValue">-- hPa</span></div>
-            </div>
-            
-            <div class="legend" id="legend" style="display: none;">
-                <div class="legend-title">Escala</div>
-                <div class="legend-gradient"></div>
-                <div class="legend-labels"></div>
-            </div>
+          </a>
         </div>
+      </div>
+
+      <div class="col-12 col-md-6 mb-4" id="cali">
+        <div class="card">
+          <a href="#" class="card-link" onclick="activateMap('calidad'); return false;">
+            <div class="card-img" style="background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');">
+              <div class="card-text">
+                <h3>Calidad del aire</h3>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map and Controls Section -->
+    <div id="app" style="display: none;">
+      <!-- Fixed Sidebar -->
+      <div id="side-menu" class="side-menu">
+        <button class="back-btn" id="btn_back" title="Volver al inicio">
+          ⬅️
+        </button>
+        <button class="menu-btn" id="btn_atmos" title="Atmósfera">
+          🌦️ <span class="menu-label">Meteorología</span>
+        </button>
+        <button class="menu-btn" id="btn_aire" title="Calidad del aire">
+          🌫️ <span class="menu-label">Calidad del aire</span>
+        </button>
+        <button class="menu-btn" id="btn_hist" title="Historial">
+          📊 <span class="menu-label">Historial</span>
+        </button>
+      </div>
+
+      <!-- New Map Implementation from Second Code -->
+      <div id="main-content">
+        <div id="map"></div>
+        <img id="map-watermark" src="https://smadsot.puebla.gob.mx/images/headers/2022/logo-puebla-contigo-blanco-2022.png" alt="Puebla Gobierno" />
+        
+        <button id="toggle-controls-btn" title="Control de Capas"><i class="fa-solid fa-layer-group"></i></button>
+
+        <div class="weather-controls" id="weather-controls">
+          <div class="controls-header">
+            <h3>Control de Capas</h3>
+            <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
+          </div>
+          <div class="controls-body">
+            <div class="control-group">
+              <label for="forecastDate">Fecha del Pronóstico</label>
+              <input type="datetime-local" id="forecastDate" value="2025-08-20T13:00">
+            </div>
+            <div class="control-group">
+              <label for="forecastHours">Horas de Pronóstico</label>
+              <select id="forecastHours">
+                <option value="12">12 horas</option>
+                <option value="24" selected>24 horas</option>
+                <option value="48">48 horas</option>
+                <option value="72">72 horas</option>
+              </select>
+            </div>
+            <div class="layer-buttons">
+              <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
+              <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
+              <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
+              <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
+              <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
+              <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
+              <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
+              <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
+              <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>
+              <button class="layer-btn" data-layer="pm25"><i class="fa-solid fa-smog"></i> PM2.5</button>
+            </div>
+            <div class="animation-controls">
+              <button class="play-btn" id="playBtn"><i class="fa-solid fa-play" id="playIcon"></i></button>
+              <div class="speed-slider">
+                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
+                <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="data-panel" id="dataPanel">
+          <h4>Datos Actuales (Punto Central)</h4>
+          <div class="data-value"><span class="data-label">Temperatura</span><span class="data-number" id="tempValue">--°C</span></div>
+          <div class="data-value"><span class="data-label">Humedad</span><span class="data-number" id="humidityValue">--%</span></div>
+          <div class="data-value"><span class="data-label">Viento</span><span class="data-number" id="windValue">-- km/h</span></div>
+          <div class="data-value"><span class="data-label">Presión</span><span class="data-number" id="pressureValue">-- hPa</span></div>
+        </div>
+        
+        <div class="legend" id="legend" style="display: none;">
+          <div class="legend-title">Escala</div>
+          <div class="legend-gradient"></div>
+          <div class="legend-labels"></div>
+        </div>
+      </div>
+
+      <div id="hist"></div>
     </div>
 
     <script>
@@ -397,17 +508,250 @@
             navLinks.classList.toggle('active');
         }
 
-        mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
-        
-        const map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/dark-v11',
-            center: [-97.9, 19.0],
-            zoom: 8,
-            pitch: 45,
-            bearing: 0
-        });
-        
+        // Function to activate map view
+        function activateMap(type) {
+            document.body.classList.add('map-active');
+            initializeMap();
+            
+            // Automatically select appropriate layers based on type
+            if (type === 'meteorologia') {
+                setTimeout(() => {
+                    document.querySelector('[data-layer="temperature"]').click();
+                }, 500);
+            } else if (type === 'calidad') {
+                setTimeout(() => {
+                    document.querySelector('[data-layer="pm25"]').click();
+                }, 500);
+            }
+        }
+
+        // Map initialization
+        let mapInitialized = false;
+        let map = null;
+
+        function initializeMap() {
+            if (mapInitialized) return;
+            
+            mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
+            
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: [-97.9, 19.0], // Center of Puebla
+                zoom: 8.5,
+                pitch: 0, // Reduced pitch for better municipality viewing
+                bearing: 0,
+                maxBounds: [[-99.5, 17.5], [-96.5, 20.5]] // Restrict bounds to Puebla area
+            });
+            
+            map.on('load', () => {
+                // Add terrain
+                map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 0.8 });
+                
+                // Add sky layer
+                map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
+                
+                // Add Puebla state boundary
+                addPueblaStateBoundary();
+                
+                // Add municipalities
+                addPueblaMunicipalities();
+                
+                map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+                map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+            });
+            
+            mapInitialized = true;
+        }
+
+        // Puebla state boundary coordinates (simplified polygon)
+        function getPueblaStateBoundary() {
+            return {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {
+                        "name": "Puebla"
+                    },
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[
+                            [-99.0, 17.6], [-98.8, 17.6], [-98.6, 17.7], [-98.4, 17.8],
+                            [-98.2, 17.9], [-98.0, 18.0], [-97.8, 18.1], [-97.6, 18.2],
+                            [-97.4, 18.4], [-97.2, 18.6], [-97.1, 18.8], [-97.0, 19.0],
+                            [-97.0, 19.2], [-97.1, 19.4], [-97.2, 19.6], [-97.4, 19.8],
+                            [-97.6, 20.0], [-97.8, 20.1], [-98.0, 20.2], [-98.2, 20.3],
+                            [-98.4, 20.2], [-98.6, 20.1], [-98.8, 20.0], [-99.0, 19.8],
+                            [-99.2, 19.6], [-99.3, 19.4], [-99.4, 19.2], [-99.4, 19.0],
+                            [-99.3, 18.8], [-99.2, 18.6], [-99.1, 18.4], [-99.0, 18.2],
+                            [-98.9, 18.0], [-98.8, 17.8], [-99.0, 17.6]
+                        ]]
+                    }
+                }]
+            };
+        }
+
+        // Sample municipalities of Puebla (you can expand this with real data)
+        function getPueblaMunicipalities() {
+            return {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Puebla de Zaragoza", "population": 1576259 },
+                        "geometry": { "type": "Point", "coordinates": [-98.2063, 19.0414] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Tehuacán", "population": 274906 },
+                        "geometry": { "type": "Point", "coordinates": [-97.3953, 18.4622] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Atlixco", "population": 127062 },
+                        "geometry": { "type": "Point", "coordinates": [-98.4307, 18.9117] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "San Martín Texmelucan", "population": 141112 },
+                        "geometry": { "type": "Point", "coordinates": [-98.4342, 19.2806] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Cholula", "population": 120459 },
+                        "geometry": { "type": "Point", "coordinates": [-98.3019, 19.0631] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Amozoc", "population": 98744 },
+                        "geometry": { "type": "Point", "coordinates": [-97.9764, 19.0364] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Cuautlancingo", "population": 82197 },
+                        "geometry": { "type": "Point", "coordinates": [-98.1667, 19.0667] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Zacatlán", "population": 76296 },
+                        "geometry": { "type": "Point", "coordinates": [-97.9578, 19.9311] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Huauchinango", "population": 59375 },
+                        "geometry": { "type": "Point", "coordinates": [-98.0556, 20.1747] }
+                    },
+                    {
+                        "type": "Feature",
+                        "properties": { "name": "Izúcar de Matamoros", "population": 69413 },
+                        "geometry": { "type": "Point", "coordinates": [-98.4667, 18.6] }
+                    }
+                ]
+            };
+        }
+
+        function addPueblaStateBoundary() {
+            map.addSource('puebla-boundary', {
+                type: 'geojson',
+                data: getPueblaStateBoundary()
+            });
+
+            // Add fill layer
+            map.addLayer({
+                id: 'puebla-fill',
+                type: 'fill',
+                source: 'puebla-boundary',
+                paint: {
+                    'fill-color': 'rgba(90, 27, 48, 0.1)',
+                    'fill-opacity': 0.3
+                }
+            });
+
+            // Add border layer
+            map.addLayer({
+                id: 'puebla-border',
+                type: 'line',
+                source: 'puebla-boundary',
+                paint: {
+                    'line-color': '#5a1b30',
+                    'line-width': 3,
+                    'line-opacity': 0.8
+                }
+            });
+        }
+
+        function addPueblaMunicipalities() {
+            map.addSource('puebla-municipalities', {
+                type: 'geojson',
+                data: getPueblaMunicipalities()
+            });
+
+            // Add municipality points
+            map.addLayer({
+                id: 'municipality-points',
+                type: 'circle',
+                source: 'puebla-municipalities',
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'population'],
+                        50000, 4,
+                        500000, 8,
+                        1500000, 12
+                    ],
+                    'circle-color': '#c19862',
+                    'circle-stroke-color': '#5a1b30',
+                    'circle-stroke-width': 2,
+                    'circle-opacity': 0.8
+                }
+            });
+
+            // Add municipality labels
+            map.addLayer({
+                id: 'municipality-labels',
+                type: 'symbol',
+                source: 'puebla-municipalities',
+                layout: {
+                    'text-field': ['get', 'name'],
+                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-offset': [0, 2],
+                    'text-anchor': 'top'
+                },
+                paint: {
+                    'text-color': '#ffffff',
+                    'text-halo-color': '#000000',
+                    'text-halo-width': 1
+                }
+            });
+
+            // Add click interaction for municipalities
+            map.on('click', 'municipality-points', (e) => {
+                const name = e.features[0].properties.name;
+                const population = e.features[0].properties.population;
+                
+                new mapboxgl.Popup()
+                    .setLngLat(e.lngLat)
+                    .setHTML(`
+                        <h4>${name}</h4>
+                        <p>Población: ${population.toLocaleString()}</p>
+                    `)
+                    .addTo(map);
+            });
+
+            // Change cursor on hover
+            map.on('mouseenter', 'municipality-points', () => {
+                map.getCanvas().style.cursor = 'pointer';
+            });
+
+            map.on('mouseleave', 'municipality-points', () => {
+                map.getCanvas().style.cursor = '';
+            });
+        }
+
+        // Weather layers configuration
         const weatherLayers = {
             temperature: { name: 'Temperatura', unit: '°C', gradient: 'linear-gradient(to right, #3b4cc0, #67adcc, #f0f921, #f89540, #a52c60)', range: [-10, 40] },
             humidity: { name: 'Humedad', unit: '%', gradient: 'linear-gradient(to right, #f2f2f2, #999999, #404040)', range: [0, 100] },
@@ -420,30 +764,65 @@
             o3: { name: 'Ozono', unit: 'ppb', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 150] },
             pm25: { name: 'PM2.5', unit: 'μg/m³', gradient: 'linear-gradient(to right, #ffffcc, #fed976, #feb24c, #fd8d3c, #f03b20, #bd0026)', range: [0, 200] }
         };
+
         let activeLayer = null;
         let animationInterval = null;
         let isPlaying = false;
 
         function generateWeatherData(type) {
             const data = [];
-            const gridSize = 25;
+            const gridSize = 20; // Reduced grid for better performance
             const range = weatherLayers[type].range;
+            
+            // Generate points only within Puebla state boundaries
+            const pueblaBounds = {
+                minLat: 17.6,
+                maxLat: 20.3,
+                minLng: -99.4,
+                maxLng: -97.0
+            };
+            
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
-                    const lat = 17.8 + (i / gridSize) * 2.4;
-                    const lng = -99.0 + (j / gridSize) * 2.3;
-                    const value = range[0] + Math.random() * (range[1] - range[0]);
-                    data.push({
-                        type: 'Feature',
-                        geometry: { type: 'Point', coordinates: [lng, lat] },
-                        properties: { value: value }
-                    });
+                    const lat = pueblaBounds.minLat + (i / gridSize) * (pueblaBounds.maxLat - pueblaBounds.minLat);
+                    const lng = pueblaBounds.minLng + (j / gridSize) * (pueblaBounds.maxLng - pueblaBounds.minLng);
+                    
+                    // Check if point is roughly within Puebla (simplified check)
+                    if (isPointInPuebla(lat, lng)) {
+                        const value = range[0] + Math.random() * (range[1] - range[0]);
+                        data.push({
+                            type: 'Feature',
+                            geometry: { type: 'Point', coordinates: [lng, lat] },
+                            properties: { value: value }
+                        });
+                    }
                 }
             }
             return { type: 'FeatureCollection', features: data };
         }
+
+        // Simplified function to check if a point is roughly within Puebla state
+        function isPointInPuebla(lat, lng) {
+            // This is a simplified polygon check - you could make this more precise with actual boundaries
+            const pueblaPolygon = [
+                [-99.0, 17.6], [-98.8, 17.6], [-98.6, 17.7], [-98.4, 17.8],
+                [-98.2, 17.9], [-98.0, 18.0], [-97.8, 18.1], [-97.6, 18.2],
+                [-97.4, 18.4], [-97.2, 18.6], [-97.1, 18.8], [-97.0, 19.0],
+                [-97.0, 19.2], [-97.1, 19.4], [-97.2, 19.6], [-97.4, 19.8],
+                [-97.6, 20.0], [-97.8, 20.1], [-98.0, 20.2], [-98.2, 20.3],
+                [-98.4, 20.2], [-98.6, 20.1], [-98.8, 20.0], [-99.0, 19.8],
+                [-99.2, 19.6], [-99.3, 19.4], [-99.4, 19.2], [-99.4, 19.0],
+                [-99.3, 18.8], [-99.2, 18.6], [-99.1, 18.4], [-99.0, 18.2],
+                [-98.9, 18.0], [-98.8, 17.8], [-99.0, 17.6]
+            ];
+            
+            // Simple bounding box check for now (you could implement proper point-in-polygon)
+            return lat >= 17.6 && lat <= 20.3 && lng >= -99.4 && lng <= -97.0;
+        }
         
         function addWeatherLayer(type) {
+            if (!map) return;
+            
             if (activeLayer) {
                 if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
                 if (map.getSource(activeLayer)) map.removeSource(activeLayer);
@@ -505,7 +884,7 @@
             
             animationInterval = setInterval(() => {
                 const data = generateWeatherData(activeLayer);
-                if(map.getSource(activeLayer)) {
+                if(map && map.getSource(activeLayer)) {
                     map.getSource(activeLayer).setData(data);
                 }
                 updateDataPanel();
@@ -519,7 +898,7 @@
             animationInterval = null;
         }
 
-        // --- Event Listeners ---
+        // Event Listeners
         const controlsPanel = document.getElementById('weather-controls');
 
         document.querySelectorAll('.layer-btn').forEach(btn => {
@@ -548,16 +927,45 @@
             controlsPanel.classList.remove('is-open');
         });
 
-        map.on('load', () => {
-            map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
-            map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.5 });
-            map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
-            
-            map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-            map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+        // Back button functionality
+        document.getElementById('btn_back').addEventListener('click', () => {
+            document.body.classList.remove('map-active');
+            // Reset any active states
+            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            stopAnimation();
+            document.getElementById('legend').style.display = 'none';
+        });
 
+        // Sidebar button functionality
+        document.getElementById('btn_atmos').addEventListener('click', () => {
+            if (!mapInitialized) activateMap('meteorologia');
             document.querySelector('[data-layer="temperature"]').click();
         });
+
+        document.getElementById('btn_aire').addEventListener('click', () => {
+            if (!mapInitialized) activateMap('calidad');
+            document.querySelector('[data-layer="pm25"]').click();
+        });
+
+        document.getElementById('btn_hist').addEventListener('click', () => {
+            // Placeholder for histogram functionality
+            alert('Funcionalidad de Historial en desarrollo');
+        });
+
+        // Mobile menu buttons
+        document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            activateMap('meteorologia');
+            toggleMenu();
+        });
+
+        document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            activateMap('calidad');
+            toggleMenu();
+        });
     </script>
-</body>
+  </body>
+  <canvas id="filter-canvas" style="display: none"></canvas>
 </html>
