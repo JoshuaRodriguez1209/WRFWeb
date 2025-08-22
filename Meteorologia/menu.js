@@ -232,19 +232,112 @@ $(document).on("click", "#btn_aire", function () {
   $("#app").show();
   $("#map").show();
   $("#banner, #botones1").hide();
-  $("#panel-header-text").text("Calidad del aire para el Estado de Puebla");
+  $("#panel_header_text").text("Calidad del aire para el Estado de Puebla");
   m_glosario = "gchem.html";
   m_map.updateSize();
   set_chem();
 });
 
+// Función para manejar la vista de historial
 $(document).on("click", "#btn_hist", function () {
   $("#app").show();
-  $("#banner, #botones1").hide();
   $("#map").hide();
-  $("#hist").hide();
+  $("#banner, #botones1").hide();
+  $("#hist").show();
+  $("#historial-dashboard").show();
+  $("#panel-header-text").text("Historial de Datos");
+  
+  // Cargar cabeceras en el selector
+  loadHistoricalCabeceras();
 });
 
+// Función para cargar las cabeceras
+async function loadHistoricalCabeceras() {
+  try {
+    const features = m_vectorSource.getFeatures();
+    const select = document.getElementById('hist-cabecera-select');
+    select.innerHTML = '<option value="">Seleccione un municipio</option>';
+    
+    // Filtrar solo las cabeceras y ordenar por nombre
+    const cabeceras = features
+      .filter(feature => feature.get('local') === 'cabecera')
+      .sort((a, b) => a.get('nombre').localeCompare(b.get('nombre')));
+
+    cabeceras.forEach(feature => {
+      const option = document.createElement('option');
+      option.value = feature.get('clave');
+      option.textContent = feature.get('nombre');
+      select.appendChild(option);
+    });
+
+    // Eventos para actualizar datos
+    $('#hist-cabecera-select, #hist-tipo-select').on('change', updateHistoricalView);
+  } catch (error) {
+    console.error('Error cargando cabeceras:', error);
+    m_notification.show('Error cargando datos históricos', 3000);
+  }
+}
+
+// Función para actualizar la vista histórica
+function updateHistoricalView() {
+  const cabeceraId = $('#hist-cabecera-select').val();
+  const tipo = $('#hist-tipo-select').val();
+  
+  if (!cabeceraId) return;
+
+  // Get the last run from select element
+  const runs = document.getElementById('select_run');
+  const lastRun = runs.options[runs.options.length - 1].value;
+  
+  // Parse the run directory name (e.g., "2024081900")
+  const runDir = lastRun.split('/').pop(); // Get last part of path
+  const runDate = runDir.substring(0, 8);   // "20240819"
+  const runHour = runDir.substring(8, 10);  // "00"
+  
+  // Construct the correct file path
+  const basePath = 'runs';
+  const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
+  const path = `${basePath}/${runDir}/cabeceras/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
+
+  console.log('Loading historical data from:', path);
+  
+  const contentDiv = $('#hist-content');
+  contentDiv.empty();
+  
+  // Add loading indicator
+  contentDiv.html(`
+    <div class="text-center my-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Cargando...</span>
+      </div>
+      <p class="mt-2">Cargando datos para ${fileName}...</p>
+    </div>
+  `);
+  
+  // Try to load the data
+  fetch(path)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(data => {
+      contentDiv.empty();
+      createHistoricalView(path, contentDiv, tipo);
+    })
+    .catch(error => {
+      contentDiv.html(`
+        <div class="alert alert-danger" role="alert">
+          <h4 class="alert-heading">Error cargando datos</h4>
+          <p>${error.message}</p>
+          <hr>
+          <p class="mb-0">Archivo: ${path}</p>
+        </div>
+      `);
+      console.error('Error:', error);
+    });
+}
 
 const sideMenu = document.getElementById("side-menu");
 

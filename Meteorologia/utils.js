@@ -336,14 +336,3 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
     gradientValues.appendChild(label);
   }
 }
-
-function resizeGradientCanvas(){
-    const c = document.getElementById('dynamic-gradient-canvas');
-    const h = c.getBoundingClientRect().height;   // alto CSS
-    if (c.height !== Math.round(h)) {
-      c.height = Math.round(h);                   // alto “real” del canvas
-      if (window.drawGradient) window.drawGradient(); // tu función de repintado
-    }
-  }
-  window.addEventListener('load', resizeGradientCanvas);
-  window.addEventListener('resize', resizeGradientCanvas);

@@ -746,3 +746,102 @@
   .gradient-title{ font-size: 16px; }
   .gradient-values{ font-size: 12px; font-weight: 800; }
 }
+
+/* Estilos para el dashboard histórico */
+#historial-dashboard {
+  position: relative;
+  top: 150px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: calc(100vh - 150px);
+}
+
+#historial-dashboard .card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: none;
+  margin-bottom: 1rem;
+}
+
+#historial-dashboard .card-header {
+  background-color: white;
+  border-bottom: 2px solid #f0f0f0;
+  padding: 15px;
+}
+
+#historial-dashboard .card-header h5 {
+  margin: 0;
+  color: #333;
+  font-weight: 600;
+}
+
+#historial-dashboard .form-group {
+  margin-bottom: 1rem;
+}
+
+#historial-dashboard select.form-control {
+  height: 45px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+#hist-content {
+  background: white;
+  padding: 20px;
+  border-radius: 5px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* Estilos para la vista histórica */
+.historical-wrapper {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.historical-wrapper .card {
+  border: none;
+  box-shadow: 0 0 20px rgba(0,0,0,0.05);
+  margin-bottom: 25px;
+}
+
+.historical-wrapper .card-header {
+  background: linear-gradient(45deg, #f8f9fa, #ffffff);
+  border-bottom: 2px solid #f0f0f0;
+  padding: 15px 20px;
+}
+
+.historical-wrapper .card-title {
+  color: #333;
+  font-weight: 600;
+  margin: 0;
+}
+
+.historical-wrapper .table {
+  margin: 0;
+}
+
+.historical-wrapper .table th {
+  background: #f8f9fa;
+  font-weight: 600;
+  border-top: none;
+}
+
+.historical-wrapper .table td {
+  vertical-align: middle;
+}
+
+.historical-wrapper .table tr:hover {
+  background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+  .historical-wrapper {
+    padding: 10px;
+  }
+  
+  .historical-wrapper .card-body {
+    padding: 15px;
+  }
+}
+

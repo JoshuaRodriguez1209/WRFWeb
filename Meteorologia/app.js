@@ -1536,3 +1536,272 @@ function hideInfo() {
     rangeElement.remove();
   }
 }
+
+// Función para crear vista histórica
+async function createHistoricalView(jsonPath, container, tipo) {
+  try {
+    const response = await fetch(jsonPath);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Crear contenedor para gráficas y tabla
+    const wrapper = document.createElement('div');
+    wrapper.className = 'historical-wrapper';
+    wrapper.innerHTML = `
+      <div class="row">
+        <div class="col-md-12 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title">${tipo === 'meteo' ? 'Variables Meteorológicas' : 'Calidad del Aire'}</h4>
+            </div>
+            <div class="card-body">
+              <canvas id="mainHistChart" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h4 class="card-title mb-0">Resumen Estadístico</h4>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Variable</th>
+                      <th>Promedio</th>
+                      <th>Máximo</th>
+                      <th>Mínimo</th>
+                      <th>Unidad</th>
+                    </tr>
+                  </thead>
+                  <tbody id="histStatsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.append(wrapper);
+
+    if (tipo === 'meteo') {
+      createMeteoHistoricalChart(data);
+      createMeteoHistoricalTable(data);
+    } else {
+      createChemHistoricalChart(data);
+      createChemHistoricalTable(data);
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+    container.html(`
+      <div class="alert alert-danger">
+        <h4>Error cargando datos</h4>
+        <p>${error.message}</p>
+      </div>
+    `);
+  }
+}
+
+function createMeteoHistoricalChart(data) {
+  const ctx = document.getElementById('mainHistChart').getContext('2d');
+  const datasets = [];
+
+  // Usar las mismas claves que en set_chart_meteo
+  const variables = {
+    t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C' },
+    rh: { label: 'Humedad', color: '#36A2EB', unit: '%' },
+    psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa' },
+    wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h' },
+    pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm' },
+    sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²' }
+  };
+
+  // Crear datasets para cada variable
+  Object.entries(variables).forEach(([key, config]) => {
+    if (data[key] && Array.isArray(data[key])) {
+      datasets.push({
+        label: `${config.label} (${config.unit})`,
+        data: data[key],
+        borderColor: config.color,
+        backgroundColor: `${config.color}20`,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
+      });
+    }
+  });
+
+  if (datasets.length === 0) {
+    console.error('No se encontraron datos válidos');
+    return;
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Tendencias de Variables Meteorológicas'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: {
+            callback: function(value) {
+              return value.toFixed(1);
+            }
+          }
+        }
+      }
+    }
+    });
+}
+
+function createChemHistoricalChart(data) {
+  const ctx = document.getElementById('mainHistChart').getContext('2d');
+  const datasets = [];
+
+  // Usar las mismas claves que en set_chart_chem
+  const variables = {
+    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm' },
+    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb' },
+    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb' },
+    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb' },
+    PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³' },
+    PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³' }
+  };
+
+  Object.entries(variables).forEach(([key, config]) => {
+    if (data[key] && Array.isArray(data[key])) {
+      datasets.push({
+        label: `${config.label} (${config.unit})`,
+        data: data[key],
+        borderColor: config.color,
+        backgroundColor: `${config.color}20`,
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true
+      });
+    }
+  });
+
+  if (datasets.length === 0) {
+    console.error('No se encontraron datos válidos');
+    return;
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`),
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Tendencias de Calidad del Aire'
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function(value) {
+              return value.toFixed(2);
+            }
+          }
+        }
+      }
+    }
+    });
+}
+
+function createMeteoHistoricalTable(data) {
+  const tbody = document.getElementById('histStatsTable');
+  const variables = {
+    t2m: { label: 'Temperatura', unit: '°C' },
+    rh: { label: 'Humedad', unit: '%' },
+    psl: { label: 'Presión', unit: 'hPa' },
+    wnd: { label: 'Viento', unit: 'km/h' },
+    pre: { label: 'Precipitación', unit: 'mm' },
+    sw: { label: 'Radiación', unit: 'w/m²' }
+  };
+
+  createStatsTable(tbody, data, variables);
+}
+
+function createChemHistoricalTable(data) {
+  const tbody = document.getElementById('histStatsTable');
+  const variables = {
+    CO: { label: 'Monóxido de Carbono', unit: 'ppm' },
+    NO2: { label: 'Dióxido de Nitrógeno', unit: 'ppb' },
+    O3: { label: 'Ozono', unit: 'ppb' },
+    SO2: { label: 'Dióxido de Azufre', unit: 'ppb' },
+    PM10: { label: 'PM10', unit: 'µg/m³' },
+    PM25: { label: 'PM2.5', unit: 'µg/m³' }
+  };
+
+  createStatsTable(tbody, data, variables);
+}
+
+function createStatsTable(tbody, data, variables) {
+  tbody.innerHTML = '';
+  
+  Object.entries(variables).forEach(([key, config]) => {
+    if (data[key]) {
+      const values = data[key];
+      const stats = calculateStats(values);
+      
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${config.label}</strong></td>
+        <td>${stats.avg.toFixed(2)}</td>
+        <td>${stats.max.toFixed(2)}</td>
+        <td>${stats.min.toFixed(2)}</td>
+        <td>${config.unit}</td>
+      `;
+      tbody.appendChild(row);
+    }
+  });
+}
+
+function calculateStats(values) {
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  
+  return { avg, max, min };
+}
+//-------------------------------------------------------------------------------
