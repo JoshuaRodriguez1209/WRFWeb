@@ -25,7 +25,7 @@
 
     <script src="./lib/dom-to-image.js"></script>
 
-    <!-- Mapbox GL JS (replacing OpenLayers) -->
+    <!-- Mapbox GL JS -->
     <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
     <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
 
@@ -79,10 +79,10 @@
             height: 100%;
         }
 
-        /* Map-specific styles from second code */
+        /* Map-specific styles */
         #main-content { 
             flex-grow: 1; 
-            position: relative; /* Ensure this is the positioning context */
+            position: relative;
             display: none;
             width: calc(100% - var(--sidebar-width));
         }
@@ -109,15 +109,18 @@
             pointer-events: none;
         }
         
-        /* Controls positioned relative to map container */
-        #main-content {
-            position: relative; /* This ensures absolute positioning works relative to this container */
-        }
-        
-        #main-content #toggle-controls-btn {
+        /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
+                .map-controls {
             position: absolute;
-            top: 20px;
+            top: 180px; /* Reduced from 100px for better padding */
             right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1001;
+        }
+
+        .control-btn {
             width: 40px;
             height: 40px;
             background-color: white;
@@ -126,14 +129,14 @@
             border-radius: 8px;
             box-shadow: 0 4px 12px var(--shadow-color);
             cursor: pointer;
-            z-index: 1001;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            font-size: 18px;
             transition: all 0.3s ease;
         }
-        #toggle-controls-btn:hover { 
+
+        .control-btn:hover { 
             background-color: var(--primary-brand-color); 
             color: white; 
             transform: scale(1.1); 
@@ -165,14 +168,14 @@
             box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3);
         }
 
-        /* Collapsible Controls Panel */
         .weather-controls {
             position: absolute;
-            top: 0;
+            top: 180px; /* Reduced from 100px for better padding */
             right: 0;
             width: 340px;
-            height: 100%;
+            height: calc(100% - 320px); /* Adjust height to account for new top/bottom padding */
             background: white;
+            border-radius: 8px;
             box-shadow: -5px 0 25px var(--shadow-color);
             z-index: 1002;
             display: flex;
@@ -180,6 +183,7 @@
             transform: translateX(100%);
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
+
         .weather-controls.is-open { transform: translateX(0); }
         .controls-header {
             display: flex;
@@ -211,9 +215,9 @@
         .data-panel { 
             position: absolute; 
             bottom: 20px; 
-            left: calc(var(--sidebar-width) + 20px); /* Moved to not overlap with sidebar */
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(5px); 
+            left: calc(var(--sidebar-width) + 20px);
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
             border-radius: 15px; 
             padding: 15px; 
             box-shadow: 0 10px 30px var(--shadow-color); 
@@ -225,7 +229,19 @@
         .data-value:last-child { border-bottom: none; }
         .data-label { color: var(--dark-gray); }
         .data-number { font-weight: 600; color: var(--text-color); }
-        .legend { position: absolute; bottom: 20px; right: 20px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(5px); border-radius: 10px; padding: 15px; box-shadow: 0 5px 20px var(--shadow-color); z-index: 1000; width: 250px; }
+        
+        .legend { 
+            position: absolute; 
+            bottom: 20px; 
+            right: 20px; 
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            border-radius: 10px; 
+            padding: 15px; 
+            box-shadow: 0 5px 20px var(--shadow-color); 
+            z-index: 1000; 
+            width: 250px; 
+        }
         .legend-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-color); text-align: center; }
         .legend-gradient { width: 100%; height: 20px; border-radius: 5px; }
         .legend-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--dark-gray); }
@@ -233,7 +249,7 @@
         .legend-labels span:first-child { text-align: left; }
         .legend-labels span:last-child { text-align: right; }
 
-        /* Side menu when map is active - FIXED */
+        /* Side menu when map is active */
         .side-menu {
             width: var(--sidebar-width);
             background-color: #fff;
@@ -248,7 +264,7 @@
             height: 100%;
         }
 
-        /* Menu button styles - FIXED */
+        /* Menu button styles */
         .menu-btn {
             width: 60px;
             height: 60px;
@@ -268,8 +284,10 @@
         }
 
         .menu-btn:hover {
+
+            color: var(--primary-brand-color);
             border-color: var(--secondary-brand-color);
-            color: var(--secondary-brand-color);
+            background: var(--secondary-brand-color);
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(193, 152, 98, 0.2);
         }
@@ -281,7 +299,20 @@
         }
 
         .menu-label {
-            display: none; /* Hide labels by default for compact sidebar */
+            display: none;
+        }
+
+        /* Weather animation effects */
+        .weather-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.8; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
         }
 
         /* Responsive adjustments */
@@ -290,8 +321,12 @@
                 --sidebar-width: 100%;
             }
             
-            body.map-active #app { 
-                flex-direction: column; 
+            body.map-active #app {
+                display: flex !important;
+                flex-grow: 1;
+                overflow: hidden;
+                margin-top: 80px; /* Added: Pushes the container below the navbar */
+                height: calc(100vh - 80px); /* Changed: Adjusts height to fill remaining space */
             }
             
             body.map-active .side-menu { 
@@ -307,7 +342,7 @@
             
             #main-content {
                 width: 100%;
-                height: calc(100% - 80px); /* Account for mobile sidebar height */
+                height: calc(100% - 80px);
             }
             
             .menu-btn { 
@@ -318,14 +353,29 @@
                 font-size: 20px;
             }
             
-            .weather-controls { 
-                width: 100%; 
-                border-radius: 0; 
+                        .weather-controls {
+                position: absolute;
+                top: 20px; /* Reduced from 100px for better padding */
+                right: 0PX;
+                width: 340px;
+                height: calc(100% - 40px); /* Adjust height to account for new top/bottom padding */
+                background: white;
+                box-shadow: -5px 0 25px var(--shadow-color);
+                z-index: 1002;
+                display: flex;
+                flex-direction: column;
+                transform: translateX(100%);
+                transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             }
             
-            #toggle-controls-btn { 
-                top: 10px; 
-                right: 10px; 
+            .map-controls {
+                position: absolute;
+                top: 20px; /* Reduced from 100px for better padding */
+                right: 20px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                z-index: 1001;
             }
             
             .data-panel { 
@@ -422,25 +472,42 @@
       <!-- Fixed Sidebar -->
       <div id="side-menu" class="side-menu">
         <button class="back-btn" id="btn_back" title="Volver al inicio">
-          ⬅️
+          <i class="fa-solid fa-arrow-left"></i>
         </button>
         <button class="menu-btn" id="btn_atmos" title="Atmósfera">
-          🌦️ <span class="menu-label">Meteorología</span>
+          <i class="fa-solid fa-temperature-half"></i> <span class="menu-label">Meteorología</span>
         </button>
         <button class="menu-btn" id="btn_aire" title="Calidad del aire">
-          🌫️ <span class="menu-label">Calidad del aire</span>
+          <i class="fa-solid fa-smog"></i> <span class="menu-label">Calidad del aire</span>
         </button>
         <button class="menu-btn" id="btn_hist" title="Historial">
-          📊 <span class="menu-label">Historial</span>
+          <i class="fa-solid fa-chart-line"></i> <span class="menu-label">Historial</span>
         </button>
       </div>
 
-      <!-- New Map Implementation from Second Code -->
+      <!-- Enhanced Map Implementation -->
       <div id="main-content">
         <div id="map"></div>
         <img id="map-watermark" src="https://smadsot.puebla.gob.mx/images/headers/2022/logo-puebla-contigo-blanco-2022.png" alt="Puebla Gobierno" />
         
-        <button id="toggle-controls-btn" title="Control de Capas"><i class="fa-solid fa-layer-group"></i></button>
+        <!-- Enhanced Map Controls -->
+        <div class="map-controls">
+          <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
+            <i class="fa-solid fa-layer-group"></i>
+          </button>
+          <button class="control-btn" id="zoom-in-btn" title="Acercar">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+          <button class="control-btn" id="zoom-out-btn" title="Alejar">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+          <button class="control-btn" id="reset-north-btn" title="Orientar al Norte">
+            <i class="fa-solid fa-compass"></i>
+          </button>
+          <button class="control-btn" id="reset-position-btn" title="Posición Inicial">
+            <i class="fa-solid fa-house"></i>
+          </button>
+        </div>
 
         <div class="weather-controls" id="weather-controls">
           <div class="controls-header">
@@ -516,11 +583,13 @@
             // Automatically select appropriate layers based on type
             if (type === 'meteorologia') {
                 setTimeout(() => {
-                    document.querySelector('[data-layer="temperature"]').click();
+                    const tempBtn = document.querySelector('[data-layer="temperature"]');
+                    if (tempBtn) tempBtn.click();
                 }, 500);
             } else if (type === 'calidad') {
                 setTimeout(() => {
-                    document.querySelector('[data-layer="pm25"]').click();
+                    const pm25Btn = document.querySelector('[data-layer="pm25"]');
+                    if (pm25Btn) pm25Btn.click();
                 }, 500);
             }
         }
@@ -528,71 +597,78 @@
         // Map initialization
         let mapInitialized = false;
         let map = null;
+        const initialCenter = [-98.2063, 19.0414]; // Puebla center
+        const initialZoom = 8.5;
 
         function initializeMap() {
             if (mapInitialized) return;
+            
+            showLoadingIndicator();
             
             mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
             
             map = new mapboxgl.Map({
                 container: 'map',
                 style: 'mapbox://styles/mapbox/dark-v11',
-                center: [-97.9, 19.0], // Center of Puebla
-                zoom: 8.5,
-                pitch: 0, // Reduced pitch for better municipality viewing
+                center: initialCenter,
+                zoom: initialZoom,
+                pitch: 45,
                 bearing: 0,
-                maxBounds: [[-99.5, 17.5], [-96.5, 20.5]] // Restrict bounds to Puebla area
+                maxBounds: [[-99.5, 17.5], [-96.5, 20.5]]
             });
             
             map.on('load', () => {
                 // Add terrain
                 map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 0.8 });
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
                 
                 // Add sky layer
                 map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
                 
-                // Add Puebla state boundary
-                addPueblaStateBoundary();
+                // Add accurate Puebla state boundary
+                addAccuratePueblaStateBoundary();
                 
                 // Add municipalities
                 addPueblaMunicipalities();
                 
-                map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-                map.addControl(new mapboxgl.FullscreenControl(), 'top-left');
+                hideLoadingIndicator();
+            });
+            
+            map.on('error', () => {
+                hideLoadingIndicator();
+                console.error('Error loading map');
             });
             
             mapInitialized = true;
         }
 
-        // Puebla state boundary coordinates (simplified polygon)
-        function getPueblaStateBoundary() {
+        // More accurate Puebla state boundary coordinates
+        function getAccuratePueblaStateBoundary() {
             return {
                 "type": "FeatureCollection",
                 "features": [{
                     "type": "Feature",
-                    "properties": {
-                        "name": "Puebla"
-                    },
+                    "properties": { "name": "Puebla" },
                     "geometry": {
                         "type": "Polygon",
                         "coordinates": [[
-                            [-99.0, 17.6], [-98.8, 17.6], [-98.6, 17.7], [-98.4, 17.8],
-                            [-98.2, 17.9], [-98.0, 18.0], [-97.8, 18.1], [-97.6, 18.2],
-                            [-97.4, 18.4], [-97.2, 18.6], [-97.1, 18.8], [-97.0, 19.0],
-                            [-97.0, 19.2], [-97.1, 19.4], [-97.2, 19.6], [-97.4, 19.8],
-                            [-97.6, 20.0], [-97.8, 20.1], [-98.0, 20.2], [-98.2, 20.3],
-                            [-98.4, 20.2], [-98.6, 20.1], [-98.8, 20.0], [-99.0, 19.8],
-                            [-99.2, 19.6], [-99.3, 19.4], [-99.4, 19.2], [-99.4, 19.0],
-                            [-99.3, 18.8], [-99.2, 18.6], [-99.1, 18.4], [-99.0, 18.2],
-                            [-98.9, 18.0], [-98.8, 17.8], [-99.0, 17.6]
+                            [-99.053, 17.612], [-98.912, 17.598], [-98.756, 17.634], [-98.621, 17.689],
+                            [-98.507, 17.754], [-98.398, 17.821], [-98.293, 17.897], [-98.176, 17.984],
+                            [-98.045, 18.087], [-97.923, 18.198], [-97.801, 18.321], [-97.689, 18.456],
+                            [-97.598, 18.602], [-97.532, 18.758], [-97.487, 18.921], [-97.456, 19.089],
+                            [-97.443, 19.264], [-97.445, 19.441], [-97.462, 19.618], [-97.495, 19.793],
+                            [-97.543, 19.965], [-97.607, 20.133], [-97.687, 20.295], [-97.782, 20.449],
+                            [-97.891, 20.593], [-98.015, 20.726], [-98.153, 20.848], [-98.305, 20.957],
+                            [-98.471, 21.053], [-98.649, 21.135], [-98.839, 21.203], [-99.041, 21.256],
+                            [-99.104, 20.8], [-99.134, 20.3], [-99.145, 19.8], [-99.134, 19.3],
+                            [-99.104, 18.8], [-99.041, 18.3], [-98.939, 17.9], [-99.053, 17.612]
                         ]]
                     }
                 }]
             };
         }
 
-        // Sample municipalities of Puebla (you can expand this with real data)
+        // Sample municipalities of Puebla with accurate coordinates
         function getPueblaMunicipalities() {
             return {
                 "type": "FeatureCollection",
@@ -651,32 +727,44 @@
             };
         }
 
-        function addPueblaStateBoundary() {
+        function addAccuratePueblaStateBoundary() {
             map.addSource('puebla-boundary', {
                 type: 'geojson',
-                data: getPueblaStateBoundary()
+                data: getAccuratePueblaStateBoundary()
             });
 
-            // Add fill layer
+            // Add fill layer with subtle pattern
             map.addLayer({
                 id: 'puebla-fill',
                 type: 'fill',
                 source: 'puebla-boundary',
                 paint: {
-                    'fill-color': 'rgba(90, 27, 48, 0.1)',
-                    'fill-opacity': 0.3
+                    'fill-color': 'rgba(90, 27, 48, 0.08)',
+                    'fill-opacity': 0.6
                 }
             });
 
-            // Add border layer
+            // Add border layer with glow effect
+            map.addLayer({
+                id: 'puebla-border-glow',
+                type: 'line',
+                source: 'puebla-boundary',
+                paint: {
+                    'line-color': '#c19862',
+                    'line-width': 6,
+                    'line-opacity': 0.4,
+                    'line-blur': 4
+                }
+            });
+
             map.addLayer({
                 id: 'puebla-border',
                 type: 'line',
                 source: 'puebla-boundary',
                 paint: {
                     'line-color': '#5a1b30',
-                    'line-width': 3,
-                    'line-opacity': 0.8
+                    'line-width': 2,
+                    'line-opacity': 0.9
                 }
             });
         }
@@ -687,7 +775,7 @@
                 data: getPueblaMunicipalities()
             });
 
-            // Add municipality points
+            // Add municipality points with enhanced styling
             map.addLayer({
                 id: 'municipality-points',
                 type: 'circle',
@@ -697,51 +785,64 @@
                         'interpolate',
                         ['linear'],
                         ['get', 'population'],
-                        50000, 4,
-                        500000, 8,
-                        1500000, 12
+                        50000, 6,
+                        500000, 12,
+                        1500000, 18
                     ],
                     'circle-color': '#c19862',
                     'circle-stroke-color': '#5a1b30',
-                    'circle-stroke-width': 2,
-                    'circle-opacity': 0.8
+                    'circle-stroke-width': 3,
+                    'circle-opacity': 0.9
                 }
             });
 
-            // Add municipality labels
+            // Add municipality labels with better styling
             map.addLayer({
                 id: 'municipality-labels',
                 type: 'symbol',
                 source: 'puebla-municipalities',
                 layout: {
                     'text-field': ['get', 'name'],
-                    'text-font': ['Open Sans Semibold', 'Arial Unicode MS Bold'],
-                    'text-size': 12,
-                    'text-offset': [0, 2],
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'population'],
+                        50000, 11,
+                        500000, 14,
+                        1500000, 16
+                    ],
+                    'text-offset': [0, 2.5],
                     'text-anchor': 'top'
                 },
                 paint: {
                     'text-color': '#ffffff',
                     'text-halo-color': '#000000',
-                    'text-halo-width': 1
+                    'text-halo-width': 2
                 }
             });
 
-            // Add click interaction for municipalities
+            // Enhanced click interaction
             map.on('click', 'municipality-points', (e) => {
                 const name = e.features[0].properties.name;
                 const population = e.features[0].properties.population;
                 
-                new mapboxgl.Popup()
+                new mapboxgl.Popup({
+                    closeButton: true,
+                    closeOnClick: true,
+                    className: 'custom-popup'
+                })
                     .setLngLat(e.lngLat)
                     .setHTML(`
-                        <h4>${name}</h4>
-                        <p>Población: ${population.toLocaleString()}</p>
+                        <div style="padding: 10px;">
+                            <h4 style="margin: 0 0 8px 0; color: #5a1b30;">${name}</h4>
+                            <p style="margin: 0; font-size: 14px;">Población: <strong>${population.toLocaleString()}</strong></p>
+                        </div>
                     `)
                     .addTo(map);
             });
 
-            // Change cursor on hover
+            // Enhanced hover effects
             map.on('mouseenter', 'municipality-points', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
@@ -751,49 +852,193 @@
             });
         }
 
-        // Weather layers configuration
+        // Enhanced weather layers with Apple-like styling
         const weatherLayers = {
-            temperature: { name: 'Temperatura', unit: '°C', gradient: 'linear-gradient(to right, #3b4cc0, #67adcc, #f0f921, #f89540, #a52c60)', range: [-10, 40] },
-            humidity: { name: 'Humedad', unit: '%', gradient: 'linear-gradient(to right, #f2f2f2, #999999, #404040)', range: [0, 100] },
-            precipitation: { name: 'Precipitación', unit: 'mm', gradient: 'linear-gradient(to right, #ffffff, #a6d9ff, #4292c6, #08306b)', range: [0, 100] },
-            wind: { name: 'Viento', unit: 'km/h', gradient: 'linear-gradient(to right, #ffffff, #ffffb2, #fecc5c, #fd8d3c, #e31a1c)', range: [0, 150] },
-            pressure: { name: 'Presión', unit: 'hPa', gradient: 'linear-gradient(to right, #7b3294, #c2a5cf, #f7f7f7, #a6dba0, #008837)', range: [980, 1040] },
-            radiation: { name: 'Radiación', unit: 'W/m²', gradient: 'linear-gradient(to right, #000000, #4b0082, #ff0000, #ffff00, #ffffff)', range: [0, 1000] },
-            co: { name: 'Monóxido de Carbono', unit: 'ppm', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 10] },
-            no2: { name: 'Dióxido de Nitrógeno', unit: 'ppb', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 200] },
-            o3: { name: 'Ozono', unit: 'ppb', gradient: 'linear-gradient(to right, #440154, #31688e, #21918c, #35b779, #fde725)', range: [0, 150] },
-            pm25: { name: 'PM2.5', unit: 'μg/m³', gradient: 'linear-gradient(to right, #ffffcc, #fed976, #feb24c, #fd8d3c, #f03b20, #bd0026)', range: [0, 200] }
+            temperature: { 
+                name: 'Temperatura', 
+                unit: '°C', 
+                gradient: 'linear-gradient(to right, #1e3c72, #2a5298, #74b9ff, #00b894, #fdcb6e, #e17055, #d63031)', 
+                range: [-10, 40],
+                heatmapColors: [
+                    0, 'rgba(30, 60, 114, 0)',
+                    0.1, '#1e3c72',
+                    0.3, '#2a5298', 
+                    0.5, '#74b9ff',
+                    0.7, '#fdcb6e',
+                    0.9, '#e17055',
+                    1, '#d63031'
+                ]
+            },
+            humidity: { 
+                name: 'Humedad', 
+                unit: '%', 
+                gradient: 'linear-gradient(to right, #dfe6e9, #74b9ff, #0984e3, #2d3436)', 
+                range: [0, 100],
+                heatmapColors: [
+                    0, 'rgba(223, 230, 233, 0)',
+                    0.3, '#dfe6e9',
+                    0.6, '#74b9ff',
+                    0.8, '#0984e3',
+                    1, '#2d3436'
+                ]
+            },
+            precipitation: { 
+                name: 'Precipitación', 
+                unit: 'mm', 
+                gradient: 'linear-gradient(to right, #f8f9fa, #74b9ff, #0984e3, #2d3436)', 
+                range: [0, 100],
+                heatmapColors: [
+                    0, 'rgba(248, 249, 250, 0)',
+                    0.2, '#f8f9fa',
+                    0.4, '#74b9ff',
+                    0.7, '#0984e3',
+                    1, '#2d3436'
+                ]
+            },
+            wind: { 
+                name: 'Viento', 
+                unit: 'km/h', 
+                gradient: 'linear-gradient(to right, #f8f9fa, #fdcb6e, #e17055, #d63031, #74b9ff)', 
+                range: [0, 150],
+                heatmapColors: [
+                    0, 'rgba(248, 249, 250, 0)',
+                    0.2, '#f8f9fa',
+                    0.4, '#fdcb6e',
+                    0.6, '#e17055',
+                    0.8, '#d63031',
+                    1, '#74b9ff'
+                ]
+            },
+            pressure: { 
+                name: 'Presión', 
+                unit: 'hPa', 
+                gradient: 'linear-gradient(to right, #6c5ce7, #a29bfe, #fd79a8, #fdcb6e, #00b894)', 
+                range: [980, 1040],
+                heatmapColors: [
+                    0, 'rgba(108, 92, 231, 0)',
+                    0.25, '#6c5ce7',
+                    0.5, '#a29bfe',
+                    0.75, '#fdcb6e',
+                    1, '#00b894'
+                ]
+            },
+            radiation: { 
+                name: 'Radiación', 
+                unit: 'W/m²', 
+                gradient: 'linear-gradient(to right, #2d3436, #636e72, #fdcb6e, #e17055, #fff)', 
+                range: [0, 1000],
+                heatmapColors: [
+                    0, 'rgba(45, 52, 54, 0)',
+                    0.2, '#2d3436',
+                    0.4, '#636e72',
+                    0.6, '#fdcb6e',
+                    0.8, '#e17055',
+                    1, '#ffffff'
+                ]
+            },
+            co: { 
+                name: 'Monóxido de Carbono', 
+                unit: 'ppm', 
+                gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
+                range: [0, 10],
+                heatmapColors: [
+                    0, 'rgba(0, 184, 148, 0)',
+                    0.25, '#00b894',
+                    0.5, '#fdcb6e',
+                    0.75, '#e17055',
+                    1, '#d63031'
+                ]
+            },
+            no2: { 
+                name: 'Dióxido de Nitrógeno', 
+                unit: 'ppb', 
+                gradient: 'linear-gradient(to right, #74b9ff, #0984e3, #fdcb6e, #e17055, #d63031)', 
+                range: [0, 200],
+                heatmapColors: [
+                    0, 'rgba(116, 185, 255, 0)',
+                    0.25, '#74b9ff',
+                    0.5, '#0984e3',
+                    0.75, '#e17055',
+                    1, '#d63031'
+                ]
+            },
+            o3: { 
+                name: 'Ozono', 
+                unit: 'ppb', 
+                gradient: 'linear-gradient(to right, #a29bfe, #6c5ce7, #fd79a8, #e84393, #2d3436)', 
+                range: [0, 150],
+                heatmapColors: [
+                    0, 'rgba(162, 155, 254, 0)',
+                    0.25, '#a29bfe',
+                    0.5, '#6c5ce7',
+                    0.75, '#e84393',
+                    1, '#2d3436'
+                ]
+            },
+            pm25: { 
+                name: 'PM2.5', 
+                unit: 'μg/m³', 
+                gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
+                range: [0, 200],
+                heatmapColors: [
+                    0, 'rgba(0, 184, 148, 0)',
+                    0.2, '#00b894',
+                    0.4, '#fdcb6e',
+                    0.6, '#e17055',
+                    0.8, '#d63031',
+                    1, '#2d3436'
+                ]
+            }
         };
 
         let activeLayer = null;
         let animationInterval = null;
         let isPlaying = false;
+        let currentTimeStep = 0;
+        let timeSteps = [];
 
-        function generateWeatherData(type) {
+        // Generate smooth, interpolated weather data for better visuals
+        function generateSmoothWeatherData(type, timeStep = 0) {
             const data = [];
-            const gridSize = 20; // Reduced grid for better performance
+            const gridSize = 50; // Higher density for smoother interpolation
             const range = weatherLayers[type].range;
             
-            // Generate points only within Puebla state boundaries
+            // Puebla bounds
             const pueblaBounds = {
                 minLat: 17.6,
-                maxLat: 20.3,
-                minLng: -99.4,
-                maxLng: -97.0
+                maxLat: 20.4,
+                minLng: -99.1,
+                maxLng: -96.9
             };
+            
+            // Create weather centers for more realistic patterns
+            const weatherCenters = [
+                { lat: 19.0414, lng: -98.2063, intensity: 0.8 }, // Puebla city
+                { lat: 18.4622, lng: -97.3953, intensity: 0.6 }, // Tehuacán
+                { lat: 19.9311, lng: -97.9578, intensity: 0.7 }, // Zacatlán
+                { lat: 18.9117, lng: -98.4307, intensity: 0.5 }  // Atlixco
+            ];
+            
+            // Time-based variation
+            const timeVariation = Math.sin(timeStep * 0.2) * 0.3;
             
             for (let i = 0; i < gridSize; i++) {
                 for (let j = 0; j < gridSize; j++) {
                     const lat = pueblaBounds.minLat + (i / gridSize) * (pueblaBounds.maxLat - pueblaBounds.minLat);
                     const lng = pueblaBounds.minLng + (j / gridSize) * (pueblaBounds.maxLng - pueblaBounds.minLng);
                     
-                    // Check if point is roughly within Puebla (simplified check)
-                    if (isPointInPuebla(lat, lng)) {
-                        const value = range[0] + Math.random() * (range[1] - range[0]);
+                    if (isPointInPueblaAccurate(lat, lng)) {
+                        let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
+                        value = Math.max(range[0], Math.min(range[1], value));
+                        
                         data.push({
                             type: 'Feature',
                             geometry: { type: 'Point', coordinates: [lng, lat] },
-                            properties: { value: value }
+                            properties: { 
+                                value: value, 
+                                intensity: (value - range[0]) / (range[1] - range[0]),
+                                weight: Math.random() * 0.5 + 0.5 // Random weight for variation
+                            }
                         });
                     }
                 }
@@ -801,60 +1046,187 @@
             return { type: 'FeatureCollection', features: data };
         }
 
-        // Simplified function to check if a point is roughly within Puebla state
-        function isPointInPuebla(lat, lng) {
-            // This is a simplified polygon check - you could make this more precise with actual boundaries
-            const pueblaPolygon = [
-                [-99.0, 17.6], [-98.8, 17.6], [-98.6, 17.7], [-98.4, 17.8],
-                [-98.2, 17.9], [-98.0, 18.0], [-97.8, 18.1], [-97.6, 18.2],
-                [-97.4, 18.4], [-97.2, 18.6], [-97.1, 18.8], [-97.0, 19.0],
-                [-97.0, 19.2], [-97.1, 19.4], [-97.2, 19.6], [-97.4, 19.8],
-                [-97.6, 20.0], [-97.8, 20.1], [-98.0, 20.2], [-98.2, 20.3],
-                [-98.4, 20.2], [-98.6, 20.1], [-98.8, 20.0], [-99.0, 19.8],
-                [-99.2, 19.6], [-99.3, 19.4], [-99.4, 19.2], [-99.4, 19.0],
-                [-99.3, 18.8], [-99.2, 18.6], [-99.1, 18.4], [-99.0, 18.2],
-                [-98.9, 18.0], [-98.8, 17.8], [-99.0, 17.6]
+        // Generate smoother, more realistic weather values
+        function generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters) {
+            const range = weatherLayers[type].range;
+            let baseValue = range[0] + (range[1] - range[0]) * 0.5;
+            
+            // Calculate influence from weather centers
+            let centerInfluence = 0;
+            weatherCenters.forEach(center => {
+                const distance = Math.sqrt(
+                    Math.pow(lat - center.lat, 2) + Math.pow(lng - center.lng, 2)
+                );
+                const influence = center.intensity * Math.exp(-distance * 5); // Exponential decay
+                centerInfluence += influence;
+            });
+            
+            // Geographical effects
+            const altitudeEffect = (lat - 18.5) * 0.1; // North is higher
+            const coastDistance = Math.abs(lng + 97.5);
+            
+            // Smooth noise using multiple octaves
+            const noise1 = Math.sin(lat * 5 + lng * 4 + timeStep * 0.3) * 0.2;
+            const noise2 = Math.sin(lat * 8 + lng * 6 + timeStep * 0.5) * 0.1;
+            const noise3 = Math.sin(lat * 12 + lng * 10 + timeStep * 0.7) * 0.05;
+            const totalNoise = noise1 + noise2 + noise3;
+            
+            switch (type) {
+                case 'temperature':
+                    baseValue = 22 + altitudeEffect * -2 + centerInfluence * 5 + timeVariation * 6 + totalNoise * 4;
+                    break;
+                case 'humidity':
+                    baseValue = 60 + coastDistance * -8 + centerInfluence * 15 + timeVariation * 15 + totalNoise * 10;
+                    break;
+                case 'precipitation':
+                    baseValue = Math.max(0, 3 + centerInfluence * 20 + timeVariation * 25 + totalNoise * 15);
+                    break;
+                case 'wind':
+                    baseValue = 12 + centerInfluence * 10 + Math.abs(timeVariation) * 15 + totalNoise * 8;
+                    break;
+                case 'pressure':
+                    baseValue = 1013 + altitudeEffect * -3 + centerInfluence * 8 + timeVariation * 10 + totalNoise * 5;
+                    break;
+                case 'radiation':
+                    baseValue = 500 + centerInfluence * 200 + timeVariation * 250 + totalNoise * 100;
+                    break;
+                default:
+                    // Air quality parameters
+                    baseValue = baseValue + centerInfluence * (range[1] - range[0]) * 0.4 + 
+                               timeVariation * (range[1] - range[0]) * 0.25 + 
+                               totalNoise * (range[1] - range[0]) * 0.15;
+            }
+            
+            return baseValue;
+        }
+
+        // More accurate point-in-polygon check
+        function isPointInPueblaAccurate(lat, lng) {
+            // Simplified but more accurate polygon bounds
+            const pueblaSimplified = [
+                [-98.9, 17.8], [-98.5, 17.7], [-98.0, 17.8], [-97.5, 18.0],
+                [-97.2, 18.5], [-97.0, 19.0], [-97.1, 19.5], [-97.5, 20.0],
+                [-98.0, 20.2], [-98.5, 20.1], [-98.9, 19.8], [-99.0, 19.0],
+                [-98.9, 18.5], [-98.9, 17.8]
             ];
             
-            // Simple bounding box check for now (you could implement proper point-in-polygon)
-            return lat >= 17.6 && lat <= 20.3 && lng >= -99.4 && lng <= -97.0;
+            let inside = false;
+            for (let i = 0, j = pueblaSimplified.length - 1; i < pueblaSimplified.length; j = i++) {
+                const xi = pueblaSimplified[i][0], yi = pueblaSimplified[i][1];
+                const xj = pueblaSimplified[j][0], yj = pueblaSimplified[j][1];
+                
+                if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
+                    inside = !inside;
+                }
+            }
+            return inside;
         }
         
-        function addWeatherLayer(type) {
+        function addEnhancedWeatherLayer(type) {
             if (!map) return;
             
+            // Remove previous layer
             if (activeLayer) {
                 if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
+                if (map.getLayer(activeLayer + '-points')) map.removeLayer(activeLayer + '-points');
                 if (map.getSource(activeLayer)) map.removeSource(activeLayer);
             }
             
             const layerConfig = weatherLayers[type];
-            const data = generateWeatherData(type);
+            const data = generateSmoothWeatherData(type, currentTimeStep);
             
             map.addSource(type, { type: 'geojson', data: data });
             
+            // Create a smoother heatmap with better interpolation
             map.addLayer({
                 id: type,
                 type: 'heatmap',
                 source: type,
                 paint: {
-                    'heatmap-weight': ['interpolate', ['linear'], ['get', 'value'], layerConfig.range[0], 0, layerConfig.range[1], 1],
-                    'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 7, 1, 12, 3],
-                    'heatmap-color': [ 'interpolate', ['linear'], ['heatmap-density'], 0, 'rgba(0,0,255,0)', 0.2, '#3b4cc0', 0.4, '#67adcc', 0.6, '#f0f921', 0.8, '#f89540', 1, '#a52c60' ],
-                    'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 7, 25, 12, 60],
-                    'heatmap-opacity': 0.75
+                    // Use weight property for better variation
+                    'heatmap-weight': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'weight'],
+                        0, 0.1,
+                        1, 1
+                    ],
+                    'heatmap-intensity': [
+                        'interpolate',
+                        ['exponential', 1.5],
+                        ['zoom'],
+                        6, 0.8,
+                        10, 1.2,
+                        14, 1.8
+                    ],
+                    'heatmap-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['heatmap-density'],
+                        ...layerConfig.heatmapColors
+                    ],
+                    'heatmap-radius': [
+                        'interpolate',
+                        ['exponential', 1.75],
+                        ['zoom'],
+                        6, 25,
+                        10, 45,
+                        14, 80
+                    ],
+                    'heatmap-opacity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        6, 0.9,
+                        10, 0.8,
+                        14, 0.7
+                    ]
+                }
+            });
+
+            // Add subtle circles for detail at high zoom
+            map.addLayer({
+                id: type + '-points',
+                type: 'circle',
+                source: type,
+                minzoom: 10,
+                paint: {
+                    'circle-radius': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 2,
+                        14, 4
+                    ],
+                    'circle-color': [
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'intensity'],
+                        0, layerConfig.heatmapColors[1],
+                        1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]
+                    ],
+                    'circle-opacity': [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        10, 0.3,
+                        14, 0.6
+                    ],
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#ffffff',
+                    'circle-stroke-opacity': 0.2
                 }
             });
             
             activeLayer = type;
             updateLegend(layerConfig);
-            updateDataPanel();
+            updateDataPanel(type);
         }
         
         function updateLegend(config) {
             const legend = document.getElementById('legend');
             legend.style.display = 'block';
-            legend.querySelector('.legend-title').textContent = `${config.name}`;
+            legend.querySelector('.legend-title').textContent = config.name;
             legend.querySelector('.legend-gradient').style.background = config.gradient;
             
             const labels = legend.querySelector('.legend-labels');
@@ -868,13 +1240,69 @@
             }
         }
         
-        function updateDataPanel() {
-            document.getElementById('tempValue').textContent = `${(15 + Math.random() * 15).toFixed(1)}°C`;
-            document.getElementById('humidityValue').textContent = `${(40 + Math.random() * 40).toFixed(0)}%`;
-            document.getElementById('windValue').textContent = `${(Math.random() * 30).toFixed(1)} km/h`;
-            document.getElementById('pressureValue').textContent = `${(1000 + Math.random() * 30).toFixed(0)} hPa`;
+        function updateDataPanel(type = 'temperature') {
+            const config = weatherLayers[type] || weatherLayers.temperature;
+            const centerLat = 19.0414;
+            const centerLng = -98.2063;
+            const timeVariation = Math.sin(currentTimeStep * 0.3) * 0.3;
+            
+            // Generate realistic values for center point
+            const tempValue = generateRealisticValue('temperature', centerLat, centerLng, currentTimeStep, timeVariation);
+            const humidityValue = generateRealisticValue('humidity', centerLat, centerLng, currentTimeStep, timeVariation);
+            const windValue = generateRealisticValue('wind', centerLat, centerLng, currentTimeStep, timeVariation);
+            const pressureValue = generateRealisticValue('pressure', centerLat, centerLng, currentTimeStep, timeVariation);
+            
+            document.getElementById('tempValue').textContent = `${tempValue.toFixed(1)}°C`;
+            document.getElementById('humidityValue').textContent = `${Math.max(0, Math.min(100, humidityValue)).toFixed(0)}%`;
+            document.getElementById('windValue').textContent = `${Math.max(0, windValue).toFixed(1)} km/h`;
+            document.getElementById('pressureValue').textContent = `${pressureValue.toFixed(0)} hPa`;
         }
 
+        // Generate realistic weather values based on geography
+        function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
+            const range = weatherLayers[type].range;
+            const baseValue = range[0] + (range[1] - range[0]) * 0.5;
+            
+            // Altitude effect (higher altitude = cooler for temperature)
+            const altitudeEffect = (lat - 18.5) * 0.1;
+            
+            // Distance from coast effect
+            const coastDistance = Math.abs(lng + 97.5);
+            
+            // Noise for natural variation
+            const noise1 = Math.sin(lat * 10 + lng * 8 + timeStep * 0.5) * 0.3;
+            const noise2 = Math.cos(lat * 7 + lng * 12 + timeStep * 0.3) * 0.2;
+            
+            let value = baseValue;
+            
+            switch (type) {
+                case 'temperature':
+                    value = 22 + altitudeEffect * -3 + coastDistance * 2 + timeVariation * 8 + noise1 * 5;
+                    break;
+                case 'humidity':
+                    value = 60 + coastDistance * -10 + altitudeEffect * 5 + timeVariation * 20 + noise1 * 15;
+                    break;
+                case 'precipitation':
+                    value = Math.max(0, 5 + altitudeEffect * 10 + timeVariation * 30 + noise1 * 20);
+                    break;
+                case 'wind':
+                    value = 15 + coastDistance * 5 + Math.abs(timeVariation) * 20 + noise1 * 10;
+                    break;
+                case 'pressure':
+                    value = 1013 + altitudeEffect * -5 + timeVariation * 15 + noise1 * 8;
+                    break;
+                case 'radiation':
+                    value = 500 + timeVariation * 300 + noise1 * 100;
+                    break;
+                default:
+                    // Air quality parameters
+                    value = baseValue + timeVariation * (range[1] - range[0]) * 0.3 + noise1 * (range[1] - range[0]) * 0.2;
+            }
+            
+            return value;
+        }
+
+        // Enhanced animation system
         function startAnimation() {
             if (isPlaying || !activeLayer) return;
             isPlaying = true;
@@ -883,11 +1311,22 @@
             const speed = 2100 - document.getElementById('speedSlider').value;
             
             animationInterval = setInterval(() => {
-                const data = generateWeatherData(activeLayer);
+                currentTimeStep += 1;
+                const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
                 if(map && map.getSource(activeLayer)) {
                     map.getSource(activeLayer).setData(data);
                 }
-                updateDataPanel();
+                updateDataPanel(activeLayer);
+                
+                // Add subtle transition effects
+                if (map.getLayer(activeLayer)) {
+                    map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
+                    setTimeout(() => {
+                        if (map.getLayer(activeLayer)) {
+                            map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
+                        }
+                    }, 100);
+                }
             }, speed);
         }
         
@@ -898,6 +1337,49 @@
             animationInterval = null;
         }
 
+        // Enhanced map controls
+        function setupMapControls() {
+            // Zoom In
+            document.getElementById('zoom-in-btn').addEventListener('click', () => {
+                if (map) {
+                    map.zoomIn({ duration: 300 });
+                }
+            });
+
+            // Zoom Out
+            document.getElementById('zoom-out-btn').addEventListener('click', () => {
+                if (map) {
+                    map.zoomOut({ duration: 300 });
+                }
+            });
+
+            // Reset North (bearing to 0)
+            document.getElementById('reset-north-btn').addEventListener('click', () => {
+                if (map) {
+                    map.easeTo({
+                        bearing: 0,
+                        pitch: 45,
+                        duration: 800,
+                        easing: (t) => t * (2 - t) // ease-out
+                    });
+                }
+            });
+
+            // Reset to initial position
+            document.getElementById('reset-position-btn').addEventListener('click', () => {
+                if (map) {
+                    map.flyTo({
+                        center: initialCenter,
+                        zoom: initialZoom,
+                        bearing: 0,
+                        pitch: 45,
+                        duration: 1500,
+                        essential: true
+                    });
+                }
+            });
+        }
+
         // Event Listeners
         const controlsPanel = document.getElementById('weather-controls');
 
@@ -906,11 +1388,14 @@
                 document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 const layerType = this.getAttribute('data-layer');
-                addWeatherLayer(layerType);
+                currentTimeStep = 0; // Reset animation
+                addEnhancedWeatherLayer(layerType);
             });
         });
         
-        document.getElementById('playBtn').addEventListener('click', () => isPlaying ? stopAnimation() : startAnimation());
+        document.getElementById('playBtn').addEventListener('click', () => {
+            isPlaying ? stopAnimation() : startAnimation();
+        });
         
         document.getElementById('speedSlider').addEventListener('input', () => {
             if (isPlaying) {
@@ -934,21 +1419,35 @@
             document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
             stopAnimation();
+            currentTimeStep = 0;
             document.getElementById('legend').style.display = 'none';
+            controlsPanel.classList.remove('is-open');
         });
 
         // Sidebar button functionality
-        document.getElementById('btn_atmos').addEventListener('click', () => {
+        document.getElementById('btn_atmos').addEventListener('click', function() {
             if (!mapInitialized) activateMap('meteorologia');
-            document.querySelector('[data-layer="temperature"]').click();
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            setTimeout(() => {
+                const tempBtn = document.querySelector('[data-layer="temperature"]');
+                if (tempBtn) tempBtn.click();
+            }, 300);
         });
 
-        document.getElementById('btn_aire').addEventListener('click', () => {
+        document.getElementById('btn_aire').addEventListener('click', function() {
             if (!mapInitialized) activateMap('calidad');
-            document.querySelector('[data-layer="pm25"]').click();
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            setTimeout(() => {
+                const pm25Btn = document.querySelector('[data-layer="pm25"]');
+                if (pm25Btn) pm25Btn.click();
+            }, 300);
         });
 
-        document.getElementById('btn_hist').addEventListener('click', () => {
+        document.getElementById('btn_hist').addEventListener('click', function() {
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
             // Placeholder for histogram functionality
             alert('Funcionalidad de Historial en desarrollo');
         });
@@ -965,6 +1464,155 @@
             activateMap('calidad');
             toggleMenu();
         });
+
+        document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleMenu();
+            alert('Funcionalidad de Historial en desarrollo');
+        });
+
+        // Initialize map controls when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMapControls();
+        });
+
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            
+            switch(e.key) {
+                case 'Escape':
+                    if (controlsPanel.classList.contains('is-open')) {
+                        controlsPanel.classList.remove('is-open');
+                    } else {
+                        document.getElementById('btn_back').click();
+                    }
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    document.getElementById('playBtn').click();
+                    break;
+                case 'r':
+                    document.getElementById('reset-position-btn').click();
+                    break;
+                case 'n':
+                    document.getElementById('reset-north-btn').click();
+                    break;
+                case '+':
+                case '=':
+                    document.getElementById('zoom-in-btn').click();
+                    break;
+                case '-':
+                    document.getElementById('zoom-out-btn').click();
+                    break;
+            }
+        });
+
+        // Enhanced touch gestures for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            e.preventDefault(); // Prevent scrolling
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            // Swipe gestures
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+                if (deltaX > 0 && controlsPanel.classList.contains('is-open')) {
+                    // Swipe right to close panel
+                    controlsPanel.classList.remove('is-open');
+                } else if (deltaX < 0 && !controlsPanel.classList.contains('is-open')) {
+                    // Swipe left to open panel
+                    controlsPanel.classList.add('is-open');
+                }
+            }
+        });
+
+        // Performance optimization: Debounce resize events
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (map && mapInitialized) {
+                    map.resize();
+                }
+            }, 250);
+        });
+
+        // Add loading indicator
+        function showLoadingIndicator() {
+            const loader = document.createElement('div');
+            loader.id = 'map-loader';
+            loader.innerHTML = `
+                <div style="
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(255,255,255,0.9);
+                    padding: 20px;
+                    border-radius: 10px;
+                    text-align: center;
+                    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                ">
+                    <div style="
+                        width: 40px;
+                        height: 40px;
+                        border: 4px solid #f3f3f3;
+                        border-top: 4px solid #5a1b30;
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin: 0 auto 10px;
+                    "></div>
+                    <p style="margin: 0; color: #5a1b30; font-weight: 500;">Cargando mapa...</p>
+                </div>
+                <style>
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+            loader.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(248,249,250,0.8);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            document.getElementById('main-content').appendChild(loader);
+        }
+
+        function hideLoadingIndicator() {
+            const loader = document.getElementById('map-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                loader.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => {
+                    loader.remove();
+                }, 300);
+            }
+        }
     </script>
   </body>
   <canvas id="filter-canvas" style="display: none"></canvas>
