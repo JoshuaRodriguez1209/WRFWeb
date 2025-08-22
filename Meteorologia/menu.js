@@ -249,6 +249,9 @@ $(document).on("click", "#btn_hist", function () {
   
   // Cargar cabeceras en el selector
   loadHistoricalCabeceras();
+  
+  // Initialize variable toggles for initial type
+  createVariableToggles($("#hist-tipo-select").val());
 });
 
 // Función para cargar las cabeceras

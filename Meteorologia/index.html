@@ -265,28 +265,48 @@
       <div id="hist">
         <!-- Historial Dashboard -->
         <div id="historial-dashboard" style="display:none;">
-          <div class="row mt-4">
-            <div class="col-md-4">
-              <div class="card">
-                <div class="card-header">
-                  <h5>Seleccionar Municipio</h5>
-                </div>
-                <div class="card-body">
-                  <div class="form-group">
-                    <select id="hist-cabecera-select" class="form-control"></select>
-                  </div>
-                  <div class="form-group mt-3">
-                    <select id="hist-tipo-select" class="form-control">
-                      <option value="meteo">Datos Meteorológicos</option>
-                      <option value="chem">Calidad del Aire</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
+          <div class="dashboard-header">
+            <div class="location-selector">
+              <select id="hist-cabecera-select" class="form-control"></select>
             </div>
-            <div class="col-md-8">
+            <div class="data-type-selector">
+              <select id="hist-tipo-select" class="form-control">
+                <option value="meteo">Datos Meteorológicos</option>
+                <option value="chem">Calidad del Aire</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="dashboard-content">
+            <!-- Variable Selection Grid -->
+            <div class="variables-grid" id="variable-toggles">
+              <!-- Variables will be dynamically added here -->
+            </div>
+
+            <!-- Main Content Area -->
+            <div class="content-wrapper">
               <div id="hist-content">
-                <!-- Aquí se mostrará el contenido dinámico -->
+                <div class="visualization-container">
+                  <canvas id="mainHistChart"></canvas>
+                </div>
+                <div class="stats-container">
+                  <h4>Resumen Estadístico</h4>
+                  <div class="stats-table-wrapper">
+                    <table class="stats-table">
+                      <thead>
+                        <tr>
+                          <th>Variable</th>
+                          <th>Promedio</th>
+                          <th>Máximo</th>
+                          <th>Mínimo</th>
+                          <th>Unidades</th>
+                        </tr>
+                      </thead>
+                      <tbody id="histStatsTable">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

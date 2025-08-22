@@ -712,6 +712,111 @@
   font-size: 0.9em;
 }
 
+/* Variable selection panel */
+.variable-selection {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: slideIn 0.5s ease;
+}
+
+.variable-selection h4 {
+  color: #333;
+  margin-bottom: 15px;
+  font-weight: 600;
+}
+
+.variable-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.variable-toggle {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.variable-toggle:hover {
+  border-color: #007bff;
+  background: #f0f7ff;
+}
+
+.variable-toggle.active {
+  background: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.variable-toggle input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Historical charts container */
+.historical-wrapper {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  animation: fadeInUp 0.5s ease;
+}
+
+.historical-wrapper .chart-container {
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.historical-wrapper canvas {
+  transition: all 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stats table styling */
+.stats-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 20px;
+}
+
+.stats-table th {
+  background: #f8f9fa;
+  padding: 15px;
+  font-weight: 600;
+  color: #333;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.stats-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.stats-table tr:hover td {
+  background: #f8f9fa;
+}
+
 /* Escala/gradiente vertical */
 #gradient-container.vertical{
   position: fixed;          
@@ -751,37 +856,181 @@
 #historial-dashboard {
   position: relative;
   top: 150px;
-  padding: 20px;
-  background-color: #f8f9fa;
+  left: 60px;
+  padding: 30px;
+  width: calc(100% - 60px);
+  background-color: #ffffff;
   min-height: calc(100vh - 150px);
+  transition: all 0.3s ease;
+  animation: fadeIn 0.5s ease;
 }
 
-#historial-dashboard .card {
-  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-  border: none;
-  margin-bottom: 1rem;
+.dashboard-header {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 0 15px;
 }
 
-#historial-dashboard .card-header {
-  background-color: white;
-  border-bottom: 2px solid #f0f0f0;
+.location-selector,
+.data-type-selector {
+  flex: 1;
+}
+
+.dashboard-content {
+  background: #ffffff;
+  border-radius: 15px;
+  padding: 30px;
+}
+
+/* Variable Selection Grid */
+.variables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.variable-toggle {
+  background: #ffffff;
+  border: 2px solid #e0e0e0;
+  border-radius: 12px;
   padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #5a1b30;
 }
 
-#historial-dashboard .card-header h5 {
-  margin: 0;
-  color: #333;
-  font-weight: 600;
+.variable-toggle:hover {
+  border-color: #5a1b30;
+  background: #fff9f5;
 }
 
-#historial-dashboard .form-group {
-  margin-bottom: 1rem;
+.variable-toggle.active {
+  background: #5a1b30;
+  color: #ffffff;
+  border-color: #5a1b30;
 }
 
+.variable-toggle .icon {
+  font-size: 24px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.variable-toggle .label {
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+/* Selectors Styling */
 #historial-dashboard select.form-control {
-  height: 45px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  padding: 0 15px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  cursor: pointer;
+  color: #5a1b30;
+}
+
+#historial-dashboard select.form-control:hover {
+  border-color: #5a1b30;
+}
+
+#historial-dashboard select.form-control:focus {
+  box-shadow: 0 0 0 3px rgba(90, 27, 48, 0.2);
+  border-color: #5a1b30;
+  outline: none;
+}
+
+/* Content Area */
+.content-wrapper {
+  background: #ffffff;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.visualization-container {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 15px 15px 0 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stats-container {
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 0 0 15px 15px;
+}
+
+.stats-container h4 {
+  color: #5a1b30;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.stats-table-wrapper {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.stats-table th {
+  background: #f8f9fa;
+  padding: 15px;
+  font-weight: 600;
+  color: #5a1b30;
+  border-bottom: 2px solid #e0e0e0;
+  text-align: left;
+}
+
+.stats-table td {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.stats-table tr:hover td {
+  background: #fff9f5;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  #historial-dashboard {
+    left: 0;
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .dashboard-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .variables-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  
+  .dashboard-content {
+    padding: 15px;
+  }
 }
 
 #hist-content {
@@ -845,3 +1094,116 @@
   }
 }
 
+/* === Variable tiles estilo "tarjeta" === */
+.variables-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:14px;
+}
+
+.variable-toggle{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:16px 14px;
+  border-radius:16px;
+  border:1.5px solid #E6E6E6;
+  background:#ffffff;
+  color:#5a1b30;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
+}
+.variable-toggle .icon{font-size:28px; line-height:1}
+.variable-toggle .label{font-weight:600; font-size:.98rem}
+
+.variable-toggle:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(0,0,0,.10);
+  border-color:#c19862;
+}
+
+/* Activo con gradiente tipo tarjeta seleccionada */
+.variable-toggle.active{
+  background:linear-gradient(135deg,#6e2436 0%, #c19862 100%);
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 8px 22px rgba(97, 44, 59, .25);
+}
+
+/* === Contenedor de múltiples gráficas === */
+.charts-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px;
+}
+.chart-card{
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 4px 14px rgba(0,0,0,.06);
+  animation:fadeInUp .35s ease both;
+}
+@keyframes fadeInUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}
+
+/* Altura contenida para que no ocupen mucho alto */
+.chart-card canvas{ height:240px !important; }
+@media (max-width: 768px){
+  .chart-card canvas{ height:220px !important; }
+}
+@media (max-width: 768px){
+  .charts-grid{
+    grid-template-columns: 1fr;
+    gap:14px;
+    overflow-y:scroll;
+  }
+  .chart-card{ padding:10px; }
+  .chart-card canvas{
+    height:180px !important;
+    max-height:180px;
+  }
+}
+
+
+/* Contenedor visualización */
+.visualization-container{ padding:12px !important; }
+
+/* Botones de variables */
+.variable-toggle{
+  color:#000;                 /* texto negro por defecto */
+}
+.variable-toggle .label,
+.variable-toggle .icon{
+  color:inherit;
+}
+.variable-toggle.active{
+  color:#fff;                 /* texto blanco cuando esté activa */
+}
+
+/* Contenedor de gráficas en cuadrícula compacta */
+.charts-grid{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:16px;
+}
+.chart-card{
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:14px;
+  padding:10px;
+  box-shadow:0 6px 18px rgba(0,0,0,.06);
+  animation:fadeInUp .5s ease;
+}
+.chart-card canvas{
+  height:300px !important;    /* reduce altura */
+  max-height:300px;
+}
+@keyframes fadeInUp{
+  from{opacity:0; transform:translateY(8px)}
+  to{opacity:1; transform:translateY(0)}
+}

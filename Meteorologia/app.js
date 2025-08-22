@@ -1144,6 +1144,58 @@ function downloadFileCSV() {
   document.body.removeChild(downloadLink);
 }
 
+// Function to update the historical chart based on selected variables
+function updateHistoricalChart() {
+  if (!currentHistData) return;
+  
+  const tipoSeleccionado = $("#hist-tipo-select").val();
+  if (tipoSeleccionado === 'meteo') {
+    createMeteoHistoricalChart(currentHistData);
+  } else {
+    createChemHistoricalChart(currentHistData);
+  }
+  
+  // Update stats table
+  updateStatsTable(tipoSeleccionado);
+}
+
+// Function to update the stats table
+function updateStatsTable(tipo) {
+  if (!currentHistData) return;
+  
+  const tbody = document.getElementById('histStatsTable');
+  tbody.innerHTML = '';
+  
+  const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  
+  selectedVariables.forEach(key => {
+    if (currentHistData[key] && variables[key]) {
+      const values = currentHistData[key];
+      const stats = calculateStats(values);
+      const { label, unit, icon } = variables[key];
+      
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><span style="margin-right: 8px">${icon}</span>${label}</td>
+        <td>${stats.avg.toFixed(2)}</td>
+        <td>${stats.max.toFixed(2)}</td>
+        <td>${stats.min.toFixed(2)}</td>
+        <td>${unit}</td>
+      `;
+      tbody.appendChild(row);
+    }
+  });
+}
+
+// Event handler for tipo-select changes
+$("#hist-tipo-select").on('change', function() {
+  const tipo = $(this).val();
+  createVariableToggles(tipo);
+  if (currentHistData) {
+    tipo === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
+  }
+});
+
 //-------------------------------------------------------------------------------
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   var canva = document.createElement("canvas");
@@ -1546,7 +1598,9 @@ async function createHistoricalView(jsonPath, container, tipo) {
     }
     
     const data = await response.json();
-    
+    const firstKey = Object.keys(data).find(k => Array.isArray(data[k]));
+    const len = firstKey ? data[firstKey].length : 0;
+    currentHistLabels = len ? buildTimeLabelsFromPath(jsonPath, len) : null;
     // Crear contenedor para gráficas y tabla
     const wrapper = document.createElement('div');
     wrapper.className = 'historical-wrapper';
@@ -1558,7 +1612,7 @@ async function createHistoricalView(jsonPath, container, tipo) {
               <h4 class="card-title">${tipo === 'meteo' ? 'Variables Meteorológicas' : 'Calidad del Aire'}</h4>
             </div>
             <div class="card-body">
-              <canvas id="mainHistChart" height="300"></canvas>
+              <div id="chartsHost" class="charts-grid"></div>
             </div>
           </div>
         </div>
@@ -1611,142 +1665,242 @@ async function createHistoricalView(jsonPath, container, tipo) {
   }
 }
 
-function createMeteoHistoricalChart(data) {
-  const ctx = document.getElementById('mainHistChart').getContext('2d');
-  const datasets = [];
+// Variable definitions
+const meteorologicalVariables = {
+  t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: '🌡️' },
+  rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
+  psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
+  wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
+  pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
+  sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
+};
 
-  // Usar las mismas claves que en set_chart_meteo
-  const variables = {
-    t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C' },
-    rh: { label: 'Humedad', color: '#36A2EB', unit: '%' },
-    psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa' },
-    wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h' },
-    pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm' },
-    sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²' }
+const airQualityVariables = {
+  CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
+  NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
+  SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
+  PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
+  PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
+};
+
+let currentHistChart = null;
+let currentHistData = null;
+let selectedVariables = new Set();
+
+let currentHistCharts = []; // múltiples instancias Chart.js
+
+function destroyHistCharts(){
+  if (currentHistCharts && currentHistCharts.length){
+    currentHistCharts.forEach(ch => { try { ch.destroy(); } catch(e){} });
+  }
+  currentHistCharts = [];
+}
+
+// Agrupa datasets para que el rango por gráfico sea ≤ threshold
+function groupDatasetsByRange(datasets, threshold = 30){
+  const groups = [];
+  const fits = (grp, ds) => {
+    const all = grp.concat([ds]).flatMap(d => d.data).filter(v => Number.isFinite(v));
+    const min = Math.min(...all), max = Math.max(...all); // <-- FIX: ...all
+    return (max - min) <= threshold;
   };
+  datasets.forEach(ds => {
+    let placed = false;
+    for (const g of groups){
+      if (fits(g, ds)){ g.push(ds); placed = true; break; }
+    }
+    if (!placed) groups.push([ds]);
+  });
+  return groups;
+}
 
-  // Crear datasets para cada variable
+function renderGroupedCharts(groups, labels, titlePrefix){
+  const host = document.getElementById('chartsHost');
+  if (!host) return;
+  host.innerHTML = ''; // limpiar
+  destroyHistCharts();
+
+  groups.forEach((grp, idx) => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    const cv = document.createElement('canvas');
+    card.appendChild(cv);
+    host.appendChild(card);
+
+    const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
+const gmin = Math.min(...allY), gmax = Math.max(...allY);
+const range = Math.max(1e-9, gmax - gmin);
+const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
+
+// paso “bonito” (1–2–5 * 10^n) para ~5–6 ticks
+const niceStep = (() => {
+  const target = range / 5;
+  const pow10 = Math.pow(10, Math.floor(Math.log10(target)));
+  const cand = [1, 2, 5].map(m => m * pow10);
+  return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
+})();
+
+const chart = new Chart(cv.getContext('2d'), {
+  type: 'line',
+  data: { labels, datasets: grp },
+  options: {
+    responsive: true,
+    animation: { duration: 650, easing: 'easeInOutQuart' },
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { padding: 10, usePointStyle: true, font: { size: 12, family: "'Poppins', sans-serif" } }
+      },
+      title: {
+        display: true,
+        text: titlePrefix,
+        font: { size: 15, weight: 'bold', family: "'Poppins', sans-serif" }
+      },
+      tooltip: {
+        mode: 'index', intersect: false,
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        titleColor: '#222', bodyColor: '#333',
+        borderColor: '#e8e8e8', borderWidth: 1, padding: 10, boxPadding: 6,
+        callbacks: { label: c => ` ${c.dataset.label}: ${(+c.parsed.y).toFixed(2)}` }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        suggestedMin: gmin - pad,
+        suggestedMax: gmax + pad,
+        ticks: {
+          stepSize: niceStep,
+          maxTicksLimit: 6,
+          padding: 6,
+          callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : v)
+        },
+        grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+      },
+      x: {
+        ticks: { autoSkip: true, maxRotation: 0, minRotation: 0, autoSkipPadding: 12 },
+        grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+      }
+    },
+    elements: { point: { radius: 2, hoverRadius: 5 } },
+    interaction: { intersect:false, mode:'index' }
+  }
+});
+
+    currentHistCharts.push(chart);
+  });
+}
+
+
+// Function to create variable toggles
+function createVariableToggles(type) {
+  const container = document.getElementById('variable-toggles');
+  container.innerHTML = ''; // Clear existing toggles
+  selectedVariables.clear(); // Reset selected variables
+  
+  const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  
   Object.entries(variables).forEach(([key, config]) => {
-    if (data[key] && Array.isArray(data[key])) {
+    const toggle = document.createElement('div');
+    toggle.className = 'variable-toggle active';
+    toggle.dataset.variable = key;
+    toggle.innerHTML = `
+      <div class="icon">${config.icon}</div>
+      <div class="label">${config.label}</div>
+    `;
+    
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      if (toggle.classList.contains('active')) {
+        selectedVariables.add(key);
+      } else {
+        selectedVariables.delete(key);
+      }
+      updateHistoricalChart();
+    });
+    
+    container.appendChild(toggle);
+    selectedVariables.add(key); // Initially select all variables
+  });
+}
+
+function createMeteoHistoricalChart(data) {
+  currentHistData = data;
+
+  // Construir datasets SOLO de variables seleccionadas
+  const datasets = [];
+  Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
+    if (selectedVariables.has(key) && Array.isArray(data[key])) {
       datasets.push({
-        label: `${config.label} (${config.unit})`,
+        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
         data: data[key],
-        borderColor: config.color,
-        backgroundColor: `${config.color}20`,
+        borderColor: cfg.color,
+        backgroundColor: `${cfg.color}20`,
         borderWidth: 2,
-        tension: 0.4,
-        fill: true
+        tension: 0.35,
+        fill: false
       });
     }
   });
 
-  if (datasets.length === 0) {
-    console.error('No se encontraron datos válidos');
-    return;
-  }
+  if (!datasets.length) return;
 
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`),
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Tendencias de Variables Meteorológicas'
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          ticks: {
-            callback: function(value) {
-              return value.toFixed(1);
-            }
-          }
-        }
-      }
-    }
-    });
+const labels = (currentHistLabels && currentHistLabels.length === datasets[0].data.length)
+  ? currentHistLabels
+  : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
+
+
+  const groups = groupDatasetsByRange(datasets, 30);
+
+
+  renderGroupedCharts(groups, labels, 'Tendencias de Variables Meteorológicas');
+}
+let currentHistLabels = null;
+
+// Construye etiquetas de tiempo a partir del path del JSON usando setLabel()
+function buildTimeLabelsFromPath(jsonPath, length){
+  const labels = [];
+  let hs = 0;
+  for (let i = 0; i < length; i++){
+    hs += 3; // tus datos están cada 3 h
+    labels.push(setLabel(jsonPath, hs)); // usa tu setLabel existente
+  }
+  return labels;
 }
 
 function createChemHistoricalChart(data) {
-  const ctx = document.getElementById('mainHistChart').getContext('2d');
+  currentHistData = data;
+
   const datasets = [];
-
-  // Usar las mismas claves que en set_chart_chem
-  const variables = {
-    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb' },
-    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb' },
-    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb' },
-    PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³' },
-    PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³' }
-  };
-
-  Object.entries(variables).forEach(([key, config]) => {
-    if (data[key] && Array.isArray(data[key])) {
+  Object.entries(airQualityVariables).forEach(([key, cfg]) => {
+    if (selectedVariables.has(key) && Array.isArray(data[key])) {
       datasets.push({
-        label: `${config.label} (${config.unit})`,
+        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
         data: data[key],
-        borderColor: config.color,
-        backgroundColor: `${config.color}20`,
+        borderColor: cfg.color,
+        backgroundColor: `${cfg.color}20`,
         borderWidth: 2,
-        tension: 0.4,
-        fill: true
+        tension: 0.35,
+        fill: false
       });
     }
   });
 
-  if (datasets.length === 0) {
-    console.error('No se encontraron datos válidos');
-    return;
-  }
+  if (!datasets.length) return;
 
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`),
-      datasets: datasets
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'top',
-        },
-        title: {
-          display: true,
-          text: 'Tendencias de Calidad del Aire'
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return value.toFixed(2);
-            }
-          }
-        }
-      }
-    }
-    });
+  const labels = (currentHistLabels && currentHistLabels.length === datasets[0].data.length)
+  ? currentHistLabels
+  : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
+
+
+  const groups = groupDatasetsByRange(datasets, 30);
+
+  renderGroupedCharts(groups, labels, 'Tendencias de Calidad del Aire');
 }
+
+
 
 function createMeteoHistoricalTable(data) {
   const tbody = document.getElementById('histStatsTable');
