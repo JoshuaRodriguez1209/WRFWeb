@@ -369,11 +369,13 @@
             align-items: center;
         }
 
+        /* --- And replace it with this --- */
         .modal-content {
             background: white;
             border-radius: 15px;
             padding: 25px;
-            max-width: 600px;
+            width: 90%; /* Add this for flexibility */
+            max-width: 900px; /* Increase this value */
             max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -544,9 +546,32 @@
             }
 
             .modal-content {
-                margin: 20px;
-                max-width: calc(100% - 40px);
-                max-height: calc(100% - 40px);
+                margin: 10px;
+                max-width: calc(100% - 20px);
+                width: calc(100% - 20px);
+                max-height: calc(100% - 20px);
+                padding: 20px;
+            }
+
+            .pollutant-summary {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            .chart-container {
+                height: 250px;
+                padding: 10px;
+            }
+
+            .modal-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .download-btn {
+                align-self: flex-end;
+                margin-top: 10px;
             }
         }
     </style>
@@ -596,7 +621,7 @@
           Pronóstico meteorológico y de calidad del aire para el Estado de Puebla
         </h1>
         <p class="banner-subtitle">
-          En esta página encontrarás datos sobre la calidad del aire y el pronóstico del clima obtneidos a tráves del modelo WRF.
+          En esta página encontrarás datos sobre la calidad del aire y el pronóstico del clima obtenidos a través del modelo WRF.
         </p>
       </div>
     </section>
@@ -608,7 +633,7 @@
           <a href="#" class="card-link" onclick="activateMap('meteorologia'); return false;">
             <div class="card-img" style="background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');">
               <div class="card-text">
-                <h3>Metereología</h3>
+                <h3>Meteorología</h3>
               </div>
             </div>
           </a>
@@ -819,274 +844,254 @@
     </div>
 
     <script>
-        // Function to toggle mobile menu
-        function toggleMenu() {
-            const navLinks = document.getElementById('nav-links');
-            navLinks.classList.toggle('active');
-        }
+        // Global variables for storing JSON data
+        let municipalitiesData = null;
+        let stationsData = null;
+        let mapInitialized = false;
+        let mapIsReady = false; // <-- Add this line
+        const initialCenter = [-98.2063, 19.0414];
+        const initialZoom = 8.5;
+        let colorFilter = null;
+        let activeLayer = null;
+        let animationInterval = null;
+        let isPlaying = false;
+        let currentTimeStep = 0;
+// MODIFICATION: Added a new global variable for your custom boundary data
+        let pueblaBoundaryData = null; 
+        let pueblaSimpleBoundaryData = null; // <-- Add this line
 
-        // Function to activate map view
-        function activateMap(type) {
-            document.body.classList.add('map-active');
-            initializeMap();
-            
-            // Automatically select appropriate layers based on type
-            if (type === 'meteorologia') {
-                setTimeout(() => {
-                    const tempBtn = document.querySelector('[data-layer="temperature"]');
-                    if (tempBtn) tempBtn.click();
-                }, 500);
-            } else if (type === 'calidad') {
-                setTimeout(() => {
-                    const pm25Btn = document.querySelector('[data-layer="pm25"]');
-                    if (pm25Btn) pm25Btn.click();
-                }, 500);
+        // Load JSON data
+        // REPLACE this function
+        async function loadJSONData() {
+            try {
+                // MODIFICATION: Added your 'puebla_state_boundary.json' to the files being fetched
+                const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
+                    fetch('./cabeceras.json'),
+                    fetch('./estaciones.json'),
+                    fetch('./puebla_coordinates.json'),
+                    fetch('./puebla_state_boundary.json') // <-- Add this line for your new file
+                ]);
+                
+                municipalitiesData = await municipalitiesResponse.json();
+                stationsData = await stationsResponse.json();
+                pueblaBoundaryData = await pueblaResponse.json(); 
+                pueblaSimpleBoundaryData = await pueblaStateResponse.json(); // <-- Store the new data
+                
+                console.log('JSON data loaded successfully');
+                return true;
+            } catch (error) {
+                console.error('Error loading JSON data:', error);
+                showNotification('Error cargando datos de municipios', 'error');
+                return false;
             }
         }
 
-        // Map initialization
-        let mapInitialized = false;
-        let map = null;
-        const initialCenter = [-98.2063, 19.0414]; // Puebla center
-        const initialZoom = 8.5;
-        let colorFilter = null;
-
-        function initializeMap() {
-            if (mapInitialized) return;
+        // Enhanced function to add realistic air quality data to municipalities
+        function enrichMunicipalityData(municipality) {
+            const coords = municipality.geometry.coordinates;
+            const lng = coords[0];
+            const lat = coords[1];
             
-            showLoadingIndicator();
+            let baseMultiplier = 1;
             
-            mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
+            const majorCities = ['Heroica Puebla de Zaragoza', 'TehuacÃ¡n', 'Atlixco', 'San MartÃ­n Texmelucan de Labastida'];
+            if (majorCities.some(city => municipality.properties.nombre.includes(city.split(' ')[0]))) {
+                baseMultiplier = 2.5;
+            }
             
-            map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/dark-v11',
-                center: initialCenter,
-                zoom: initialZoom,
-                pitch: 45,
-                bearing: 0,
-                maxBounds: [[-99.5, 17.5], [-96.5, 20.5]]
-            });
+            const distanceFromCenter = Math.sqrt(Math.pow(lat - 19.04, 2) + Math.pow(lng + 98.2, 2));
+            const urbanEffect = Math.max(0.5, 2 - distanceFromCenter * 2);
             
-            map.on('load', () => {
-                // Add terrain
-                map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
-                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
-                
-                // Add sky layer
-                map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
-                
-                // Add accurate Puebla state boundary
-                addAccuratePueblaStateBoundary();
-                
-                // Add municipalities
-                addPueblaMunicipalities();
-                
-                hideLoadingIndicator();
-            });
+            const randomFactor = 0.8 + Math.random() * 0.4;
+            const multiplier = baseMultiplier * urbanEffect * randomFactor;
             
-            map.on('error', () => {
-                hideLoadingIndicator();
-                console.error('Error loading map');
-            });
-            
-            mapInitialized = true;
-        }
-
-        // More accurate Puebla state boundary coordinates
-        function getAccuratePueblaStateBoundary() {
             return {
-                "type": "FeatureCollection",
-                "features": [{
-                    "type": "Feature",
-                    "properties": { "name": "Puebla" },
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[
-                            [-99.053, 17.612], [-98.912, 17.598], [-98.756, 17.634], [-98.621, 17.689],
-                            [-98.507, 17.754], [-98.398, 17.821], [-98.293, 17.897], [-98.176, 17.984],
-                            [-98.045, 18.087], [-97.923, 18.198], [-97.801, 18.321], [-97.689, 18.456],
-                            [-97.598, 18.602], [-97.532, 18.758], [-97.487, 18.921], [-97.456, 19.089],
-                            [-97.443, 19.264], [-97.445, 19.441], [-97.462, 19.618], [-97.495, 19.793],
-                            [-97.543, 19.965], [-97.607, 20.133], [-97.687, 20.295], [-97.782, 20.449],
-                            [-97.891, 20.593], [-98.015, 20.726], [-98.153, 20.848], [-98.305, 20.957],
-                            [-98.471, 21.053], [-98.649, 21.135], [-98.839, 21.203], [-99.041, 21.256],
-                            [-99.104, 20.8], [-99.134, 20.3], [-99.145, 19.8], [-99.134, 19.3],
-                            [-99.104, 18.8], [-99.041, 18.3], [-98.939, 17.9], [-99.053, 17.612]
-                        ]]
-                    }
-                }]
+                ...municipality.properties,
+                population: estimatePopulation(municipality.properties.nombre),
+                airQuality: {
+                    co: Math.round((0.5 + Math.random() * 2) * multiplier * 10) / 10,
+                    no2: Math.round((0.1 + Math.random() * 0.8) * multiplier * 10) / 10,
+                    o3: Math.round((5 + Math.random() * 15) * multiplier * 10) / 10,
+                    so2: Math.round(Math.random() * 0.3 * multiplier * 10) / 10,
+                    pm10: Math.round((0.05 + Math.random() * 0.4) * multiplier * 100) / 100,
+                    pm25: Math.round((0.02 + Math.random() * 0.2) * multiplier * 100) / 100
+                }
             };
         }
 
-        // Sample municipalities of Puebla with enhanced data
-        function getPueblaMunicipalities() {
-            return {
-                "type": "FeatureCollection",
-                "features": [
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Puebla de Zaragoza", 
-                            "population": 1576259,
-                            "airQuality": {
-                                "co": 2.6, "no2": 0.5, "o3": 14.7, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.2063, 19.0414] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Tehuacán", 
-                            "population": 274906,
-                            "airQuality": {
-                                "co": 1.8, "no2": 0.3, "o3": 12.1, "so2": 0.0, "pm10": 0.2, "pm25": 0.1
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-97.3953, 18.4622] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Atlixco", 
-                            "population": 127062,
-                            "airQuality": {
-                                "co": 1.2, "no2": 0.2, "o3": 10.5, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.4307, 18.9117] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "San Martín Texmelucan", 
-                            "population": 141112,
-                            "airQuality": {
-                                "co": 2.1, "no2": 0.4, "o3": 13.2, "so2": 0.0, "pm10": 0.2, "pm25": 0.1
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.4342, 19.2806] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Cholula", 
-                            "population": 120459,
-                            "airQuality": {
-                                "co": 1.9, "no2": 0.3, "o3": 11.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.3019, 19.0631] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Amozoc", 
-                            "population": 98744,
-                            "airQuality": {
-                                "co": 1.5, "no2": 0.2, "o3": 9.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-97.9764, 19.0364] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Cuautlancingo", 
-                            "population": 82197,
-                            "airQuality": {
-                                "co": 1.4, "no2": 0.2, "o3": 9.2, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.1667, 19.0667] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Zacatlán", 
-                            "population": 76296,
-                            "airQuality": {
-                                "co": 0.8, "no2": 0.1, "o3": 7.5, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-97.9578, 19.9311] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Huauchinango", 
-                            "population": 59375,
-                            "airQuality": {
-                                "co": 0.9, "no2": 0.1, "o3": 8.1, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.0556, 20.1747] }
-                    },
-                    {
-                        "type": "Feature",
-                        "properties": { 
-                            "name": "Izúcar de Matamoros", 
-                            "population": 69413,
-                            "airQuality": {
-                                "co": 1.1, "no2": 0.2, "o3": 8.8, "so2": 0.0, "pm10": 0.1, "pm25": 0.0
-                            }
-                        },
-                        "geometry": { "type": "Point", "coordinates": [-98.4667, 18.6] }
-                    }
-                ]
+        // Estimate population based on city name and type
+        function estimatePopulation(cityName) {
+            const majorCities = {
+                'Heroica Puebla de Zaragoza': 1576259,
+                'TehuacÃ¡n': 274906,
+                'Atlixco': 127062,
+                'San MartÃ­n Texmelucan de Labastida': 141112
             };
+            
+            for (const [name, pop] of Object.entries(majorCities)) {
+                if (cityName.includes(name.split(' ')[0])) {
+                    return pop;
+                }
+            }
+            
+            if (cityName.includes('Ciudad de')) {
+                return 50000 + Math.random() * 100000;
+            } else if (cityName.includes('San ') || cityName.includes('Santa ')) {
+                return 20000 + Math.random() * 60000;
+            } else {
+                return 10000 + Math.random() * 40000;
+            }
         }
 
-        function addAccuratePueblaStateBoundary() {
-            map.addSource('puebla-boundary', {
-                type: 'geojson',
-                data: getAccuratePueblaStateBoundary()
-            });
 
-            // Add fill layer with subtle pattern
-            map.addLayer({
-                id: 'puebla-fill',
-                type: 'fill',
-                source: 'puebla-boundary',
-                paint: {
-                    'fill-color': 'rgba(90, 27, 48, 0.08)',
-                    'fill-opacity': 0.6
-                }
-            });
 
-            // Add border layer with glow effect
-            map.addLayer({
-                id: 'puebla-border-glow',
-                type: 'line',
-                source: 'puebla-boundary',
-                paint: {
-                    'line-color': '#c19862',
-                    'line-width': 6,
-                    'line-opacity': 0.4,
-                    'line-blur': 4
-                }
-            });
-
-            map.addLayer({
-                id: 'puebla-border',
-                type: 'line',
-                source: 'puebla-boundary',
-                paint: {
-                    'line-color': '#5a1b30',
-                    'line-width': 2,
-                    'line-opacity': 0.9
-                }
-            });
+// REPLACE this function to use your new file
+function getSimplifiedPueblaStateBoundary() {
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": pueblaSimpleBoundaryData // Use the data loaded from your new file
         }
+    };
+}
 
+// More accurate Puebla state boundary coordinates
+// NEW, CORRECTED FUNCTION
+function getAccuratePueblaStateBoundary() {
+    // This adds the extra layer of nesting required for a valid GeoJSON MultiPolygon
+    const validMultiPolygonCoords = pueblaBoundaryData.map(linearRing => [linearRing]);
+
+    return {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "properties": { "name": "Puebla" },
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": validMultiPolygonCoords // Use the new, correctly formatted data
+            }
+        }]
+    };
+}
+        // Add this new helper function
+// UPDATED FUNCTION
+function getPueblaBoundingBox() {
+    // Using the simple boundary is much faster for this.
+    const coords = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
+    
+    let minLng = coords[0][0], maxLng = coords[0][0];
+    let minLat = coords[0][1], maxLat = coords[0][1];
+
+    for (const coord of coords) {
+        if (coord[0] < minLng) minLng = coord[0];
+        if (coord[0] > maxLng) maxLng = coord[0];
+        if (coord[1] < minLat) minLat = coord[1];
+        if (coord[1] > maxLat) maxLat = coord[1];
+    }
+    
+    return [[minLng - 0.1, minLat - 0.1], [maxLng + 0.1, maxLat + 0.1]];
+}
+
+
+// UPDATED FUNCTION
+function addMapMask() {
+    // This now uses the simple boundary, which will work correctly.
+    const pueblaBoundary = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
+    const worldWithPueblaHole = [
+        [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]],
+        pueblaBoundary
+    ];
+
+    map.addSource('puebla-mask', {
+        'type': 'geojson',
+        'data': {
+            'type': 'Feature',
+            'geometry': {
+                'type': 'Polygon',
+                'coordinates': worldWithPueblaHole
+            }
+        }
+    });
+
+    map.addLayer({
+        'id': 'puebla-mask-layer',
+        'type': 'fill',
+        'source': 'puebla-mask',
+        'layout': {},
+        'paint': {
+            'fill-color': '#000',
+            'fill-opacity': 0.7 
+        }
+    });
+}
+
+// UPDATED FUNCTION
+function addAccuratePueblaStateBoundary() {
+    // SOURCE 1: The detailed MultiPolygon for the borders (your original file)
+    map.addSource('puebla-municipalities-boundary', {
+        type: 'geojson',
+        data: {
+            type: 'Feature',
+            geometry: {
+                type: 'MultiPolygon',
+                coordinates: pueblaBoundaryData.map(ring => [ring])
+            }
+        }
+    });
+
+    // SOURCE 2: The simple Polygon for the fast-rendering fill
+    map.addSource('puebla-simple-boundary', {
+        type: 'geojson',
+        data: getSimplifiedPueblaStateBoundary()
+    });
+    
+    // LAYER 1: The transparent fill based on the SIMPLE source
+    map.addLayer({
+        id: 'puebla-fill',
+        type: 'fill',
+        source: 'puebla-simple-boundary', // Use simple source
+        paint: {
+            'fill-color': 'rgba(90, 27, 48, 0.08)',
+            'fill-opacity': 1 // Opacity can be 1 since color has alpha
+        }
+    });
+
+    // LAYER 2: The border lines based on the DETAILED source
+    map.addLayer({
+        id: 'puebla-border',
+        type: 'line',
+        source: 'puebla-municipalities-boundary', // Use detailed source
+        paint: {
+            'line-color': '#FFFFFF',
+            'line-width': 1.5, // Made it slightly thinner
+            'line-opacity': 0.6
+        }
+    });
+}
+
+        // Updated function to add municipalities from JSON
         function addPueblaMunicipalities() {
+            if (!municipalitiesData) {
+                console.error('Municipality data not loaded');
+                return;
+            }
+
+            const enrichedFeatures = municipalitiesData.features.map(feature => ({
+                ...feature,
+                properties: enrichMunicipalityData(feature)
+            }));
+
+            const enrichedData = {
+                ...municipalitiesData,
+                features: enrichedFeatures
+            };
+
             map.addSource('puebla-municipalities', {
                 type: 'geojson',
-                data: getPueblaMunicipalities()
+                data: enrichedData
             });
 
-            // Add municipality points with enhanced styling
             map.addLayer({
                 id: 'municipality-points',
                 type: 'circle',
@@ -1096,32 +1101,35 @@
                         'interpolate',
                         ['linear'],
                         ['get', 'population'],
-                        50000, 6,
-                        500000, 12,
-                        1500000, 18
+                        10000, 4,
+                        50000, 8,
+                        100000, 12,
+                        500000, 16,
+                        1500000, 20
                     ],
-                    'circle-color': '#c19862',
-                    'circle-stroke-color': '#5a1b30',
-                    'circle-stroke-width': 3,
-                    'circle-opacity': 0.9
+                    'circle-color': '#c19862', // Use fixed color instead of complex expression
+                    'circle-stroke-color': '#ffffff',
+                    'circle-stroke-width': 2,
+                    'circle-opacity': 0.8
                 }
             });
 
-            // Add municipality labels with better styling
             map.addLayer({
                 id: 'municipality-labels',
                 type: 'symbol',
                 source: 'puebla-municipalities',
                 layout: {
-                    'text-field': ['get', 'name'],
+                    'text-field': ['get', 'nombre'],
                     'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
                     'text-size': [
                         'interpolate',
                         ['linear'],
                         ['get', 'population'],
-                        50000, 11,
-                        500000, 14,
-                        1500000, 16
+                        10000, 10,
+                        50000, 12,
+                        100000, 14,
+                        500000, 16,
+                        1500000, 18
                     ],
                     'text-offset': [0, 2.5],
                     'text-anchor': 'top'
@@ -1133,13 +1141,13 @@
                 }
             });
 
-            // Enhanced click interaction - Show municipality data modal
             map.on('click', 'municipality-points', (e) => {
+                console.log('Municipality clicked:', e.features[0]); // Debug log
                 const properties = e.features[0].properties;
+                console.log('Properties:', properties); // Debug log
                 showMunicipalityModal(properties);
             });
 
-            // Enhanced hover effects
             map.on('mouseenter', 'municipality-points', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
@@ -1149,84 +1157,195 @@
             });
         }
 
-        // Municipality Modal Functions
+        // Add monitoring stations from JSON
+        function addMonitoringStations() {
+            if (!stationsData) {
+                console.error('Stations data not loaded');
+                return;
+            }
+
+            map.addSource('monitoring-stations', {
+                type: 'geojson',
+                data: stationsData
+            });
+
+            map.addLayer({
+                id: 'station-points',
+                type: 'circle',
+                source: 'monitoring-stations',
+                paint: {
+                    'circle-radius': 8,
+                    'circle-color': '#5a1b30',
+                    'circle-stroke-color': '#c19862',
+                    'circle-stroke-width': 3,
+                    'circle-opacity': 0.9
+                }
+            });
+
+            map.addLayer({
+                id: 'station-labels',
+                type: 'symbol',
+                source: 'monitoring-stations',
+                layout: {
+                    'text-field': ['get', 'nombre'],
+                    'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                    'text-size': 12,
+                    'text-offset': [0, -2.5],
+                    'text-anchor': 'bottom'
+                },
+                paint: {
+                    'text-color': '#5a1b30',
+                    'text-halo-color': '#ffffff',
+                    'text-halo-width': 2
+                }
+            });
+
+            map.on('click', 'station-points', (e) => {
+                const properties = e.features[0].properties;
+                showStationModal(properties);
+            });
+        }
+
+        // Show station modal
+        function showStationModal(properties) {
+            showNotification(`Estación: ${properties.nombre} (${properties.clave})`, 'info');
+        }
+
+        // Enhanced municipality modal with real data structure
         function showMunicipalityModal(properties) {
             const modal = document.getElementById('municipalityModal');
             const title = document.getElementById('modalTitle');
             const summary = document.getElementById('pollutantSummary');
             
-            title.textContent = properties.name;
+            const airQuality = typeof properties.airQuality === 'string' 
+                ? JSON.parse(properties.airQuality) 
+                : properties.airQuality;
             
-            // Clear previous data
+            title.textContent = properties.nombre;
             summary.innerHTML = '';
             
-            // Add pollutant data
-            const airQuality = properties.airQuality;
             const pollutants = [
-                { key: 'co', name: 'Monóxido de Carbono (ppm)', color: '#8B4513', value: airQuality.co },
-                { key: 'no2', name: 'Dióxido de Nitrógeno (ppb)', color: '#6A5ACD', value: airQuality.no2 },
-                { key: 'o3', name: 'Ozono (ppb)', color: '#32CD32', value: airQuality.o3 },
-                { key: 'so2', name: 'Dióxido de Azufre (ppb)', color: '#4169E1', value: airQuality.so2 },
-                { key: 'pm10', name: 'PM 10 (μg/m³)', color: '#2F4F4F', value: airQuality.pm10 },
-                { key: 'pm25', name: 'PM 2.5 (μg/m³)', color: '#556B2F', value: airQuality.pm25 }
+                { 
+                    key: 'co', 
+                    name: 'Monóxido de Carbono', 
+                    unit: 'ppm',
+                    color: '#8B4513', 
+                    value: airQuality.co,
+                    threshold: { good: 1, moderate: 2, bad: 3 }
+                },
+                { 
+                    key: 'no2', 
+                    name: 'Dióxido de Nitrógeno', 
+                    unit: 'ppb',
+                    color: '#6A5ACD', 
+                    value: airQuality.no2,
+                    threshold: { good: 0.3, moderate: 0.6, bad: 1.0 }
+                },
+                { 
+                    key: 'o3', 
+                    name: 'Ozono', 
+                    unit: 'ppb',
+                    color: '#32CD32', 
+                    value: airQuality.o3,
+                    threshold: { good: 8, moderate: 15, bad: 25 }
+                },
+                { 
+                    key: 'so2', 
+                    name: 'Dióxido de Azufre', 
+                    unit: 'ppb',
+                    color: '#4169E1', 
+                    value: airQuality.so2,
+                    threshold: { good: 0.1, moderate: 0.2, bad: 0.5 }
+                },
+                { 
+                    key: 'pm10', 
+                    name: 'PM 10', 
+                    unit: 'μg/m³',
+                    color: '#2F4F4F', 
+                    value: airQuality.pm10,
+                    threshold: { good: 0.15, moderate: 0.3, bad: 0.5 }
+                },
+                { 
+                    key: 'pm25', 
+                    name: 'PM 2.5', 
+                    unit: 'μg/m³',
+                    color: '#556B2F', 
+                    value: airQuality.pm25,
+                    threshold: { good: 0.1, moderate: 0.2, bad: 0.3 }
+                }
             ];
             
             pollutants.forEach(pollutant => {
                 const item = document.createElement('div');
                 item.className = 'pollutant-item';
+                
+                let qualityLevel = 'good';
+                if (pollutant.value > pollutant.threshold.bad) {
+                    qualityLevel = 'bad';
+                } else if (pollutant.value > pollutant.threshold.moderate) {
+                    qualityLevel = 'moderate';
+                }
+                
+                const qualityColors = {
+                    good: '#00b894',
+                    moderate: '#fdcb6e', 
+                    bad: '#d63031'
+                };
+                
                 item.innerHTML = `
-                    <div class="pollutant-color" style="background-color: ${pollutant.color}"></div>
+                    <div class="pollutant-color" style="background-color: ${qualityColors[qualityLevel]}"></div>
                     <div class="pollutant-info">
-                        <div class="pollutant-name">${pollutant.name}</div>
+                        <div class="pollutant-name">${pollutant.name} (${pollutant.unit})</div>
                         <div class="pollutant-value">${pollutant.value}</div>
                     </div>
                 `;
                 summary.appendChild(item);
             });
             
-            // Create chart
-            createPollutantChart(pollutants, properties.name);
-            
+            createEnhancedPollutantChart(pollutants, properties.nombre);
+            window.currentMunicipality = properties;
             modal.style.display = 'flex';
         }
 
-        function createPollutantChart(pollutants, cityName) {
+        // Enhanced chart creation with realistic data patterns
+        function createEnhancedPollutantChart(pollutants, cityName) {
+            // Check if Chart.js is available
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded');
+                showNotification('Error: Chart.js no está disponible', 'error');
+                return;
+            }
+
             const ctx = document.getElementById('pollutantChart').getContext('2d');
             
-            // Destroy existing chart if it exists
-            if (window.pollutantChart) {
+            // Destroy existing chart if it exists and has destroy method
+            if (window.pollutantChart && typeof window.pollutantChart.destroy === 'function') {
                 window.pollutantChart.destroy();
             }
             
-            // Generate time series data (simulated)
             const timeLabels = [];
             const datasets = [];
             
-            // Generate 24 hours of data
             for (let i = 0; i < 24; i++) {
                 const hour = i.toString().padStart(2, '0') + ':00';
                 timeLabels.push(hour);
             }
             
-            // Create dataset for each pollutant
             pollutants.forEach(pollutant => {
-                const data = [];
-                const baseValue = pollutant.value;
-                
-                for (let i = 0; i < 24; i++) {
-                    // Add some realistic variation
-                    const variation = (Math.sin(i * 0.5) + Math.random() * 0.4 - 0.2) * baseValue * 0.3;
-                    data.push(Math.max(0, baseValue + variation));
-                }
+                const data = generateRealistic24HourData(pollutant);
                 
                 datasets.push({
-                    label: pollutant.name,
+                    label: `${pollutant.name} (${pollutant.unit})`,
                     data: data,
                     borderColor: pollutant.color,
                     backgroundColor: pollutant.color + '20',
                     borderWidth: 2,
                     fill: false,
-                    tension: 0.4
+                    tension: 0.4,
+                    pointBackgroundColor: pollutant.color,
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
                 });
             });
             
@@ -1243,11 +1362,16 @@
                         title: {
                             display: true,
                             text: `Niveles de Contaminantes - ${cityName}`,
-                            font: { size: 16, weight: 'bold' }
+                            font: { size: 16, weight: 'bold' },
+                            color: '#5a1b30'
                         },
                         legend: {
                             display: true,
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15
+                            }
                         }
                     },
                     scales: {
@@ -1255,49 +1379,105 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Concentración'
+                                text: 'Concentración',
+                                color: '#666'
+                            },
+                            grid: {
+                                color: '#f0f0f0'
+                            },
+                            ticks: {
+                                color: '#666'
                             }
                         },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Hora del día'
+                                text: 'Hora del día',
+                                color: '#666'
+                            },
+                            grid: {
+                                color: '#f0f0f0'
+                            },
+                            ticks: {
+                                color: '#666'
                             }
                         }
                     },
                     interaction: {
                         intersect: false,
                         mode: 'index'
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.4
+                        }
                     }
                 }
             });
         }
 
-        // CSV Download functionality
+        // Generate realistic 24-hour pollution data patterns
+        function generateRealistic24HourData(pollutant) {
+            const data = [];
+            const baseValue = pollutant.value;
+            
+            for (let hour = 0; hour < 24; hour++) {
+                let multiplier = 1;
+                
+                if (hour >= 6 && hour <= 9) {
+                    multiplier = 1.4; // Morning rush
+                } else if (hour >= 17 && hour <= 20) {
+                    multiplier = 1.3; // Evening rush
+                } else if (hour >= 22 || hour <= 5) {
+                    multiplier = 0.7; // Night time
+                }
+                
+                const variation = 0.8 + Math.random() * 0.4;
+                const noiseFactor = Math.sin(hour * 0.5) * 0.1 + 1;
+                
+                let value = baseValue * multiplier * variation * noiseFactor;
+                value = Math.max(value, baseValue * 0.3);
+                
+                if (pollutant.unit === 'ppm' || pollutant.unit === 'ppb') {
+                    value = Math.round(value * 10) / 10;
+                } else {
+                    value = Math.round(value * 100) / 100;
+                }
+                
+                data.push(value);
+            }
+            
+            return data;
+        }
+
+        // Enhanced CSV download with proper data structure
         function downloadMunicipalityCSV(properties) {
-            const airQuality = properties.airQuality;
+            const airQuality = typeof properties.airQuality === 'string' 
+                ? JSON.parse(properties.airQuality) 
+                : properties.airQuality;
+            
             const csvContent = [
-                ['Contaminante', 'Concentración', 'Unidad'],
-                ['Monóxido de Carbono', airQuality.co, 'ppm'],
-                ['Dióxido de Nitrógeno', airQuality.no2, 'ppb'],
-                ['Ozono', airQuality.o3, 'ppb'],
-                ['Dióxido de Azufre', airQuality.so2, 'ppb'],
-                ['PM 10', airQuality.pm10, 'μg/m³'],
-                ['PM 2.5', airQuality.pm25, 'μg/m³']
+                ['Municipio', 'Población', 'Contaminante', 'Concentración', 'Unidad'],
+                [properties.nombre, properties.population, 'Monóxido de Carbono', airQuality.co, 'ppm'],
+                [properties.nombre, properties.population, 'Dióxido de Nitrógeno', airQuality.no2, 'ppb'],
+                [properties.nombre, properties.population, 'Ozono', airQuality.o3, 'ppb'],
+                [properties.nombre, properties.population, 'Dióxido de Azufre', airQuality.so2, 'ppb'],
+                [properties.nombre, properties.population, 'PM 10', airQuality.pm10, 'μg/m³'],
+                [properties.nombre, properties.population, 'PM 2.5', airQuality.pm25, 'μg/m³']
             ].map(row => row.join(',')).join('\n');
             
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `calidad_aire_${properties.name.replace(/\s+/g, '_')}.csv`);
+            link.setAttribute('download', `calidad_aire_${properties.nombre.replace(/\s+/g, '_')}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // Enhanced weather layers with Apple-like styling
+        // Weather layers configuration
         const weatherLayers = {
             temperature: { 
                 name: 'Temperatura', 
@@ -1436,19 +1616,12 @@
             }
         };
 
-        let activeLayer = null;
-        let animationInterval = null;
-        let isPlaying = false;
-        let currentTimeStep = 0;
-        let timeSteps = [];
-
-        // Generate smooth, interpolated weather data for better visuals
+        // Generate smooth, interpolated weather data
         function generateSmoothWeatherData(type, timeStep = 0) {
             const data = [];
-            const gridSize = 50; // Higher density for smoother interpolation
+            const gridSize = 50;
             const range = weatherLayers[type].range;
             
-            // Puebla bounds
             const pueblaBounds = {
                 minLat: 17.6,
                 maxLat: 20.4,
@@ -1456,15 +1629,13 @@
                 maxLng: -96.9
             };
             
-            // Create weather centers for more realistic patterns
             const weatherCenters = [
-                { lat: 19.0414, lng: -98.2063, intensity: 0.8 }, // Puebla city
-                { lat: 18.4622, lng: -97.3953, intensity: 0.6 }, // Tehuacán
-                { lat: 19.9311, lng: -97.9578, intensity: 0.7 }, // Zacatlán
-                { lat: 18.9117, lng: -98.4307, intensity: 0.5 }  // Atlixco
+                { lat: 19.0414, lng: -98.2063, intensity: 0.8 },
+                { lat: 18.4622, lng: -97.3953, intensity: 0.6 },
+                { lat: 19.9311, lng: -97.9578, intensity: 0.7 },
+                { lat: 18.9117, lng: -98.4307, intensity: 0.5 }
             ];
             
-            // Time-based variation
             const timeVariation = Math.sin(timeStep * 0.2) * 0.3;
             
             for (let i = 0; i < gridSize; i++) {
@@ -1476,9 +1647,8 @@
                         let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
                         value = Math.max(range[0], Math.min(range[1], value));
                         
-                        // Apply color filter if active
                         if (colorFilter && !isValueInColorFilter(value, range)) {
-                            continue; // Skip this point if it doesn't match the filter
+                            continue;
                         }
                         
                         data.push({
@@ -1487,7 +1657,7 @@
                             properties: { 
                                 value: value, 
                                 intensity: (value - range[0]) / (range[1] - range[0]),
-                                weight: Math.random() * 0.5 + 0.5 // Random weight for variation
+                                weight: Math.random() * 0.5 + 0.5
                             }
                         });
                     }
@@ -1496,34 +1666,28 @@
             return { type: 'FeatureCollection', features: data };
         }
 
-        // Check if a value matches the current color filter
         function isValueInColorFilter(value, range) {
             if (!colorFilter) return true;
-            
             const normalizedValue = (value - range[0]) / (range[1] - range[0]);
             return normalizedValue >= colorFilter.min && normalizedValue <= colorFilter.max;
         }
 
-        // Generate smoother, more realistic weather values
         function generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters) {
             const range = weatherLayers[type].range;
             let baseValue = range[0] + (range[1] - range[0]) * 0.5;
             
-            // Calculate influence from weather centers
             let centerInfluence = 0;
             weatherCenters.forEach(center => {
                 const distance = Math.sqrt(
                     Math.pow(lat - center.lat, 2) + Math.pow(lng - center.lng, 2)
                 );
-                const influence = center.intensity * Math.exp(-distance * 5); // Exponential decay
+                const influence = center.intensity * Math.exp(-distance * 5);
                 centerInfluence += influence;
             });
             
-            // Geographical effects
-            const altitudeEffect = (lat - 18.5) * 0.1; // North is higher
+            const altitudeEffect = (lat - 18.5) * 0.1;
             const coastDistance = Math.abs(lng + 97.5);
             
-            // Smooth noise using multiple octaves
             const noise1 = Math.sin(lat * 5 + lng * 4 + timeStep * 0.3) * 0.2;
             const noise2 = Math.sin(lat * 8 + lng * 6 + timeStep * 0.5) * 0.1;
             const noise3 = Math.sin(lat * 12 + lng * 10 + timeStep * 0.7) * 0.05;
@@ -1549,7 +1713,6 @@
                     baseValue = 500 + centerInfluence * 200 + timeVariation * 250 + totalNoise * 100;
                     break;
                 default:
-                    // Air quality parameters
                     baseValue = baseValue + centerInfluence * (range[1] - range[0]) * 0.4 + 
                                timeVariation * (range[1] - range[0]) * 0.25 + 
                                totalNoise * (range[1] - range[0]) * 0.15;
@@ -1558,128 +1721,75 @@
             return baseValue;
         }
 
-        // More accurate point-in-polygon check
-        function isPointInPueblaAccurate(lat, lng) {
-            // Simplified but more accurate polygon bounds
-            const pueblaSimplified = [
-                [-98.9, 17.8], [-98.5, 17.7], [-98.0, 17.8], [-97.5, 18.0],
-                [-97.2, 18.5], [-97.0, 19.0], [-97.1, 19.5], [-97.5, 20.0],
-                [-98.0, 20.2], [-98.5, 20.1], [-98.9, 19.8], [-99.0, 19.0],
-                [-98.9, 18.5], [-98.9, 17.8]
-            ];
-            
-            let inside = false;
-            for (let i = 0, j = pueblaSimplified.length - 1; i < pueblaSimplified.length; j = i++) {
-                const xi = pueblaSimplified[i][0], yi = pueblaSimplified[i][1];
-                const xj = pueblaSimplified[j][0], yj = pueblaSimplified[j][1];
-                
-                if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
-                    inside = !inside;
-                }
-            }
-            return inside;
-        }
+// Replace the old function with this one
+// NEW, CORRECTED FUNCTION
+// UPDATED FUNCTION
+function isPointInPueblaAccurate(lat, lng) {
+    // This is the biggest performance fix: check against one simple shape, not hundreds.
+    const polygonBoundary = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
+    let inside = false;
+    for (let i = 0, j = polygonBoundary.length - 1; i < polygonBoundary.length; j = i++) {
+        const xi = polygonBoundary[i][0], yi = polygonBoundary[i][1];
+        const xj = polygonBoundary[j][0], yj = polygonBoundary[j][1];
         
-        function addEnhancedWeatherLayer(type) {
-            if (!map) return;
-            
-            // Remove previous layer
-            if (activeLayer) {
-                if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
-                if (map.getLayer(activeLayer + '-points')) map.removeLayer(activeLayer + '-points');
-                if (map.getSource(activeLayer)) map.removeSource(activeLayer);
-            }
-            
-            const layerConfig = weatherLayers[type];
-            const data = generateSmoothWeatherData(type, currentTimeStep);
-            
-            map.addSource(type, { type: 'geojson', data: data });
-            
-            // Create a smoother heatmap with better interpolation
-            map.addLayer({
-                id: type,
-                type: 'heatmap',
-                source: type,
-                paint: {
-                    // Use weight property for better variation
-                    'heatmap-weight': [
-                        'interpolate',
-                        ['linear'],
-                        ['get', 'weight'],
-                        0, 0.1,
-                        1, 1
-                    ],
-                    'heatmap-intensity': [
-                        'interpolate',
-                        ['exponential', 1.5],
-                        ['zoom'],
-                        6, 0.8,
-                        10, 1.2,
-                        14, 1.8
-                    ],
-                    'heatmap-color': [
-                        'interpolate',
-                        ['linear'],
-                        ['heatmap-density'],
-                        ...layerConfig.heatmapColors
-                    ],
-                    'heatmap-radius': [
-                        'interpolate',
-                        ['exponential', 1.75],
-                        ['zoom'],
-                        6, 25,
-                        10, 45,
-                        14, 80
-                    ],
-                    'heatmap-opacity': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        6, 0.9,
-                        10, 0.8,
-                        14, 0.7
-                    ]
-                }
-            });
-
-            // Add subtle circles for detail at high zoom
-            map.addLayer({
-                id: type + '-points',
-                type: 'circle',
-                source: type,
-                minzoom: 10,
-                paint: {
-                    'circle-radius': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 2,
-                        14, 4
-                    ],
-                    'circle-color': [
-                        'interpolate',
-                        ['linear'],
-                        ['get', 'intensity'],
-                        0, layerConfig.heatmapColors[1],
-                        1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]
-                    ],
-                    'circle-opacity': [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        10, 0.3,
-                        14, 0.6
-                    ],
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#ffffff',
-                    'circle-stroke-opacity': 0.2
-                }
-            });
-            
-            activeLayer = type;
-            updateLegend(layerConfig);
-            updateDataPanel(type);
+        const intersect = ((yi > lat) !== (yj > lat))
+            && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+        if (intersect) {
+            inside = !inside;
         }
+    }
+    return inside;
+}
+        
+        // REPLACE this entire function
+function addEnhancedWeatherLayer(type) {
+    if (!map || !mapIsReady) { return; } 
+
+    if (activeLayer) {
+        if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
+        if (map.getLayer(activeLayer + '-points')) map.removeLayer(activeLayer + '-points');
+        if (map.getSource(activeLayer)) map.removeSource(activeLayer);
+    }
+    
+    const layerConfig = weatherLayers[type];
+    const data = generateSmoothWeatherData(type, currentTimeStep);
+    
+    map.addSource(type, { type: 'geojson', data: data });
+    
+    // This layer draws the main heatmap
+    map.addLayer({
+        id: type,
+        type: 'heatmap',
+        source: type,
+        paint: {
+            'heatmap-weight': ['interpolate',['linear'],['get', 'weight'],0, 0.1,1, 1],
+            'heatmap-intensity': ['interpolate',['exponential', 1.5],['zoom'],6, 0.8,10, 1.2,14, 1.8],
+            'heatmap-color': ['interpolate',['linear'],['heatmap-density'],...layerConfig.heatmapColors],
+            'heatmap-radius': ['interpolate',['exponential', 1.75],['zoom'],6, 25,10, 45,14, 80],
+            'heatmap-opacity': ['interpolate',['linear'],['zoom'],6, 0.9,10, 0.8,14, 0.7]
+        }
+    }, 'puebla-border'); // <-- THE FIX: Draw heatmap UNDER the red borders
+
+    // This layer draws the small circles when you zoom in
+    map.addLayer({
+        id: type + '-points',
+        type: 'circle',
+        source: type,
+        minzoom: 10,
+        paint: {
+            'circle-radius': ['interpolate',['linear'],['zoom'],10, 2,14, 4],
+            'circle-color': ['interpolate',['linear'],['get', 'intensity'],0, layerConfig.heatmapColors[1],1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]],
+            'circle-opacity': ['interpolate',['linear'],['zoom'],10, 0.3,14, 0.6],
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-opacity': 0.2
+        }
+    }, 'puebla-border'); // <-- ALSO FIX: Draw points UNDER the red borders
+    
+    activeLayer = type;
+    updateLegend(layerConfig);
+    updateDataPanel(type);
+}
         
         function updateLegend(config) {
             const legend = document.getElementById('legend');
@@ -1698,7 +1808,128 @@
             }
         }
 
-        // Enhanced legend click functionality for color filtering
+        function updateDataPanel(type = 'temperature') {
+            const config = weatherLayers[type] || weatherLayers.temperature;
+            const centerLat = 19.0414;
+            const centerLng = -98.2063;
+            const timeVariation = Math.sin(currentTimeStep * 0.3) * 0.3;
+            
+            const tempValue = generateRealisticValue('temperature', centerLat, centerLng, currentTimeStep, timeVariation);
+            const humidityValue = generateRealisticValue('humidity', centerLat, centerLng, currentTimeStep, timeVariation);
+            const windValue = generateRealisticValue('wind', centerLat, centerLng, currentTimeStep, timeVariation);
+            const pressureValue = generateRealisticValue('pressure', centerLat, centerLng, currentTimeStep, timeVariation);
+            
+            document.getElementById('tempValue').textContent = `${tempValue.toFixed(1)}°C`;
+            document.getElementById('humidityValue').textContent = `${Math.max(0, Math.min(100, humidityValue)).toFixed(0)}%`;
+            document.getElementById('windValue').textContent = `${Math.max(0, windValue).toFixed(1)} km/h`;
+            document.getElementById('pressureValue').textContent = `${pressureValue.toFixed(0)} hPa`;
+        }
+
+        function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
+            const range = weatherLayers[type].range;
+            const baseValue = range[0] + (range[1] - range[0]) * 0.5;
+            
+            const altitudeEffect = (lat - 18.5) * 0.1;
+            const coastDistance = Math.abs(lng + 97.5);
+            
+            const noise1 = Math.sin(lat * 10 + lng * 8 + timeStep * 0.5) * 0.3;
+            const noise2 = Math.cos(lat * 7 + lng * 12 + timeStep * 0.3) * 0.2;
+            
+            let value = baseValue;
+            
+            switch (type) {
+                case 'temperature':
+                    value = 22 + altitudeEffect * -3 + coastDistance * 2 + timeVariation * 8 + noise1 * 5;
+                    break;
+                case 'humidity':
+                    value = 60 + coastDistance * -10 + altitudeEffect * 5 + timeVariation * 20 + noise1 * 15;
+                    break;
+                case 'precipitation':
+                    value = Math.max(0, 5 + altitudeEffect * 10 + timeVariation * 30 + noise1 * 20);
+                    break;
+                case 'wind':
+                    value = 15 + coastDistance * 5 + Math.abs(timeVariation) * 20 + noise1 * 10;
+                    break;
+                case 'pressure':
+                    value = 1013 + altitudeEffect * -5 + timeVariation * 15 + noise1 * 8;
+                    break;
+                case 'radiation':
+                    value = 500 + timeVariation * 300 + noise1 * 100;
+                    break;
+                default:
+                    value = baseValue + timeVariation * (range[1] - range[0]) * 0.3 + noise1 * (range[1] - range[0]) * 0.2;
+            }
+            
+            return value;
+        }
+
+        function startAnimation() {
+            if (isPlaying || !activeLayer) return;
+            isPlaying = true;
+            document.getElementById('playIcon').classList.replace('fa-play', 'fa-pause');
+            
+            const speed = 2100 - document.getElementById('speedSlider').value;
+            
+            animationInterval = setInterval(() => {
+                currentTimeStep += 1;
+                const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
+                if(map && map.getSource(activeLayer)) {
+                    map.getSource(activeLayer).setData(data);
+                }
+                updateDataPanel(activeLayer);
+                
+                if (map.getLayer(activeLayer)) {
+                    map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
+                    setTimeout(() => {
+                        if (map.getLayer(activeLayer)) {
+                            map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
+                        }
+                    }, 100);
+                }
+            }, speed);
+        }
+        
+        function stopAnimation() {
+            isPlaying = false;
+            document.getElementById('playIcon').classList.replace('fa-pause', 'fa-play');
+            clearInterval(animationInterval);
+            animationInterval = null;
+        }
+
+        function setupMapControls() {
+            document.getElementById('zoom-in-btn').addEventListener('click', () => {
+                if (map) map.zoomIn({ duration: 300 });
+            });
+
+            document.getElementById('zoom-out-btn').addEventListener('click', () => {
+                if (map) map.zoomOut({ duration: 300 });
+            });
+
+            document.getElementById('reset-north-btn').addEventListener('click', () => {
+                if (map) {
+                    map.easeTo({
+                        bearing: 0,
+                        pitch: 45,
+                        duration: 800,
+                        easing: (t) => t * (2 - t)
+                    });
+                }
+            });
+
+            document.getElementById('reset-position-btn').addEventListener('click', () => {
+                if (map) {
+                    map.flyTo({
+                        center: initialCenter,
+                        zoom: initialZoom,
+                        bearing: 0,
+                        pitch: 45,
+                        duration: 1500,
+                        essential: true
+                    });
+                }
+            });
+        }
+
         function setupLegendClickFilter() {
             const legendGradient = document.getElementById('legend-gradient');
             const filterIndicator = document.getElementById('filter-indicator');
@@ -1733,23 +1964,19 @@
                 const endX = e.offsetX;
                 const gradientWidth = legendGradient.offsetWidth;
                 
-                // Calculate filter range
                 const minPercent = Math.min(startX, endX) / gradientWidth;
                 const maxPercent = Math.max(startX, endX) / gradientWidth;
                 
-                // Apply filter
-                if (Math.abs(endX - startX) > 5) { // Minimum selection width
+                if (Math.abs(endX - startX) > 5) {
                     colorFilter = { min: minPercent, max: maxPercent };
                     applyColorFilter();
                 } else {
-                    // Single click - remove filter
                     colorFilter = null;
                     filterIndicator.style.display = 'none';
                     applyColorFilter();
                 }
             });
             
-            // Handle mouse leave
             legendGradient.addEventListener('mouseleave', () => {
                 if (isSelecting) {
                     isSelecting = false;
@@ -1768,432 +1995,78 @@
                 }
             }
         }
-        
-        function updateDataPanel(type = 'temperature') {
-            const config = weatherLayers[type] || weatherLayers.temperature;
-            const centerLat = 19.0414;
-            const centerLng = -98.2063;
-            const timeVariation = Math.sin(currentTimeStep * 0.3) * 0.3;
-            
-            // Generate realistic values for center point
-            const tempValue = generateRealisticValue('temperature', centerLat, centerLng, currentTimeStep, timeVariation);
-            const humidityValue = generateRealisticValue('humidity', centerLat, centerLng, currentTimeStep, timeVariation);
-            const windValue = generateRealisticValue('wind', centerLat, centerLng, currentTimeStep, timeVariation);
-            const pressureValue = generateRealisticValue('pressure', centerLat, centerLng, currentTimeStep, timeVariation);
-            
-            document.getElementById('tempValue').textContent = `${tempValue.toFixed(1)}°C`;
-            document.getElementById('humidityValue').textContent = `${Math.max(0, Math.min(100, humidityValue)).toFixed(0)}%`;
-            document.getElementById('windValue').textContent = `${Math.max(0, windValue).toFixed(1)} km/h`;
-            document.getElementById('pressureValue').textContent = `${pressureValue.toFixed(0)} hPa`;
-        }
 
-        // Generate realistic weather values based on geography
-        function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
-            const range = weatherLayers[type].range;
-            const baseValue = range[0] + (range[1] - range[0]) * 0.5;
+        // Updated map initialization to load JSON data first
+        async function initializeMap() {
+            if (mapInitialized) return;
             
-            // Altitude effect (higher altitude = cooler for temperature)
-            const altitudeEffect = (lat - 18.5) * 0.1;
+            showLoadingIndicator();
             
-            // Distance from coast effect
-            const coastDistance = Math.abs(lng + 97.5);
-            
-            // Noise for natural variation
-            const noise1 = Math.sin(lat * 10 + lng * 8 + timeStep * 0.5) * 0.3;
-            const noise2 = Math.cos(lat * 7 + lng * 12 + timeStep * 0.3) * 0.2;
-            
-            let value = baseValue;
-            
-            switch (type) {
-                case 'temperature':
-                    value = 22 + altitudeEffect * -3 + coastDistance * 2 + timeVariation * 8 + noise1 * 5;
-                    break;
-                case 'humidity':
-                    value = 60 + coastDistance * -10 + altitudeEffect * 5 + timeVariation * 20 + noise1 * 15;
-                    break;
-                case 'precipitation':
-                    value = Math.max(0, 5 + altitudeEffect * 10 + timeVariation * 30 + noise1 * 20);
-                    break;
-                case 'wind':
-                    value = 15 + coastDistance * 5 + Math.abs(timeVariation) * 20 + noise1 * 10;
-                    break;
-                case 'pressure':
-                    value = 1013 + altitudeEffect * -5 + timeVariation * 15 + noise1 * 8;
-                    break;
-                case 'radiation':
-                    value = 500 + timeVariation * 300 + noise1 * 100;
-                    break;
-                default:
-                    // Air quality parameters
-                    value = baseValue + timeVariation * (range[1] - range[0]) * 0.3 + noise1 * (range[1] - range[0]) * 0.2;
+            const dataLoaded = await loadJSONData();
+            if (!dataLoaded) {
+                hideLoadingIndicator();
+                return;
             }
             
-            return value;
-        }
-
-        // Enhanced animation system
-        function startAnimation() {
-            if (isPlaying || !activeLayer) return;
-            isPlaying = true;
-            document.getElementById('playIcon').classList.replace('fa-play', 'fa-pause');
+            mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
             
-            const speed = 2100 - document.getElementById('speedSlider').value;
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: initialCenter,
+                zoom: initialZoom,
+                pitch: 45,
+                bearing: 0,
+                // Use the new function to set the map's navigation boundaries
+                maxBounds: getPueblaBoundingBox()
+            });
             
-            animationInterval = setInterval(() => {
-                currentTimeStep += 1;
-                const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
-                if(map && map.getSource(activeLayer)) {
-                    map.getSource(activeLayer).setData(data);
-                }
-                updateDataPanel(activeLayer);
+            map.on('load', () => {
+                map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
+                map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
+                map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
                 
-                // Add subtle transition effects
-                if (map.getLayer(activeLayer)) {
-                    map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
-                    setTimeout(() => {
-                        if (map.getLayer(activeLayer)) {
-                            map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
-                        }
-                    }, 100);
-                }
-            }, speed);
-        }
-        
-        function stopAnimation() {
-            isPlaying = false;
-            document.getElementById('playIcon').classList.replace('fa-pause', 'fa-play');
-            clearInterval(animationInterval);
-            animationInterval = null;
-        }
-
-        // Enhanced map controls
-        function setupMapControls() {
-            // Zoom In
-            document.getElementById('zoom-in-btn').addEventListener('click', () => {
-                if (map) {
-                    map.zoomIn({ duration: 300 });
-                }
+                // Call the new mask function first
+                addMapMask(); 
+                // Then call the rest
+                addAccuratePueblaStateBoundary();
+                addPueblaMunicipalities();
+                addMonitoringStations();
+                
+                hideLoadingIndicator();
+                mapIsReady = true; // <-- Add this line
             });
-
-            // Zoom Out
-            document.getElementById('zoom-out-btn').addEventListener('click', () => {
-                if (map) {
-                    map.zoomOut({ duration: 300 });
-                }
+            
+            map.on('error', () => {
+                hideLoadingIndicator();
+                console.error('Error loading map');
             });
-
-            // Reset North (bearing to 0)
-            document.getElementById('reset-north-btn').addEventListener('click', () => {
-                if (map) {
-                    map.easeTo({
-                        bearing: 0,
-                        pitch: 45,
-                        duration: 800,
-                        easing: (t) => t * (2 - t) // ease-out
-                    });
-                }
-            });
-
-            // Reset to initial position
-            document.getElementById('reset-position-btn').addEventListener('click', () => {
-                if (map) {
-                    map.flyTo({
-                        center: initialCenter,
-                        zoom: initialZoom,
-                        bearing: 0,
-                        pitch: 45,
-                        duration: 1500,
-                        essential: true
-                    });
-                }
-            });
+            
+            mapInitialized = true;
         }
 
-        // Event Listeners
-        const controlsPanel = document.getElementById('weather-controls');
-
-        document.querySelectorAll('.layer-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                const layerType = this.getAttribute('data-layer');
-                currentTimeStep = 0; // Reset animation
-                colorFilter = null; // Reset color filter
-                document.getElementById('filter-indicator').style.display = 'none';
-                addEnhancedWeatherLayer(layerType);
-            });
-        });
-        
-        document.getElementById('playBtn').addEventListener('click', () => {
-            isPlaying ? stopAnimation() : startAnimation();
-        });
-        
-        document.getElementById('speedSlider').addEventListener('input', () => {
-            if (isPlaying) {
-                stopAnimation();
-                startAnimation();
-            }
-        });
-        
-        document.getElementById('toggle-controls-btn').addEventListener('click', () => {
-            controlsPanel.classList.add('is-open');
-        });
-        
-        document.getElementById('close-controls-btn').addEventListener('click', () => {
-            controlsPanel.classList.remove('is-open');
-        });
-
-        // Modal event listeners
-        document.getElementById('modalClose').addEventListener('click', () => {
-            document.getElementById('municipalityModal').style.display = 'none';
-        });
-
-        document.getElementById('glossaryClose').addEventListener('click', () => {
-            document.getElementById('glossaryModal').style.display = 'none';
-        });
-
-        document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-            // Get current municipality data and download CSV
-            const modal = document.getElementById('municipalityModal');
-            const cityName = document.getElementById('modalTitle').textContent;
-            
-            // Find the municipality data
-            const municipalities = getPueblaMunicipalities();
-            const municipality = municipalities.features.find(f => f.properties.name === cityName);
-            
-            if (municipality) {
-                downloadMunicipalityCSV(municipality.properties);
-            }
-        });
-
-        // Footer button event listeners
-        document.getElementById('btn_glosario').addEventListener('click', () => {
-            document.getElementById('glossaryModal').style.display = 'flex';
-        });
-
-        document.getElementById('btn_datos').addEventListener('click', () => {
-            // Download current layer data as CSV
-            if (activeLayer) {
-                downloadLayerData(activeLayer);
-            } else {
-                alert('Selecciona una capa primero para descargar los datos.');
-            }
-        });
-
-        document.getElementById('btn_recarga').addEventListener('click', () => {
-            // Reload current layer
-            if (activeLayer) {
-                currentTimeStep = 0;
-                colorFilter = null;
-                document.getElementById('filter-indicator').style.display = 'none';
-                addEnhancedWeatherLayer(activeLayer);
-            }
-        });
-
-        // Download layer data functionality
-        function downloadLayerData(layerType) {
-            const config = weatherLayers[layerType];
-            const data = generateSmoothWeatherData(layerType, currentTimeStep);
-            
-            const csvRows = [
-                ['Latitud', 'Longitud', config.name + ' (' + config.unit + ')']
-            ];
-            
-            data.features.forEach(feature => {
-                const coords = feature.geometry.coordinates;
-                const value = feature.properties.value;
-                csvRows.push([coords[1].toFixed(4), coords[0].toFixed(4), value.toFixed(2)]);
-            });
-            
-            const csvContent = csvRows.map(row => row.join(',')).join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `${layerType}_puebla.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function toggleMenu() {
+            const navLinks = document.getElementById('nav-links');
+            navLinks.classList.toggle('active');
         }
 
-        // Back button functionality
-        document.getElementById('btn_back').addEventListener('click', () => {
-            document.body.classList.remove('map-active');
-            // Reset any active states
-            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            stopAnimation();
-            currentTimeStep = 0;
-            colorFilter = null;
-            document.getElementById('legend').style.display = 'none';
-            document.getElementById('filter-indicator').style.display = 'none';
-            controlsPanel.classList.remove('is-open');
-        });
-
-        // Sidebar button functionality
-        document.getElementById('btn_atmos').addEventListener('click', function() {
-            if (!mapInitialized) activateMap('meteorologia');
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            setTimeout(() => {
-                const tempBtn = document.querySelector('[data-layer="temperature"]');
-                if (tempBtn) tempBtn.click();
-            }, 300);
-        });
-
-        document.getElementById('btn_aire').addEventListener('click', function() {
-            if (!mapInitialized) activateMap('calidad');
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            setTimeout(() => {
-                const pm25Btn = document.querySelector('[data-layer="pm25"]');
-                if (pm25Btn) pm25Btn.click();
-            }, 300);
-        });
-
-        document.getElementById('btn_hist').addEventListener('click', function() {
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            // Placeholder for histogram functionality
-            alert('Funcionalidad de Historial en desarrollo');
-        });
-
-        // Mobile menu buttons
-        document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            activateMap('meteorologia');
-            toggleMenu();
-        });
-
-        document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            activateMap('calidad');
-            toggleMenu();
-        });
-
-        document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            toggleMenu();
-            alert('Funcionalidad de Historial en desarrollo');
-        });
-
-        // Initialize map controls when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            setupMapControls();
-            setupLegendClickFilter();
-        });
-
-        // Enhanced keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (!document.body.classList.contains('map-active')) return;
+        function activateMap(type) {
+            document.body.classList.add('map-active');
+            initializeMap();
             
-            switch(e.key) {
-                case 'Escape':
-                    if (controlsPanel.classList.contains('is-open')) {
-                        controlsPanel.classList.remove('is-open');
-                    } else if (document.getElementById('municipalityModal').style.display === 'flex') {
-                        document.getElementById('municipalityModal').style.display = 'none';
-                    } else if (document.getElementById('glossaryModal').style.display === 'flex') {
-                        document.getElementById('glossaryModal').style.display = 'none';
-                    } else {
-                        document.getElementById('btn_back').click();
-                    }
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    document.getElementById('playBtn').click();
-                    break;
-                case 'r':
-                    document.getElementById('reset-position-btn').click();
-                    break;
-                case 'n':
-                    document.getElementById('reset-north-btn').click();
-                    break;
-                case '+':
-                case '=':
-                    document.getElementById('zoom-in-btn').click();
-                    break;
-                case '-':
-                    document.getElementById('zoom-out-btn').click();
-                    break;
-                case 'c':
-                    // Clear color filter
-                    colorFilter = null;
-                    document.getElementById('filter-indicator').style.display = 'none';
-                    applyColorFilter();
-                    break;
-                case 'g':
-                    // Open glossary
-                    document.getElementById('btn_glosario').click();
-                    break;
-                case 'd':
-                    // Download data
-                    document.getElementById('btn_datos').click();
-                    break;
+            if (type === 'meteorologia') {
+                setTimeout(() => {
+                    const tempBtn = document.querySelector('[data-layer="temperature"]');
+                    if (tempBtn) tempBtn.click();
+                }, 500);
+            } else if (type === 'calidad') {
+                setTimeout(() => {
+                    const pm25Btn = document.querySelector('[data-layer="pm25"]');
+                    if (pm25Btn) pm25Btn.click();
+                }, 500);
             }
-        });
+        }
 
-        // Enhanced touch gestures for mobile
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        document.addEventListener('touchstart', (e) => {
-            if (!document.body.classList.contains('map-active')) return;
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-        });
-
-        document.addEventListener('touchmove', (e) => {
-            if (!document.body.classList.contains('map-active')) return;
-            e.preventDefault(); // Prevent scrolling
-        }, { passive: false });
-
-        document.addEventListener('touchend', (e) => {
-            if (!document.body.classList.contains('map-active')) return;
-            
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            
-            // Swipe gestures
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
-                if (deltaX > 0 && controlsPanel.classList.contains('is-open')) {
-                    // Swipe right to close panel
-                    controlsPanel.classList.remove('is-open');
-                } else if (deltaX < 0 && !controlsPanel.classList.contains('is-open')) {
-                    // Swipe left to open panel
-                    controlsPanel.classList.add('is-open');
-                }
-            }
-        });
-
-        // Close modals when clicking outside
-        document.getElementById('municipalityModal').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                e.currentTarget.style.display = 'none';
-            }
-        });
-
-        document.getElementById('glossaryModal').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                e.currentTarget.style.display = 'none';
-            }
-        });
-
-        // Performance optimization: Debounce resize events
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                if (map && mapInitialized) {
-                    map.resize();
-                }
-            }, 250);
-        });
-
-        // Add loading indicator
         function showLoadingIndicator() {
             const loader = document.createElement('div');
             loader.id = 'map-loader';
@@ -2253,125 +2126,6 @@
             }
         }
 
-        // Enhanced data export functionality
-        function exportAllMunicipalityData() {
-            const municipalities = getPueblaMunicipalities();
-            const csvRows = [
-                ['Municipio', 'Población', 'Latitud', 'Longitud', 'CO (ppm)', 'NO₂ (ppb)', 'O₃ (ppb)', 'SO₂ (ppb)', 'PM10 (μg/m³)', 'PM2.5 (μg/m³)']
-            ];
-            
-            municipalities.features.forEach(feature => {
-                const props = feature.properties;
-                const coords = feature.geometry.coordinates;
-                const aq = props.airQuality;
-                
-                csvRows.push([
-                    props.name,
-                    props.population,
-                    coords[1].toFixed(4),
-                    coords[0].toFixed(4),
-                    aq.co,
-                    aq.no2,
-                    aq.o3,
-                    aq.so2,
-                    aq.pm10,
-                    aq.pm25
-                ]);
-            });
-            
-            const csvContent = csvRows.map(row => row.join(',')).join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'municipios_puebla_calidad_aire.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        // Update parameter selection functionality
-        document.getElementById('select_dat').addEventListener('change', function() {
-            const parameter = this.value;
-            const subParamSelect = document.getElementById('select_var');
-            
-            // Clear existing options
-            subParamSelect.innerHTML = '';
-            
-            if (parameter === 'meteorologia') {
-                const meteorologicalParams = [
-                    { value: 'temperature', text: 'Temperatura' },
-                    { value: 'humidity', text: 'Humedad' },
-                    { value: 'precipitation', text: 'Precipitación' },
-                    { value: 'wind', text: 'Viento' },
-                    { value: 'pressure', text: 'Presión' },
-                    { value: 'radiation', text: 'Radiación' }
-                ];
-                
-                meteorologicalParams.forEach(param => {
-                    const option = document.createElement('option');
-                    option.value = param.value;
-                    option.textContent = param.text;
-                    subParamSelect.appendChild(option);
-                });
-            } else if (parameter === 'calidad') {
-                const airQualityParams = [
-                    { value: 'co', text: 'Monóxido de Carbono (CO)' },
-                    { value: 'no2', text: 'Dióxido de Nitrógeno (NO₂)' },
-                    { value: 'o3', text: 'Ozono (O₃)' },
-                    { value: 'pm25', text: 'Partículas PM2.5' }
-                ];
-                
-                airQualityParams.forEach(param => {
-                    const option = document.createElement('option');
-                    option.value = param.value;
-                    option.textContent = param.text;
-                    subParamSelect.appendChild(option);
-                });
-            }
-        });
-
-        // Update sub-parameter selection
-        document.getElementById('select_var').addEventListener('change', function() {
-            const selectedParam = this.value;
-            if (selectedParam && weatherLayers[selectedParam]) {
-                // Automatically activate the selected layer
-                const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
-                if (layerBtn) {
-                    layerBtn.click();
-                }
-            }
-        });
-
-        // Initialize parameter dropdowns
-        document.getElementById('select_dat').dispatchEvent(new Event('change'));
-
-        // Add help tooltips
-        function addTooltips() {
-            const tooltips = {
-                'zoom-in-btn': 'Acercar (Tecla: +)',
-                'zoom-out-btn': 'Alejar (Tecla: -)',
-                'reset-north-btn': 'Orientar al Norte (Tecla: N)',
-                'reset-position-btn': 'Posición Inicial (Tecla: R)',
-                'playBtn': 'Reproducir/Pausar animación (Tecla: Espacio)',
-                'btn_glosario': 'Ver glosario de términos (Tecla: G)',
-                'btn_datos': 'Descargar datos actuales (Tecla: D)',
-                'btn_recarga': 'Recargar capa actual'
-            };
-
-            Object.entries(tooltips).forEach(([id, text]) => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.setAttribute('title', text);
-                }
-            });
-        }
-
-        // Initialize tooltips
-        addTooltips();
-
-        // Add notification system
         function showNotification(message, type = 'info') {
             const notification = document.createElement('div');
             notification.style.cssText = `
@@ -2395,13 +2149,11 @@
             
             document.body.appendChild(notification);
             
-            // Animate in
             setTimeout(() => {
                 notification.style.opacity = '1';
                 notification.style.transform = 'translateX(0)';
             }, 100);
             
-            // Auto remove
             setTimeout(() => {
                 notification.style.opacity = '0';
                 notification.style.transform = 'translateX(100%)';
@@ -2411,14 +2163,329 @@
             }, 3000);
         }
 
-        // Add notification for filter usage
-        let filterNotificationShown = false;
-        document.getElementById('legend-gradient').addEventListener('mouseenter', () => {
-            if (!filterNotificationShown) {
-                showNotification('Haz clic y arrastra para filtrar por rangos de color. Presiona C para limpiar filtros.', 'info');
-                filterNotificationShown = true;
+        // Event Listeners Setup
+        document.addEventListener('DOMContentLoaded', () => {
+            setupMapControls();
+            setupLegendClickFilter();
+
+            const controlsPanel = document.getElementById('weather-controls');
+
+            document.querySelectorAll('.layer-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const layerType = this.getAttribute('data-layer');
+                    currentTimeStep = 0;
+                    colorFilter = null;
+                    document.getElementById('filter-indicator').style.display = 'none';
+                    addEnhancedWeatherLayer(layerType);
+                });
+            });
+            
+            document.getElementById('playBtn').addEventListener('click', () => {
+                isPlaying ? stopAnimation() : startAnimation();
+            });
+            
+            document.getElementById('speedSlider').addEventListener('input', () => {
+                if (isPlaying) {
+                    stopAnimation();
+                    startAnimation();
+                }
+            });
+            
+            document.getElementById('toggle-controls-btn').addEventListener('click', () => {
+                controlsPanel.classList.add('is-open');
+            });
+            
+            document.getElementById('close-controls-btn').addEventListener('click', () => {
+                controlsPanel.classList.remove('is-open');
+            });
+
+            // Modal event listeners
+            document.getElementById('modalClose').addEventListener('click', () => {
+                document.getElementById('municipalityModal').style.display = 'none';
+            });
+
+            document.getElementById('glossaryClose').addEventListener('click', () => {
+                document.getElementById('glossaryModal').style.display = 'none';
+            });
+
+            document.getElementById('downloadCsvBtn').addEventListener('click', () => {
+                if (window.currentMunicipality) {
+                    downloadMunicipalityCSV(window.currentMunicipality);
+                } else {
+                    showNotification('No hay datos disponibles para descargar', 'error');
+                }
+            });
+
+            // Footer button event listeners
+            document.getElementById('btn_glosario').addEventListener('click', () => {
+                document.getElementById('glossaryModal').style.display = 'flex';
+            });
+
+            document.getElementById('btn_datos').addEventListener('click', () => {
+                if (activeLayer) {
+                    downloadLayerData(activeLayer);
+                } else {
+                    showNotification('Selecciona una capa primero para descargar los datos.', 'info');
+                }
+            });
+
+            document.getElementById('btn_recarga').addEventListener('click', () => {
+                if (activeLayer) {
+                    currentTimeStep = 0;
+                    colorFilter = null;
+                    document.getElementById('filter-indicator').style.display = 'none';
+                    addEnhancedWeatherLayer(activeLayer);
+                }
+            });
+
+            // Back button functionality
+            document.getElementById('btn_back').addEventListener('click', () => {
+                document.body.classList.remove('map-active');
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                stopAnimation();
+                currentTimeStep = 0;
+                colorFilter = null;
+                document.getElementById('legend').style.display = 'none';
+                document.getElementById('filter-indicator').style.display = 'none';
+                controlsPanel.classList.remove('is-open');
+            });
+
+            // Sidebar button functionality
+            document.getElementById('btn_atmos').addEventListener('click', function() {
+                if (!mapInitialized) activateMap('meteorologia');
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                setTimeout(() => {
+                    const tempBtn = document.querySelector('[data-layer="temperature"]');
+                    if (tempBtn) tempBtn.click();
+                }, 300);
+            });
+
+            document.getElementById('btn_aire').addEventListener('click', function() {
+                if (!mapInitialized) activateMap('calidad');
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                setTimeout(() => {
+                    const pm25Btn = document.querySelector('[data-layer="pm25"]');
+                    if (pm25Btn) pm25Btn.click();
+                }, 300);
+            });
+
+            document.getElementById('btn_hist').addEventListener('click', function() {
+                document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                showNotification('Funcionalidad de Historial en desarrollo', 'info');
+            });
+
+            // Mobile menu buttons
+            document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                activateMap('meteorologia');
+                toggleMenu();
+            });
+
+            document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                activateMap('calidad');
+                toggleMenu();
+            });
+
+            document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                toggleMenu();
+                showNotification('Funcionalidad de Historial en desarrollo', 'info');
+            });
+
+            // Update parameter selection functionality
+            document.getElementById('select_dat').addEventListener('change', function() {
+                const parameter = this.value;
+                const subParamSelect = document.getElementById('select_var');
+                
+                subParamSelect.innerHTML = '';
+                
+                if (parameter === 'meteorologia') {
+                    const meteorologicalParams = [
+                        { value: 'temperature', text: 'Temperatura' },
+                        { value: 'humidity', text: 'Humedad' },
+                        { value: 'precipitation', text: 'Precipitación' },
+                        { value: 'wind', text: 'Viento' },
+                        { value: 'pressure', text: 'Presión' },
+                        { value: 'radiation', text: 'Radiación' }
+                    ];
+                    
+                    meteorologicalParams.forEach(param => {
+                        const option = document.createElement('option');
+                        option.value = param.value;
+                        option.textContent = param.text;
+                        subParamSelect.appendChild(option);
+                    });
+                } else if (parameter === 'calidad') {
+                    const airQualityParams = [
+                        { value: 'co', text: 'Monóxido de Carbono (CO)' },
+                        { value: 'no2', text: 'Dióxido de Nitrógeno (NO₂)' },
+                        { value: 'o3', text: 'Ozono (O₃)' },
+                        { value: 'pm25', text: 'Partículas PM2.5' }
+                    ];
+                    
+                    airQualityParams.forEach(param => {
+                        const option = document.createElement('option');
+                        option.value = param.value;
+                        option.textContent = param.text;
+                        subParamSelect.appendChild(option);
+                    });
+                }
+            });
+
+            // Update sub-parameter selection
+            document.getElementById('select_var').addEventListener('change', function() {
+                const selectedParam = this.value;
+                if (selectedParam && weatherLayers[selectedParam]) {
+                    const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
+                    if (layerBtn) {
+                        layerBtn.click();
+                    }
+                }
+            });
+
+            // Initialize parameter dropdowns
+            document.getElementById('select_dat').dispatchEvent(new Event('change'));
+
+            // Close modals when clicking outside
+            document.getElementById('municipalityModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.style.display = 'none';
+                }
+            });
+
+            document.getElementById('glossaryModal').addEventListener('click', (e) => {
+                if (e.target === e.currentTarget) {
+                    e.currentTarget.style.display = 'none';
+                }
+            });
+        });
+
+        // Enhanced keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            
+            switch(e.key) {
+                case 'Escape':
+                    const controlsPanel = document.getElementById('weather-controls');
+                    if (controlsPanel.classList.contains('is-open')) {
+                        controlsPanel.classList.remove('is-open');
+                    } else if (document.getElementById('municipalityModal').style.display === 'flex') {
+                        document.getElementById('municipalityModal').style.display = 'none';
+                    } else if (document.getElementById('glossaryModal').style.display === 'flex') {
+                        document.getElementById('glossaryModal').style.display = 'none';
+                    } else {
+                        document.getElementById('btn_back').click();
+                    }
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    document.getElementById('playBtn').click();
+                    break;
+                case 'r':
+                    document.getElementById('reset-position-btn').click();
+                    break;
+                case 'n':
+                    document.getElementById('reset-north-btn').click();
+                    break;
+                case '+':
+                case '=':
+                    document.getElementById('zoom-in-btn').click();
+                    break;
+                case '-':
+                    document.getElementById('zoom-out-btn').click();
+                    break;
+                case 'c':
+                    colorFilter = null;
+                    document.getElementById('filter-indicator').style.display = 'none';
+                    applyColorFilter();
+                    break;
+                case 'g':
+                    document.getElementById('btn_glosario').click();
+                    break;
+                case 'd':
+                    document.getElementById('btn_datos').click();
+                    break;
             }
         });
+
+        // Enhanced touch gestures for mobile
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', (e) => {
+            if (!document.body.classList.contains('map-active')) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaX = touchEndX - touchStartX;
+            const deltaY = touchEndY - touchStartY;
+            
+            const controlsPanel = document.getElementById('weather-controls');
+            
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+                if (deltaX > 0 && controlsPanel.classList.contains('is-open')) {
+                    controlsPanel.classList.remove('is-open');
+                } else if (deltaX < 0 && !controlsPanel.classList.contains('is-open')) {
+                    controlsPanel.classList.add('is-open');
+                }
+            }
+        });
+
+        // Performance optimization: Debounce resize events
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (map && mapInitialized) {
+                    map.resize();
+                }
+            }, 250);
+        });
+
+        // Download layer data functionality
+        function downloadLayerData(layerType) {
+            const config = weatherLayers[layerType];
+            const data = generateSmoothWeatherData(layerType, currentTimeStep);
+            
+            const csvRows = [
+                ['Latitud', 'Longitud', config.name + ' (' + config.unit + ')']
+            ];
+            
+            data.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
+                const value = feature.properties.value;
+                csvRows.push([coords[1].toFixed(4), coords[0].toFixed(4), value.toFixed(2)]);
+            });
+            
+            const csvContent = csvRows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `${layerType}_puebla.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
         // Error handling for missing resources
         window.addEventListener('error', (e) => {
@@ -2428,24 +2495,12 @@
             }
         });
 
-        // Add print functionality
-        function printMap() {
-            if (!map) return;
-            
-            showNotification('Preparando mapa para impresión...', 'info');
-            
-            // You would implement actual map export here
-            // For now, just show a placeholder
-            setTimeout(() => {
-                showNotification('Funcionalidad de impresión en desarrollo', 'info');
-            }, 1000);
-        }
-
-        // Add keyboard shortcut for print
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'p' && document.body.classList.contains('map-active')) {
-                e.preventDefault();
-                printMap();
+        // Add notification for filter usage
+        let filterNotificationShown = false;
+        document.getElementById('legend-gradient').addEventListener('mouseenter', () => {
+            if (!filterNotificationShown) {
+                showNotification('Haz clic y arrastra para filtrar por rangos de color. Presiona C para limpiar filtros.', 'info');
+                filterNotificationShown = true;
             }
         });
     </script>
