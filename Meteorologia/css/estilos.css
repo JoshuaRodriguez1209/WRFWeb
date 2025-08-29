@@ -1,19 +1,19 @@
 /* Barra de navegación */
 .navbar {
-  background-color: white; /* Fondo con el color solicitado */
+  background-color: white;
   padding: 0;
   position: fixed;
   height: 150px;
   width: 100%;
-  z-index: 1000;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra sutil para darle profundidad */
+  z-index: 1001;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   font-family: "Poppins", sans-serif;
 }
 
 /* Contenedor de la barra de navegación */
 .navbar-container {
   display: flex;
-  justify-content: space-between; /* Esto coloca el logo a la izquierda y los iconos a la derecha */
+  justify-content: space-between;
   align-items: center;
   margin: 0;
   padding: 0;
@@ -82,7 +82,7 @@
 }
 
 .nav-links a:hover {
-  background-color: #c19862; /* Hover con el color solicitado */
+  background-color: #c19862;
 }
 .nav-links .social-icons a:hover {
   background-color: transparent !important;
@@ -132,6 +132,7 @@
     overscroll-behavior: contain;
     padding-top: 20px;
     padding-bottom: 20px;
+    z-index: 99999;
   }
   .navbar-container {
     flex-wrap: nowrap;
@@ -157,20 +158,20 @@
 
   /* Iconos de redes sociales en móvil */
   .social-icons {
-    margin-left: 0; /* Elimina el margen para alinearlos mejor */
-    gap: 20px; /* Espaciado ajustado */
+    margin-left: 0;
+    gap: 20px;
   }
   .banner {
-  top: 150px;
-  margin-bottom: 170px;
-}
+    top: 150px;
+    margin-bottom: 170px;
+  }
 }
 /* Estilo para el banner */
 .banner {
   position: relative;
   width: 100%;
-  height: 800px; /* Ajusta el tamaño del banner según lo necesites */
-  background-image: url("../images/header//banner-intro-inicio.jpg"); /* Ruta de tu imagen */
+  height: 800px;
+  background-image: url("../images/header//banner-intro-inicio.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -183,14 +184,14 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* Color negro con 40% de opacidad */
-  z-index: 1; /* Asegura que la capa de transparencia esté sobre la imagen */
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 1;
 }
 
 /* Contenido del banner */
 .banner-content {
   position: relative;
-  z-index: 2; /* Asegura que el texto esté sobre la capa de transparencia */
+  z-index: 2;
   color: white;
   text-align: left;
   margin-left: 20px;
@@ -201,7 +202,7 @@
 
 /* Estilo para el título */
 .banner-title {
-  font-size: 48px; /* Ajusta el tamaño del título */
+  font-size: 48px;
   font-weight: bold;
   margin-bottom: 10px;
   max-width: 65%;
@@ -209,7 +210,7 @@
 
 /* Estilo para el subtítulo */
 .banner-subtitle {
-  font-size: 20px; /* Ajusta el tamaño del subtítulo */
+  font-size: 20px;
   line-height: 1.5;
   margin-top: 0;
   max-width: 60%;
@@ -220,8 +221,8 @@
   overflow: hidden;
   border: none;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombra suave para dar profundidad */
-  transition: transform 0.3s ease-in-out; /* Animación para hover */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease-in-out;
   margin-bottom: 10px;
 }
 
@@ -229,7 +230,7 @@
   display: block;
   width: 100%;
   height: 100%;
-  text-decoration: none; /* Elimina el subrayado */
+  text-decoration: none;
 }
 
 /* Imagen de fondo */
@@ -253,7 +254,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.4); /* Capa oscura */
+  background-color: rgba(0, 0, 0, 0.4);
   z-index: 1;
 }
 
@@ -282,19 +283,17 @@
 
 /* Animación de hover en la tarjeta */
 .card:hover {
-  transform: translateY(
-    -10px
-  ); /* Levanta ligeramente la tarjeta cuando se pasa el mouse */
+  transform: translateY(-10px);
 }
 
 /* Responsividad para móviles */
 @media (max-width: 768px) {
   .card-img {
-    height: 300px; /* Ajustamos la altura en pantallas pequeñas */
+    height: 300px;
   }
 
   .card-text h5 {
-    font-size: 18px; /* Reducimos el tamaño del título en móviles */
+    font-size: 18px;
   }
 }
 
@@ -314,10 +313,10 @@
 #app .controls-panel {
   display: flex;
   position: absolute;
-  top: 150px;
+  top: 170px;
   left: auto;
   margin-right: 20px;
-  right: 0px;
+  right: 20px;
   max-width: 40%;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -411,26 +410,26 @@
 
 /* Ajustes al encabezado del panel */
 #app .controls-panel .panel-header {
-  flex: 1 1 100%; /* Ocupa toda la línea */
-  font-size: 2em; /* Más grande */
-  font-weight: 700; /* Negritas */
+  flex: 1 1 100%;
+  font-size: 2em;
+  font-weight: 700;
   text-align: center;
-  color: black; /* Un azul oscuro para contraste */
-  margin: 0 0 15px 0; /* Separación abajo */
+  color: black;
+  margin: 0 0 15px 0;
   padding-bottom: 5px;
-  border-bottom: 2px solid rgba(0, 123, 255, 0.5); /* Línea sutil inferirm */
+  border-bottom: 2px solid rgba(0, 123, 255, 0.5);
 }
 
 /* Redondear y ajustar margen de selects y ranges */
 #app .controls-panel select,
 #app .controls-panel input[type="range"] {
-  border-radius: 6px; /* Más redondeado */
-  margin: 8px 0; /* Espacio arriba y abajo uniforme */
+  border-radius: 6px;
+  margin: 8px 0;
 }
 
 /* Asegurar que los labels no se amontonen */
 #app .controls-panel label {
-  margin: 12px 0 4px 0; /* Espacio antes y después */
+  margin: 12px 0 4px 0;
   font-weight: 500;
   color: #333;
 }
@@ -459,7 +458,7 @@
     max-height: calc(80vh - 56px);
     padding: 10px;
     gap: 8px;
-    z-index: 2005;
+    z-index: 2000;
   }
 
   /* Todos los controles ocupan el 100% del ancho con margen */
@@ -550,7 +549,7 @@
   z-index: 3000;
 }
 .side-menu.expanded {
-  width: 200px; /* ancho expandido */
+  width: 200px;
 }
 
 .menu-btn {
@@ -566,6 +565,7 @@
   border: none;
   cursor: pointer;
   gap: 12px;
+  z-index: 7000;
 }
 
 .menu-label {
@@ -592,11 +592,11 @@
 
 #gradient-container.vertical {
   position: absolute;
-  left: 15%;
-  top: 90px;
+  left: 20px;
+  top: 170px;
   width: 250px;
   height: 640px;
-  z-index: 2000;
+  z-index: 2005;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -645,8 +645,8 @@
 }
 @media (max-width: 768px) {
   #gradient-container.vertical {
-    left: 5%;
-    top: 150px;
+    left: 20px;
+    top: 200px;
     width: 120px;
     height: 540px;
     background-color: rgba(255, 255, 255, 0.6);
@@ -674,21 +674,21 @@
 
 #filter-info {
   position: absolute;
-  top: 50px;
-  left: 50%; 
-  transform: translateX(-50%); 
-  z-index: 3001; 
+  top: 110px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3001;
   font-weight: 500;
   color: #333;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9); 
+  background: rgba(255, 255, 255, 0.9);
   padding: 10px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
-  max-width: 80%; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 80%;
   width: fit-content;
-  font-size: 1.5em; 
-  line-height: 1.4; 
+  font-size: 1.5em;
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {
@@ -696,9 +696,9 @@
     top: 110px;
     left: 50%;
     transform: translateX(-50%);
-    max-width: 90%; 
-    padding: 8px 15px; 
-    font-size: 1em; 
+    max-width: 90%;
+    padding: 8px 15px;
+    font-size: 1em;
   }
 }
 
@@ -710,4 +710,75 @@
 .dynamic-range {
   color: #333;
   font-size: 0.9em;
+}
+
+@media (max-width: 480px) {
+  .legend {
+    position: fixed !important;
+    top: unset !important;   /* Ajusta este valor según lo alto que quieras la barra */
+    bottom: 140px !important;
+    right: 10px !important;
+    left: unset !important;
+    /*width: 90vw !important;*/
+    max-width: 90% !important;
+    z-index: 2001;
+    padding: 5px !important;
+  }
+
+
+  .gradient-title {
+    font-size: 10px;
+    margin-bottom: 0;
+    margin-right: 4px;
+  }
+
+  .gradient-scale-wrapper {
+    flex-direction: row;
+    height: 18px;
+    width: 60vw;
+    gap: 4px;
+  }
+
+  .gradient-bar {
+    width: 100%;
+    height: 12px;
+    border-radius: 6px;
+  }
+
+  .gradient-values {
+    flex-direction: row;
+    font-size: 8px;
+    height: auto;
+    width: 100%;
+    justify-content: space-between;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+
+
+  .data-panel {
+    position: fixed !important;
+    bottom: 8px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 95vw !important;
+    max-width: 98vw !important;
+    z-index: 2002;
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    padding: 6px 8px !important;
+    font-size: 12px !important;
+  }
+  .data-panel h4 {
+    font-size: 0.95em !important;
+    margin-bottom: 4px !important;
+  }
+  .data-value {
+    font-size: 0.92em !important;
+    padding: 2px 0 !important;
+  }
+  .data-label,
+  .data-number {
+    font-size: 0.98em !important;
+  }
 }
