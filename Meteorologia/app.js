@@ -451,11 +451,8 @@ function addMonitoringStations() {
         showStationModal(properties);
     });
 }
-
-// Show station modal
-function showStationModal(properties) {
-    showNotification(`Estación: ${properties.nombre} (${properties.clave})`, 'info');
-}
+//--------------------------------------------------------------------------
+// Mapeo de claves para meteorología y calidad del aire
 const meteoKeyMap = {
     t2m: 'temperature',
     rh: 'humidity',
@@ -472,66 +469,119 @@ const chemKeyMap = {
     PM10: 'pm10',
     PM25: 'pm25'
 };
+
+// ---- MODAL MUNICIPIO PROFESIONAL ----
 function showMunicipalityModal(properties) {
     const modal = document.getElementById('municipalityModal');
     const title = document.getElementById('modalTitle');
     const summary = document.getElementById('pollutantSummary');
-    const chartsContainer = document.getElementById('modalChartsHost') || (() => {
-        // Si no existe el contenedor, créalo
-        const container = document.createElement('div');
-        container.id = 'modalChartsHost';
-        container.style.width = '100%';
-        container.style.display = 'flex';
-        container.style.flexWrap = 'wrap';
-        container.style.gap = '24px';
-        summary.parentNode.insertBefore(container, summary.nextSibling);
-        return container;
-    })();
+    const chartsContainer = document.getElementById('modalChartsHost');
+    if (chartsContainer) chartsContainer.innerHTML = '';
 
     title.textContent = properties.nombre;
     summary.innerHTML = '';
-    chartsContainer.innerHTML = '';
 
-    // Determina el tipo y el mapeo de clave
-const tipo = tipoMapa === 'meteorologia' ? 'meteo' : 'calidad';
-const keyMap = tipo === 'meteo' ? meteoKeyMap : chemKeyMap;
-const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+    // Detecta tipo de mapa y variables
+    const tipo = tipoMapa === 'meteorologia' ? 'meteo' : 'calidad';
+    const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+    const keyMap = tipo === 'meteo' ? meteoKeyMap : chemKeyMap;
 
-// Obtén las variables activas seleccionadas (usa selectedVariables si existe)
-const selected = (typeof selectedVariables !== 'undefined' && selectedVariables.size)
-    ? Array.from(selectedVariables).filter(v => variables[v])
-    : Object.keys(variables);
+    // Obtén las variables seleccionadas si existen, si no usa todas
+    const selected = (typeof selectedVariables !== 'undefined' && selectedVariables.size)
+        ? Array.from(selectedVariables).filter(v => variables[v])
+        : Object.keys(variables);
 
-// Para cada variable seleccionada, genera datos y gráfica
-selected.forEach(key => {
-    const config = variables[key];
-    const weatherKey = keyMap[key]; // ← ESTE ES EL CAMBIO IMPORTANTE
-
-    // Genera los datos para la gráfica usando la función de generación para el municipio
-    const coords = properties.geometry?.coordinates || [properties.lng, properties.lat];
+    // Obtiene coordenadas (si existen en geometry, si no lat/lng)
+    let coords;
+    if (properties.geometry && properties.geometry.coordinates) {
+        coords = properties.geometry.coordinates;
+    } else if (properties.lat && properties.lng) {
+        coords = [properties.lng, properties.lat];
+    } else {
+        // fallback (no debería pasar)
+        coords = [-98.2063, 19.0414];
+    }
     const lat = coords[1];
     const lng = coords[0];
 
-    const timeLabels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-    const dataValues = [];
-    for (let hour = 0; hour < 24; hour++) {
-        const timeStep = hour;
-        const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
-        // Usa weatherKey para acceder a weatherLayers
-        dataValues.push(
-            generateRealisticValue(weatherKey, lat, lng, timeStep, timeVariation)
+    // --- 1. Tarjetas de resumen de promedios ---
+    selected.forEach(key => {
+        const config = variables[key];
+        const weatherKey = keyMap[key];
+        if (!weatherKey || !weatherLayers[weatherKey]) return; // Salta si no existe
+
+        // Obtén el valor promedio del municipio (simula con la función del mapa)
+        const value = generateRealisticValue(weatherKey, lat, lng, 0, 0);
+
+        // Si tienes thresholds, puedes usarlos para el semáforo
+        let qualityLevel = 'good';
+        // Define thresholds por variable si quieres semáforo (ejemplo para aire)
+        const thresholds = {
+            co: { good: 1, moderate: 2, bad: 3 },
+            no2: { good: 0.3, moderate: 0.6, bad: 1.0 },
+            o3: { good: 8, moderate: 15, bad: 25 },
+            so2: { good: 0.1, moderate: 0.2, bad: 0.5 },
+            pm10: { good: 0.15, moderate: 0.3, bad: 0.5 },
+            pm25: { good: 0.1, moderate: 0.2, bad: 0.3 }
+        };
+        const th = thresholds[weatherKey] || { good: 0.4, moderate: 0.7, bad: 1.1 };
+        if (value > th.bad) qualityLevel = 'bad';
+        else if (value > th.moderate) qualityLevel = 'moderate';
+
+        const qualityColors = {
+            good: '#00b894',
+            moderate: '#fdcb6e',
+            bad: '#d63031'
+        };
+
+        // Tarjeta resumen visual
+        const item = document.createElement('div');
+        item.className = 'pollutant-item';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '10px';
+        item.innerHTML = `
+            <div class="pollutant-color" style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
+            <div class="pollutant-info" style="flex:1;">
+                <div class="pollutant-name" style="font-weight:bold;">${config.icon} ${config.label} (${config.unit})</div>
+                <div class="pollutant-value" style="font-size:1.1em;color:#333;">${value.toFixed(2)}</div>
+            </div>
+        `;
+        summary.appendChild(item);
+    });
+
+    // --- 2. Gráficas limpias y profesionales ---
+    selected.forEach(key => {
+        const config = variables[key];
+        const weatherKey = keyMap[key];
+        if (!weatherKey || !weatherLayers[weatherKey]) return;
+
+        // Genera 24 datos horarios con la función del mapa
+        const timeLabels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+        const dataValues = [];
+        for (let hour = 0; hour < 24; hour++) {
+            const timeStep = hour;
+            const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
+            dataValues.push(
+                generateRealisticValue(weatherKey, lat, lng, timeStep, timeVariation)
+            );
+        }
+
+        // Crea una gráfica por variable (profesional, solo una variable por chart)
+        createSingleVariableChart(
+            chartsContainer,
+            config,
+            timeLabels,
+            dataValues,
+            properties.nombre
         );
-    }
-
-    createSingleVariableChart(chartsContainer, config, timeLabels, dataValues, properties.nombre);
-});
-
+    });
 
     window.currentMunicipality = properties;
     modal.style.display = 'flex';
 }
 
-// Función auxiliar para crear una gráfica de una variable en el modal
+// Gráfica profesional por variable (solo una por chart, limpia)
 function createSingleVariableChart(container, config, labels, data, municipioName) {
     const card = document.createElement('div');
     card.className = 'chart-card';
@@ -541,9 +591,10 @@ function createSingleVariableChart(container, config, labels, data, municipioNam
     card.style.background = '#fff';
     card.style.borderRadius = '12px';
     card.style.padding = '16px';
-    card.style.boxShadow = '0 3px 12px rgba(0,0,0,0.10)';
+    card.style.boxShadow = '0 3px 12px rgba(0,0,0,0.08)';
     card.style.display = 'flex';
     card.style.flexDirection = 'column';
+    card.style.marginBottom = '12px';
 
     const header = document.createElement('div');
     header.style.marginBottom = '8px';
@@ -551,6 +602,7 @@ function createSingleVariableChart(container, config, labels, data, municipioNam
     card.appendChild(header);
 
     const canvas = document.createElement('canvas');
+    canvas.height = 220;
     card.appendChild(canvas);
     container.appendChild(card);
 
@@ -562,13 +614,13 @@ function createSingleVariableChart(container, config, labels, data, municipioNam
                 label: `${config.label} (${config.unit})`,
                 data: data,
                 borderColor: config.color,
-                backgroundColor: config.color + '20',
-                borderWidth: 2,
-                fill: false,
-                tension: 0.3,
+                backgroundColor: hexToRgba(config.color, 0.08),
+                borderWidth: 3,
+                pointRadius: 3,
                 pointBackgroundColor: config.color,
                 pointBorderColor: '#fff',
-                pointRadius: 3
+                fill: true,
+                tension: 0.32,
             }]
         },
         options: {
@@ -576,28 +628,37 @@ function createSingleVariableChart(container, config, labels, data, municipioNam
             maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                title: {
-                    display: false
-                }
+                title: { display: false }
             },
             scales: {
                 y: {
                     beginAtZero: false,
-                    title: {
-                        display: true,
-                        text: config.unit
-                    }
+                    grid: { color: '#efefef' },
+                    ticks: { color: '#444', font: { size: 13 } },
+                    title: { display: true, text: config.unit, color: '#444', font: { weight: 'bold' } }
                 },
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Hora del día'
-                    }
+                    grid: { color: '#f6f6f6' },
+                    ticks: { color: '#888', font: { size: 11 } },
+                    title: { display: true, text: 'Hora del día', color: '#888', font: { weight: 'bold' } }
                 }
+            },
+            elements: {
+                line: { tension: 0.32 }
             }
         }
     });
 }
+
+// Utilidad para color rgba
+function hexToRgba(hex, alpha) {
+    // hex: #RRGGBB
+    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (!m) return hex;
+    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`;
+}
+//---------------------------------------------------------------------------
+
 
 // Enhanced chart creation with realistic data patterns
 function createEnhancedPollutantChart(pollutants, cityName) {
