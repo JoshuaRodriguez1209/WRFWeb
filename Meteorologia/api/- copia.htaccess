@@ -11,6 +11,3 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^([a-zA-Z_-]*)$ api.php?tipo_solicitud=$1 [QSA,L]
 
-# Enable PHP errors for debugging (remove in production)
-php_flag display_errors on
-php_value error_reporting E_ALL
