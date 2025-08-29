@@ -2129,6 +2129,88 @@ function updateStatsTable(type) {
             `;
         }
     });
+
+// --- 3. Charting Logic ---
+// **The key function**: Groups variables onto different charts based on their value range.
+function groupDatasetsByRange(datasets, threshold = 30) {
+    const groups = [];
+    datasets.forEach(ds => {
+        let placed = false;
+        for (const group of groups) {
+            const allValues = group.concat([ds]).flatMap(d => d.data);
+            const min = Math.min(...allValues);
+            const max = Math.max(...allValues);
+            if ((max - min) <= threshold) {
+                group.push(ds);
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) {
+            groups.push([ds]);
+        }
+    });
+    return groups;
+}
+
+// Renders the charts based on the groups generated above.
+function renderGroupedCharts(groups, labels, titlePrefix) {
+    const host = document.getElementById('chartsHost');
+    host.innerHTML = '';
+    currentHistCharts.forEach(chart => chart.destroy());
+    currentHistCharts = [];
+
+    groups.forEach(group => {
+        const card = document.createElement('div');
+        card.className = 'chart-card';
+        const canvas = document.createElement('canvas');
+        card.appendChild(canvas);
+        host.appendChild(card);
+
+        const chart = new Chart(canvas, {
+            type: 'line',
+            data: { labels, datasets: group },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    title: { display: true, text: titlePrefix }
+                },
+                scales: { y: { beginAtZero: false } }
+            }
+        });
+        currentHistCharts.push(chart);
+    });
+}
+
+// --- 4. Statistical Logic ---
+function calculateStats(values) {
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    return { avg, max, min };
+}
+
+function updateStatsTable(type) {
+    const tbody = document.getElementById('histStatsTable');
+    tbody.innerHTML = '';
+    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
+
+    selectedVariables.forEach(key => {
+        if (currentHistData[key] && variables[key]) {
+            const stats = calculateStats(currentHistData[key]);
+            const config = variables[key];
+            const row = tbody.insertRow();
+            row.innerHTML = `
+                <td>${config.icon} ${config.label}</td>
+                <td>${stats.avg.toFixed(2)}</td>
+                <td>${stats.max.toFixed(2)}</td>
+                <td>${stats.min.toFixed(2)}</td>
+                <td>${config.unit}</td>
+            `;
+        }
+    });
 }
 
 // --- 5. UI Functions ---
@@ -2197,8 +2279,84 @@ function createChemHistoricalChart(data) {
     if (o3Dataset) groups.push([o3Dataset]);
 
     renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+// --- 5. UI Functions ---
+function createVariableToggles(type) {
+    const container = document.getElementById('variable-toggles');
+    container.innerHTML = '';
+    selectedVariables.clear();
+    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
+
+    Object.entries(variables).forEach(([key, config]) => {
+        const toggle = document.createElement('div');
+        toggle.className = 'variable-toggle active'; // Active by default
+        toggle.dataset.variable = key;
+        toggle.innerHTML = `<div class="icon">${config.icon}</div><div class="label">${config.label}</div>`;
+        toggle.addEventListener('click', () => {
+            toggle.classList.toggle('active');
+            toggle.classList.contains('active') ? selectedVariables.add(key) : selectedVariables.delete(key);
+            updateHistoricalChart();
+        });
+        container.appendChild(toggle);
+        selectedVariables.add(key); // Start with all variables selected
+    });
 }
 
+function createMeteoHistoricalChart(data) {
+    const datasets = [];
+    Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
+        if (selectedVariables.has(key) && data[key]) {
+            datasets.push({
+                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                data: data[key],
+                borderColor: cfg.color,
+                backgroundColor: `${cfg.color}20`,
+                borderWidth: 2,
+                tension: 0.4
+            });
+        }
+    });
+    // Group Pressure (psl) separately because its range is huge
+    const pslDataset = datasets.find(d => d.label.includes('Presión'));
+    const otherDatasets = datasets.filter(d => !d.label.includes('Presión'));
+    const groups = groupDatasetsByRange(otherDatasets, 50);
+    if (pslDataset) groups.push([pslDataset]);
+    
+    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
+}
+
+function createChemHistoricalChart(data) {
+    const datasets = [];
+    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
+        if (selectedVariables.has(key) && data[key]) {
+            datasets.push({
+                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                data: data[key],
+                borderColor: cfg.color,
+                backgroundColor: `${cfg.color}20`,
+                borderWidth: 2,
+                tension: 0.4
+            });
+        }
+    });
+    // Group Ozone (O3) separately
+    const o3Dataset = datasets.find(d => d.label.includes('Ozono'));
+    const otherDatasets = datasets.filter(d => !d.label.includes('Ozono'));
+    const groups = [otherDatasets];
+    if (o3Dataset) groups.push([o3Dataset]);
+
+    renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+}
+
+function updateHistoricalChart() {
+    if (!currentHistData) return;
+    const type = document.getElementById('hist-tipo-select').value;
+    type === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
+    updateStatsTable(type);
+}
+
+// ===================================================================
+// END: New History Dashboard Functions
+// ===================================================================
 function updateHistoricalChart() {
     if (!currentHistData) return;
     const type = document.getElementById('hist-tipo-select').value;
