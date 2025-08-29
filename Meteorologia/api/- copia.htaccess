@@ -2,4 +2,15 @@ Options +FollowSymLinks -MultiViews
 
 RewriteEngine On
 
-RewriteRule ^([a-zA-Z_-]*)$ api_radar.php?tipo_solicitud=$1
+# Allow all methods
+RewriteCond %{REQUEST_METHOD} ^(GET|POST|OPTIONS)$ [NC]
+RewriteRule .* - [L]
+
+# Route requests to api.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^([a-zA-Z_-]*)$ api.php?tipo_solicitud=$1 [QSA,L]
+
+# Enable PHP errors for debugging (remove in production)
+php_flag display_errors on
+php_value error_reporting E_ALL
