@@ -456,101 +456,147 @@ function addMonitoringStations() {
 function showStationModal(properties) {
     showNotification(`Estación: ${properties.nombre} (${properties.clave})`, 'info');
 }
-
-// Enhanced municipality modal with real data structure
+const meteoKeyMap = {
+    t2m: 'temperature',
+    rh: 'humidity',
+    psl: 'pressure',
+    wnd: 'wind',
+    pre: 'precipitation',
+    sw: 'radiation'
+};
+const chemKeyMap = {
+    CO: 'co',
+    NO2: 'no2',
+    O3: 'o3',
+    SO2: 'so2',
+    PM10: 'pm10',
+    PM25: 'pm25'
+};
 function showMunicipalityModal(properties) {
     const modal = document.getElementById('municipalityModal');
     const title = document.getElementById('modalTitle');
     const summary = document.getElementById('pollutantSummary');
-    
-    const airQuality = typeof properties.airQuality === 'string' 
-        ? JSON.parse(properties.airQuality) 
-        : properties.airQuality;
-    
+    const chartsContainer = document.getElementById('modalChartsHost') || (() => {
+        // Si no existe el contenedor, créalo
+        const container = document.createElement('div');
+        container.id = 'modalChartsHost';
+        container.style.width = '100%';
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.gap = '24px';
+        summary.parentNode.insertBefore(container, summary.nextSibling);
+        return container;
+    })();
+
     title.textContent = properties.nombre;
     summary.innerHTML = '';
-    
-    const pollutants = [
-        { 
-            key: 'co', 
-            name: 'Monóxido de Carbono', 
-            unit: 'ppm',
-            color: '#8B4513', 
-            value: airQuality.co,
-            threshold: { good: 1, moderate: 2, bad: 3 }
-        },
-        { 
-            key: 'no2', 
-            name: 'Dióxido de Nitrógeno', 
-            unit: 'ppb',
-            color: '#6A5ACD', 
-            value: airQuality.no2,
-            threshold: { good: 0.3, moderate: 0.6, bad: 1.0 }
-        },
-        { 
-            key: 'o3', 
-            name: 'Ozono', 
-            unit: 'ppb',
-            color: '#32CD32', 
-            value: airQuality.o3,
-            threshold: { good: 8, moderate: 15, bad: 25 }
-        },
-        { 
-            key: 'so2', 
-            name: 'Dióxido de Azufre', 
-            unit: 'ppb',
-            color: '#4169E1', 
-            value: airQuality.so2,
-            threshold: { good: 0.1, moderate: 0.2, bad: 0.5 }
-        },
-        { 
-            key: 'pm10', 
-            name: 'PM 10', 
-            unit: 'μg/m³',
-            color: '#2F4F4F', 
-            value: airQuality.pm10,
-            threshold: { good: 0.15, moderate: 0.3, bad: 0.5 }
-        },
-        { 
-            key: 'pm25', 
-            name: 'PM 2.5', 
-            unit: 'μg/m³',
-            color: '#556B2F', 
-            value: airQuality.pm25,
-            threshold: { good: 0.1, moderate: 0.2, bad: 0.3 }
-        }
-    ];
-    
-    pollutants.forEach(pollutant => {
-        const item = document.createElement('div');
-        item.className = 'pollutant-item';
-        
-        let qualityLevel = 'good';
-        if (pollutant.value > pollutant.threshold.bad) {
-            qualityLevel = 'bad';
-        } else if (pollutant.value > pollutant.threshold.moderate) {
-            qualityLevel = 'moderate';
-        }
-        
-        const qualityColors = {
-            good: '#00b894',
-            moderate: '#fdcb6e', 
-            bad: '#d63031'
-        };
-        
-        item.innerHTML = `
-            <div class="pollutant-color" style="background-color: ${qualityColors[qualityLevel]}"></div>
-            <div class="pollutant-info">
-                <div class="pollutant-name">${pollutant.name} (${pollutant.unit})</div>
-                <div class="pollutant-value">${pollutant.value}</div>
-            </div>
-        `;
-        summary.appendChild(item);
-    });
-    
-    createEnhancedPollutantChart(pollutants, properties.nombre);
+    chartsContainer.innerHTML = '';
+
+    // Determina el tipo y el mapeo de clave
+const tipo = tipoMapa === 'meteorologia' ? 'meteo' : 'calidad';
+const keyMap = tipo === 'meteo' ? meteoKeyMap : chemKeyMap;
+const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+
+// Obtén las variables activas seleccionadas (usa selectedVariables si existe)
+const selected = (typeof selectedVariables !== 'undefined' && selectedVariables.size)
+    ? Array.from(selectedVariables).filter(v => variables[v])
+    : Object.keys(variables);
+
+// Para cada variable seleccionada, genera datos y gráfica
+selected.forEach(key => {
+    const config = variables[key];
+    const weatherKey = keyMap[key]; // ← ESTE ES EL CAMBIO IMPORTANTE
+
+    // Genera los datos para la gráfica usando la función de generación para el municipio
+    const coords = properties.geometry?.coordinates || [properties.lng, properties.lat];
+    const lat = coords[1];
+    const lng = coords[0];
+
+    const timeLabels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+    const dataValues = [];
+    for (let hour = 0; hour < 24; hour++) {
+        const timeStep = hour;
+        const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
+        // Usa weatherKey para acceder a weatherLayers
+        dataValues.push(
+            generateRealisticValue(weatherKey, lat, lng, timeStep, timeVariation)
+        );
+    }
+
+    createSingleVariableChart(chartsContainer, config, timeLabels, dataValues, properties.nombre);
+});
+
+
     window.currentMunicipality = properties;
     modal.style.display = 'flex';
+}
+
+// Función auxiliar para crear una gráfica de una variable en el modal
+function createSingleVariableChart(container, config, labels, data, municipioName) {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.style.flex = '1 1 350px';
+    card.style.minWidth = '320px';
+    card.style.maxWidth = '500px';
+    card.style.background = '#fff';
+    card.style.borderRadius = '12px';
+    card.style.padding = '16px';
+    card.style.boxShadow = '0 3px 12px rgba(0,0,0,0.10)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+
+    const header = document.createElement('div');
+    header.style.marginBottom = '8px';
+    header.innerHTML = `<span style="font-size:1.3em">${config.icon}</span> <strong>${config.label}</strong> <span style="color:#666">(${config.unit})</span>`;
+    card.appendChild(header);
+
+    const canvas = document.createElement('canvas');
+    card.appendChild(canvas);
+    container.appendChild(card);
+
+    new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: `${config.label} (${config.unit})`,
+                data: data,
+                borderColor: config.color,
+                backgroundColor: config.color + '20',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.3,
+                pointBackgroundColor: config.color,
+                pointBorderColor: '#fff',
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    title: {
+                        display: true,
+                        text: config.unit
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Hora del día'
+                    }
+                }
+            }
+        }
+    });
 }
 
 // Enhanced chart creation with realistic data patterns
@@ -1324,17 +1370,19 @@ function toggleMenu() {
     const navLinks = document.getElementById('nav-links');
     navLinks.classList.toggle('active');
 }
-
+let tipoMapa = 'meteorologia'; // Valor por defecto
 function activateMap(type) {
     document.body.classList.add('map-active');
     initializeMap();
     
     if (type === 'meteorologia') {
+        tipoMapa = 'meteorologia';
         setTimeout(() => {
             const tempBtn = document.querySelector('[data-layer="temperature"]');
             if (tempBtn) tempBtn.click();
         }, 500);
     } else if (type === 'calidad') {
+        tipoMapa = 'calidad';
         setTimeout(() => {
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
             if (pm25Btn) pm25Btn.click();
@@ -1663,6 +1711,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         setTimeout(() => {
+            tipoMapa = 'meteorologia';
             const tempBtn = document.querySelector('[data-layer="temperature"]');
             if (tempBtn) tempBtn.click();
         }, 300);
@@ -1673,6 +1722,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
         setTimeout(() => {
+            tipoMapa = 'calidad';
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
             if (pm25Btn) pm25Btn.click();
         }, 300);
