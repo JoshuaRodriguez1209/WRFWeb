@@ -182,13 +182,17 @@
                 <option value="wind">Viento</option>
               </select>
             </div>
-            <div class="layer-buttons">
+            <div class="layer-buttons" id="layer-buttons-meteo">
+              <!--meteorologia-->
               <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
               <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
               <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
               <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
               <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
               <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
+            </div>
+            <div class="layer-buttons" id="layer-buttons-aire" style="display: none;">
+              <!--calidad del aire-->
               <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
               <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
               <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>

@@ -1329,17 +1329,17 @@ function activateMap(type) {
     document.body.classList.add('map-active');
     initializeMap();
     
-    if (type === 'meteorologia') {
+    /*if (type === 'meteorologia') {
         setTimeout(() => {
             const tempBtn = document.querySelector('[data-layer="temperature"]');
-            if (tempBtn) tempBtn.click();
+            //if (tempBtn) tempBtn.click();
         }, 500);
     } else if (type === 'calidad') {
         setTimeout(() => {
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
-            if (pm25Btn) pm25Btn.click();
+            //if (pm25Btn) pm25Btn.click();
         }, 500);
-    }
+    }*/
 }
 
 function showLoadingIndicator() {
@@ -1641,11 +1641,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    //funcion para separar los botones
+    function showMeteorologiaButtons() {
+    document.getElementById('layer-buttons-meteo').style.display = 'grid'; // se muestra
+    document.getElementById('layer-buttons-aire').style.display = 'none';  // se oculta
+    }
+
+    function showAireButtons() {
+    document.getElementById('layer-buttons-meteo').style.display = 'none';
+    document.getElementById('layer-buttons-aire').style.display = 'grid';
+    }
+
+    function showMapa() {
+        document.getElementById('main-content').style.display = 'block';
+        const dashboard = document.getElementById('historial-dashboard');
+        dashboard.style.display = 'none';
+        dashboard.classList.remove('active');
+        if (map) map.resize();
+    }
+
     // Back button functionality
     document.getElementById('btn_back').addEventListener('click', () => {
         document.body.classList.remove('map-active');
         document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+
+        //limpiar mapa
+        map.removeLayer(activeLayer);
+
         stopAnimation();
         currentTimeStep = 0;
         colorFilter = null;
@@ -1662,20 +1685,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!mapInitialized) activateMap('meteorologia');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        setTimeout(() => {
-            const tempBtn = document.querySelector('[data-layer="temperature"]');
-            if (tempBtn) tempBtn.click();
-        }, 300);
+
+        //limpiar el mapa 
+        map.removeLayer(activeLayer);
+
+        //muestra mapa
+        showMapa();
+        //muestra botones divididos      
+        showMeteorologiaButtons()
+
     });
 
     document.getElementById('btn_aire').addEventListener('click', function() {
         if (!mapInitialized) activateMap('calidad');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
-        setTimeout(() => {
-            const pm25Btn = document.querySelector('[data-layer="pm25"]');
-            if (pm25Btn) pm25Btn.click();
-        }, 300);
+
+        //limpiar el mapa
+        map.removeLayer(activeLayer);
+
+        //muestra mapa
+        showMapa();
+        //muestra botones divididos      
+        showAireButtons()
+
     });
 
  document.getElementById('btn_hist').addEventListener('click', function() {
@@ -1683,8 +1716,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
 
+        //limpiar el mapa
+        map.removeLayer(activeLayer);
+
         // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
+
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
         dashboard.classList.add('active');
