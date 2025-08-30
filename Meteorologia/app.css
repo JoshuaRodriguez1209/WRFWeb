@@ -163,11 +163,52 @@ body.map-active #main-content {
 .control-group label { display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 500; font-size: 14px; }
 .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
 .control-group select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
-.layer-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px; }
-.layer-btn { padding: 12px 5px; border: 2px solid var(--medium-gray); background: white; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; text-align: center; font-size: 12px; font-weight: 500; color: #666; }
-.layer-btn:hover { border-color: var(--secondary-brand-color); color: var(--secondary-brand-color); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(193, 152, 98, 0.2); }
-.layer-btn.active { background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color)); color: white; border-color: transparent; }
-.layer-btn i { display: block; font-size: 24px; margin-bottom: 5px; }
+.layer-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* siempre 2 botones por fila */
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.layer-btn {
+  display: flex;
+  flex-direction: column;       /* ícono arriba, texto abajo */
+  justify-content: center;
+  align-items: center;
+  min-height: 100px;            /* todos con el mismo alto */
+  width: 100%;                  /* mismo ancho dentro de la celda */
+  padding: 14px 10px;
+  border: 2px solid var(--medium-gray);
+  background: white;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  box-sizing: border-box;
+}
+
+.layer-btn i {
+  display: block;
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.layer-btn:hover {
+  border-color: var(--secondary-brand-color);
+  color: var(--secondary-brand-color);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(193, 152, 98, 0.2);
+}
+
+.layer-btn.active {
+  background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color));
+  color: white;
+  border-color: transparent;
+}
+
 .animation-controls { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
 .play-btn { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color)); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3); flex-shrink: 0; font-size: 20px; }
 .play-btn:hover { transform: scale(1.1); box-shadow: 0 8px 20px rgba(90, 27, 48, 0.4); }
