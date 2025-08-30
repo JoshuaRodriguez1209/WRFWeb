@@ -388,10 +388,28 @@ function addPueblaMunicipalities() {
     });
 
     map.on('click', 'municipality-points', (e) => {
-        console.log('Municipality clicked:', e.features[0]); // Debug log
-        const properties = e.features[0].properties;
-        console.log('Properties:', properties); // Debug log
-        showMunicipalityModal(properties);
+        try {
+            console.log('Municipality clicked:', e.features[0]); // Debug log
+            console.log('Current map type:', tipoMapa); // Debug log
+            
+            const feature = e.features[0];
+            if (!feature) {
+                console.error('No feature found in click event');
+                return;
+            }
+            
+            // Ensure we have all required properties
+            const properties = {
+                ...feature.properties,
+                geometry: feature.geometry
+            };
+            
+            console.log('Properties prepared for modal:', properties); // Debug log
+            showMunicipalityModal(properties);
+        } catch (error) {
+            console.error('Error handling municipality click:', error);
+            showNotification('Error al mostrar información del municipio', 'error');
+        }
     });
 
     map.on('mouseenter', 'municipality-points', () => {
@@ -472,113 +490,82 @@ const chemKeyMap = {
 
 // ---- MODAL MUNICIPIO PROFESIONAL ----
 function showMunicipalityModal(properties) {
+    console.log('Opening modal with properties:', properties); // Debug log
+    
     const modal = document.getElementById('municipalityModal');
     const title = document.getElementById('modalTitle');
-    const summary = document.getElementById('pollutantSummary');
+    const cardsContainer = document.getElementById('pollutantSummary');
     const chartsContainer = document.getElementById('modalChartsHost');
+    
+    // Limpiar contenido previo
     if (chartsContainer) chartsContainer.innerHTML = '';
+    if (cardsContainer) cardsContainer.innerHTML = '';
+    
+    // Establecer título
+    if (title) title.textContent = properties.nombre;
 
-    title.textContent = properties.nombre;
-    summary.innerHTML = '';
+    // Detectar tipo de mapa y variables
+    const tipo = window.tipoMapa || 'meteorologia'; 
+    const variables = tipo === 'meteorologia' ? meteorologicalVariables : airQualityVariables;
+    const keyMap = tipo === 'meteorologia' ? meteoKeyMap : chemKeyMap;
 
-    // Detecta tipo de mapa y variables
-    const tipo = tipoMapa === 'meteorologia' ? 'meteo' : 'calidad';
-    const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
-    const keyMap = tipo === 'meteo' ? meteoKeyMap : chemKeyMap;
-
-    // Obtén las variables seleccionadas si existen, si no usa todas
-    const selected = (typeof selectedVariables !== 'undefined' && selectedVariables.size)
-        ? Array.from(selectedVariables).filter(v => variables[v])
-        : Object.keys(variables);
-
-    // Obtiene coordenadas (si existen en geometry, si no lat/lng)
-    let coords;
+    // Obtener coordenadas
+    let coords = [];
     if (properties.geometry && properties.geometry.coordinates) {
         coords = properties.geometry.coordinates;
     } else if (properties.lat && properties.lng) {
         coords = [properties.lng, properties.lat];
     } else {
-        // fallback (no debería pasar)
         coords = [-98.2063, 19.0414];
     }
     const lat = coords[1];
     const lng = coords[0];
 
-    // --- 1. Tarjetas de resumen de promedios ---
-    selected.forEach(key => {
-        const config = variables[key];
-        const weatherKey = keyMap[key];
-        if (!weatherKey || !weatherLayers[weatherKey]) return; // Salta si no existe
+    try {
+        Object.entries(variables).forEach(([key, config]) => {
+            const weatherKey = keyMap[key];
+            if (!weatherKey || !weatherLayers[weatherKey]) return;
 
-        // Obtén el valor promedio del municipio (simula con la función del mapa)
-        const value = generateRealisticValue(weatherKey, lat, lng, 0, 0);
+            const value = generateRealisticValue(weatherKey, lat, lng, 0, 0);
+            const qualityLevel = getQualityLevel(value, weatherKey);
+            const qualityColors = {
+                good: '#00b894',
+                moderate: '#fdcb6e',
+                bad: '#d63031'
+            };
 
-        // Si tienes thresholds, puedes usarlos para el semáforo
-        let qualityLevel = 'good';
-        // Define thresholds por variable si quieres semáforo (ejemplo para aire)
-        const thresholds = {
-            co: { good: 1, moderate: 2, bad: 3 },
-            no2: { good: 0.3, moderate: 0.6, bad: 1.0 },
-            o3: { good: 8, moderate: 15, bad: 25 },
-            so2: { good: 0.1, moderate: 0.2, bad: 0.5 },
-            pm10: { good: 0.15, moderate: 0.3, bad: 0.5 },
-            pm25: { good: 0.1, moderate: 0.2, bad: 0.3 }
-        };
-        const th = thresholds[weatherKey] || { good: 0.4, moderate: 0.7, bad: 1.1 };
-        if (value > th.bad) qualityLevel = 'bad';
-        else if (value > th.moderate) qualityLevel = 'moderate';
+            // Create summary card
+            const item = document.createElement('div');
+            item.className = 'pollutant-item';
+            item.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;background:#f8f9fa;border-radius:8px;';
+            item.innerHTML = `
+                <div style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
+                <div style="flex:1;">
+                    <div style="font-weight:bold;margin-bottom:4px;">${config.icon} ${config.label}</div>
+                    <div style="font-size:1.1em;color:#333;">${value.toFixed(2)} ${config.unit}</div>
+                </div>
+            `;
+            cardsContainer.appendChild(item);
 
-        const qualityColors = {
-            good: '#00b894',
-            moderate: '#fdcb6e',
-            bad: '#d63031'
-        };
+            // Create chart for this variable
+            const labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+            const data = generateTimeSeriesData(weatherKey, lat, lng);
+            createSingleVariableChart(chartsContainer, config, labels, data, properties.nombre);
+        });
 
-        // Tarjeta resumen visual
-        const item = document.createElement('div');
-        item.className = 'pollutant-item';
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.gap = '10px';
-        item.innerHTML = `
-            <div class="pollutant-color" style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
-            <div class="pollutant-info" style="flex:1;">
-                <div class="pollutant-name" style="font-weight:bold;">${config.icon} ${config.label} (${config.unit})</div>
-                <div class="pollutant-value" style="font-size:1.1em;color:#333;">${value.toFixed(2)}</div>
-            </div>
-        `;
-        summary.appendChild(item);
-    });
+        modal.style.display = 'flex';
+        window.currentMunicipality = properties;
 
-    // --- 2. Gráficas limpias y profesionales ---
-    selected.forEach(key => {
-        const config = variables[key];
-        const weatherKey = keyMap[key];
-        if (!weatherKey || !weatherLayers[weatherKey]) return;
-
-        // Genera 24 datos horarios con la función del mapa
-        const timeLabels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-        const dataValues = [];
-        for (let hour = 0; hour < 24; hour++) {
-            const timeStep = hour;
-            const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
-            dataValues.push(
-                generateRealisticValue(weatherKey, lat, lng, timeStep, timeVariation)
-            );
+    } catch (error) {
+        console.error('Error showing municipality modal:', error);
+        showNotification('Error al mostrar información del municipio', 'error');
+    }
+    
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
         }
-
-        // Crea una gráfica por variable (profesional, solo una variable por chart)
-        createSingleVariableChart(
-            chartsContainer,
-            config,
-            timeLabels,
-            dataValues,
-            properties.nombre
-        );
     });
-
-    window.currentMunicipality = properties;
-    modal.style.display = 'flex';
 }
 
 // Gráfica profesional por variable (solo una por chart, limpia)
@@ -656,6 +643,40 @@ function hexToRgba(hex, alpha) {
     const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
     if (!m) return hex;
     return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`;
+}
+
+// Función para determinar el nivel de calidad basado en el valor y tipo
+function getQualityLevel(value, type) {
+    const thresholds = {
+        temperature: { good: 20, moderate: 30, bad: 35 },
+        humidity: { good: 40, moderate: 60, bad: 80 },
+        pressure: { good: 1000, moderate: 1015, bad: 1025 },
+        wind: { good: 10, moderate: 20, bad: 30 },
+        precipitation: { good: 5, moderate: 15, bad: 30 },
+        radiation: { good: 300, moderate: 600, bad: 800 },
+        co: { good: 1, moderate: 2, bad: 3 },
+        no2: { good: 0.3, moderate: 0.6, bad: 1.0 },
+        o3: { good: 8, moderate: 15, bad: 25 },
+        so2: { good: 0.1, moderate: 0.2, bad: 0.5 },
+        pm10: { good: 0.15, moderate: 0.3, bad: 0.5 },
+        pm25: { good: 0.1, moderate: 0.2, bad: 0.3 }
+    };
+
+    const th = thresholds[type] || { good: 0.4, moderate: 0.7, bad: 1.1 };
+    if (value > th.bad) return 'bad';
+    if (value > th.moderate) return 'moderate';
+    return 'good';
+}
+
+// Función para generar datos de serie temporal
+function generateTimeSeriesData(type, lat, lng) {
+    const data = [];
+    for (let hour = 0; hour < 24; hour++) {
+        const timeStep = hour;
+        const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
+        data.push(generateRealisticValue(type, lat, lng, timeStep, timeVariation));
+    }
+    return data;
 }
 //---------------------------------------------------------------------------
 
@@ -1431,25 +1452,22 @@ function toggleMenu() {
     const navLinks = document.getElementById('nav-links');
     navLinks.classList.toggle('active');
 }
-let tipoMapa = 'meteorologia'; // Valor por defecto
-function activateMap(type) {
+// Variable global para el tipo de mapa
+window.tipoMapa = 'meteorologia'; // Valor por defecto
+
+// Función global para activar el mapa
+window.activateMap = function(type) {
     document.body.classList.add('map-active');
     initializeMap();
     
-    /*if (type === 'meteorologia') {
-    if (type === 'meteorologia') {
-        tipoMapa = 'meteorologia';
-        setTimeout(() => {
-            const tempBtn = document.querySelector('[data-layer="temperature"]');
-            //if (tempBtn) tempBtn.click();
-        }, 500);
-    } else if (type === 'calidad') {
-        tipoMapa = 'calidad';
-        setTimeout(() => {
-            const pm25Btn = document.querySelector('[data-layer="pm25"]');
-            //if (pm25Btn) pm25Btn.click();
-        }, 500);
-    }*/
+    // Set map type as soon as map is activated
+    window.tipoMapa = type;
+    
+    // Reset active layer
+    if (map && activeLayer && map.getLayer(activeLayer)) {
+        map.removeLayer(activeLayer);
+        activeLayer = null;
+    }
 }
 
 function showLoadingIndicator() {
@@ -1767,7 +1785,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'none';
         dashboard.classList.remove('active');
-        if (map) map.resize();
+        
+        // Limpiar estado del mapa
+        if (map) {
+            if (activeLayer && map.getLayer(activeLayer)) {
+                map.removeLayer(activeLayer);
+                if (map.getLayer(activeLayer + '-points')) {
+                    map.removeLayer(activeLayer + '-points');
+                }
+            }
+            activeLayer = null;
+            map.resize();
+        }
     }
 
     // Back button functionality
@@ -1797,15 +1826,20 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.add('active');
 
         //limpiar el mapa 
-        map.removeLayer(activeLayer);
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+        }
 
         //muestra mapa
         showMapa();
         //muestra botones divididos      
-        showMeteorologiaButtons()
+        showMeteorologiaButtons();
 
+        // Set map type immediately
+        tipoMapa = 'meteorologia';
+        
+        // Wait for map to be ready
         setTimeout(() => {
-            tipoMapa = 'meteorologia';
             const tempBtn = document.querySelector('[data-layer="temperature"]');
             if (tempBtn) tempBtn.click();
         }, 300);
@@ -1817,29 +1851,38 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.add('active');
 
         //limpiar el mapa
-        map.removeLayer(activeLayer);
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+        }
 
         //muestra mapa
         showMapa();
         //muestra botones divididos      
-        showAireButtons()
+        showAireButtons();
 
+        // Set map type immediately
+        tipoMapa = 'calidad';
+        
+        // Wait for map to be ready
         setTimeout(() => {
-            tipoMapa = 'calidad';
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
             if (pm25Btn) pm25Btn.click();
         }, 300);
     });
 
- document.getElementById('btn_hist').addEventListener('click', function() {
+    document.getElementById('btn_hist').addEventListener('click', function() {
         document.body.classList.add('map-active');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
 
         //limpiar el mapa
-        map.removeLayer(activeLayer);
-
-        // Hide map content and show the dashboard
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+            if (map.getLayer(activeLayer + '-points')) {
+                map.removeLayer(activeLayer + '-points');
+            }
+            activeLayer = null;
+        }        // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
 
         const dashboard = document.getElementById('historial-dashboard');
