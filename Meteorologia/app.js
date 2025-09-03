@@ -1462,7 +1462,6 @@ function calculateStats(values) {
 // You also need these chart creation functions
 function createMeteoHistoricalChart(data) {
     currentHistData = data;
-    
     const datasets = [];
     Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
         if (selectedVariables.has(key) && Array.isArray(data[key])) {
@@ -1698,12 +1697,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function showHistorial() {
         document.getElementById("app").style.display = "none";
         document.getElementById("historial-dashboard").style.display = "block";
-        // Cargar municipios
-        loadHistoricalCabeceras();
-        // Inicializar toggles y primera gráfica (por defecto meteorología)
-        createVariableToggles("meteo");
-        updateHistoricalChart();
-        document.getElementById("nav-links").classList.remove("active");
     }
 
 
@@ -1786,17 +1779,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
          // ADD these new listeners for the dashboard controls
-    document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
-        const muncipalityId = this.value;
-        const type = document.getElementById('hist-tipo-select').value;
-        if (!muncipalityId) return;
+        document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
+            const muncipalityId = this.value;
+            const type = document.getElementById('hist-tipo-select').value;
+            if (!muncipalityId) return;
 
-        // Show a loading indicator
-        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
+            // Show a loading indicator
+            document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
 
-        currentHistData = await fetchHistoricalData(muncipalityId, type);
-        updateHistoricalChart();
-    });
+            currentHistData = await fetchHistoricalData(muncipalityId, type);
+            updateHistoricalChart();
+        });
 
     document.getElementById('hist-tipo-select').addEventListener('change', function() {
         const type = this.value;
@@ -1865,6 +1858,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     cabeceraSelect.appendChild(option);
                 });
         }
+         // ADD these new listeners for the dashboard controls
+        document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
+            const muncipalityId = this.value;
+            const type = document.getElementById('hist-tipo-select').value;
+            if (!muncipalityId) return;
+
+            // Show a loading indicator
+            document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
+
+            currentHistData = await fetchHistoricalData(muncipalityId, type);
+            updateHistoricalChart();
+        });
+
+    document.getElementById('hist-tipo-select').addEventListener('change', function() {
+        const type = this.value;
+        createVariableToggles(type);
+        // If a municipality is already selected, refetch and update data for the new type
+        const cabeceraSelect = document.getElementById('hist-cabecera-select');
+        if (cabeceraSelect.value) {
+            cabeceraSelect.dispatchEvent(new Event('change'));
+        }
+    });
+    // END: New event listener block
+        
+        // Initial setup
+        createVariableToggles('meteo');
+        // Clear previous charts and table
+        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
+        document.getElementById('histStatsTable').innerHTML = '';
     });
 
     // Update parameter selection functionality
@@ -2100,15 +2122,15 @@ const meteorologicalVariables = {
     rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
     psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
     wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
-    pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
+    pre: { label: 'Precipitación', color: '#FF9F40', unit: 'mm', icon: '🌧️' },
     sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
 };
 
 const airQualityVariables = {
-    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
-    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
-    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
+    CO: { label: 'Monóxido de Carbono', color: '#8B4513', unit: 'ppm', icon: '🟤' },
+    NO2: { label: 'Dióxido de Nitrógeno', color: '#6A5ACD', unit: 'ppb', icon: '🟣' },
+    O3: { label: 'Ozono', color: '#32CD32', unit: 'ppb', icon: '🟢' },
+    SO2: { label: 'Dióxido de Azufre', color: '#4169E1', unit: 'ppb', icon: '🔵' },
     PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
     PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
 };
@@ -2118,6 +2140,7 @@ let selectedVariables = new Set(); // Tracks which variables are toggled on/off
 let currentHistCharts = []; // Holds the Chart.js instances to manage them
 
 // --- 2. Mock Data Function ---
+
 // Since we don't have a backend, this function simulates fetching historical data.
 function fetchHistoricalData(municipalityId, type) {
     console.log(`Fetching mock data for ${municipalityId}, type: ${type}`);
@@ -2179,23 +2202,44 @@ function groupDatasetsByRange(datasets, threshold = 30) {
     return groups;
 }
 
-// Renders the charts based on the groups generated above.
-function renderGroupedCharts(groups, labels, titlePrefix) {
-    const host = document.getElementById('chartsHost');
-    host.innerHTML = '';
-    currentHistCharts.forEach(chart => chart.destroy());
-    currentHistCharts = [];
+//creacion de slugs
+function slug(s) {
+  return String(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[^\w\-]+/g, '_') // no-alfanum -> _
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 
-    groups.forEach(group => {
+// Renders the charts based on the groups generated above.
+function slug(s) {
+  return String(s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // quita acentos
+    .replace(/[^\w\-]+/g, '_') // no-alfanum -> _
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+function renderGroupedCharts(groups, labels, titlePrefix){
+    const host = document.getElementById('chartsHost');
+    if (!host) return;
+    host.innerHTML = '';
+    destroyHistCharts();
+    if (Array.isArray(currentHistCharts)) currentHistCharts.length = 0;
+
+    groups.forEach((grp, i) => {
+        const idx = i; // <— capturamos el índice aquí
+
         const card = document.createElement('div');
         card.className = 'chart-card';
-        const canvas = document.createElement('canvas');
-        card.appendChild(canvas);
+
+        const cv = document.createElement('canvas');
+        card.appendChild(cv);
         host.appendChild(card);
 
-        const chart = new Chart(canvas, {
+        const chart = new Chart(cv.getContext('2d'), {
             type: 'line',
-            data: { labels, datasets: group },
+            data: { labels, datasets: grp },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -2203,12 +2247,31 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
                     legend: { position: 'top' },
                     title: { display: true, text: titlePrefix }
                 },
-                scales: { y: { beginAtZero: false } }
+                scales: {
+                    y: { beginAtZero: false },
+                }
             }
         });
+
         currentHistCharts.push(chart);
+
+        const btn = document.createElement('button');
+        btn.innerText = "Descargar";
+        btn.className = "download-btn";
+        btn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = chart.toBase64Image();
+
+            // Nombre de archivo robusto (usa título + idx + labels de datasets)
+            const dsNames = chart.config.data.datasets.map(d => d.label).join('_');
+            a.download = `${slug(titlePrefix)}_chart${idx + 1}_${slug(dsNames)}.png`;
+
+            a.click();
+        };
+        card.appendChild(btn);
     });
 }
+
 
 // --- 4. Statistical Logic ---
 function calculateStats(values) {
@@ -2271,17 +2334,47 @@ function createMeteoHistoricalChart(data) {
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
-                tension: 0.4
+                tension: 0.4,
             });
         }
     });
-    // Group Pressure (psl) separately because its range is huge
-    const pslDataset = datasets.find(d => d.label.includes('Presión'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Presión'));
-    const groups = groupDatasetsByRange(otherDatasets, 50);
-    if (pslDataset) groups.push([pslDataset]);
+
+    // Agrupar datasets por tipo de variable
+    const pressureDatasets = datasets.filter(d => d.label.includes('Presión'));
+    const tempDatasets = datasets.filter(d => d.label.includes('Temperatura'));
+    const windDatasets = datasets.filter(d => d.label.includes('Viento'));
+    const otherDatasets = datasets.filter(d => 
+        !d.label.includes('Presión') && 
+        !d.label.includes('Temperatura') && 
+        !d.label.includes('Viento')
+    );
+
+    // Crear grupos
+    const groups = [];
     
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
+    // Grupo 1: Presión (si existe)
+    if (pressureDatasets.length > 0) {
+        groups.push(pressureDatasets);
+    }
+    
+    // Grupo 2: Temperatura (si existe)
+    if (tempDatasets.length > 0) {
+        groups.push(tempDatasets);
+    }
+    
+    // Grupo 3: Viento (si existe)
+    if (windDatasets.length > 0) {
+        groups.push(windDatasets);
+    }
+    
+    // Grupo 4: Otras variables (agrupadas por rango)
+    if (otherDatasets.length > 0) {
+        const otherGroups = groupDatasetsByRange(otherDatasets, 30);
+        groups.push(...otherGroups);
+    }
+
+    // Renderizar todos los grupos
+    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas (simuladas)');
 }
 
 function createChemHistoricalChart(data) {
@@ -2294,17 +2387,131 @@ function createChemHistoricalChart(data) {
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
-                tension: 0.4
+                tension: 0.4,
+                unit: cfg.unit
             });
         }
     });
-    // Group Ozone (O3) separately
-    const o3Dataset = datasets.find(d => d.label.includes('Ozono'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Ozono'));
-    const groups = [otherDatasets];
-    if (o3Dataset) groups.push([o3Dataset]);
 
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+    // Si no hay datasets, mostrar mensaje
+    if (datasets.length === 0) {
+        document.getElementById('chartsHost').innerHTML = 
+            '<p style="text-align:center; color:#777; padding:20px;">No hay datos disponibles para las variables seleccionadas</p>';
+        return;
+    }
+
+    // Agrupar por tipo de unidad primero
+    const groupsByUnit = {};
+    
+    datasets.forEach(dataset => {
+        const unit = dataset.unit;
+        if (!groupsByUnit[unit]) {
+            groupsByUnit[unit] = [];
+        }
+        groupsByUnit[unit].push(dataset);
+    });
+
+    // Para cada grupo de unidad, aplicar agrupamiento por rango
+    const finalGroups = [];
+    
+    Object.values(groupsByUnit).forEach(unitGroup => {
+        if (unitGroup.length <= 2) {
+            // Grupos pequeños van directo
+            finalGroups.push(unitGroup);
+        } else {
+            // Grupos grandes se dividen por rango
+            const rangedGroups = groupDatasetsByRange(unitGroup, 20);
+            finalGroups.push(...rangedGroups);
+        }
+    });
+
+    renderGroupedCharts(finalGroups, data.labels, 'Tendencias de Calidad del Aire (simuladas)');
+}
+
+// Función mejorada de agrupamiento con manejo de errores
+function groupDatasetsByRange(datasets, threshold = 30) {
+    const groups = [];
+    
+    // Filtrar datasets vacíos o inválidos
+    const validDatasets = datasets.filter(dataset => {
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        return validData.length > 0;
+    });
+    
+    validDatasets.forEach(dataset => {
+        let placed = false;
+        
+        // Calcular rango del dataset actual
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        const minVal = Math.min(...validData);
+        const maxVal = Math.max(...validData);
+        const range = maxVal - minVal;
+        
+        // Buscar grupo compatible
+        for (const group of groups) {
+            // Obtener todos los valores válidos del grupo
+            const groupValues = group.flatMap(d => 
+                d.data.filter(v => v !== null && v !== undefined)
+            );
+            
+            if (groupValues.length === 0) continue;
+            
+            // Calcular rango combinado
+            const combinedMin = Math.min(...groupValues, minVal);
+            const combinedMax = Math.max(...groupValues, maxVal);
+            const combinedRange = combinedMax - combinedMin;
+            
+            // Verificar si son compatibles
+            if (combinedRange <= threshold) {
+                group.push(dataset);
+                placed = true;
+                break;
+            }
+        }
+        
+        if (!placed) {
+            groups.push([dataset]);
+        }
+    });
+    
+    return groups;
+}
+
+// Función alternativa para agrupamiento más inteligente
+function groupDatasetsSmart(datasets, maxGroups = 4) {
+    if (datasets.length <= maxGroups) {
+        return datasets.map(dataset => [dataset]);
+    }
+    
+    // Calcular el rango de cada dataset
+    const datasetsWithRange = datasets.map(dataset => {
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        if (validData.length === 0) return { dataset, range: 0, avg: 0 };
+        
+        const minVal = Math.min(...validData);
+        const maxVal = Math.max(...validData);
+        const avgVal = validData.reduce((a, b) => a + b, 0) / validData.length;
+        
+        return {
+            dataset,
+            range: maxVal - minVal,
+            avg: avgVal
+        };
+    }).filter(item => item.range > 0);
+    
+    // Ordenar por valor promedio
+    datasetsWithRange.sort((a, b) => a.avg - b.avg);
+    
+    // Dividir en grupos
+    const groups = [];
+    const groupSize = Math.ceil(datasetsWithRange.length / maxGroups);
+    
+    for (let i = 0; i < datasetsWithRange.length; i += groupSize) {
+        const group = datasetsWithRange.slice(i, i + groupSize).map(item => item.dataset);
+        groups.push(group);
+    }
+    
+    return groups;
 }
 
 function updateHistoricalChart() {
