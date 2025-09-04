@@ -2148,8 +2148,8 @@ function fetchHistoricalData(municipalityId, type) {
     return new Promise(resolve => {
         setTimeout(() => {
             const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            
-            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            //const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
 
             let data;
             if (type === 'meteo') {
@@ -2227,15 +2227,26 @@ function renderGroupedCharts(groups, labels, titlePrefix){
     destroyHistCharts();
     if (Array.isArray(currentHistCharts)) currentHistCharts.length = 0;
 
-    groups.forEach((grp, i) => {
-        const idx = i; // <— capturamos el índice aquí
-
+    groups.forEach((grp, idx) => {
         const card = document.createElement('div');
         card.className = 'chart-card';
-
         const cv = document.createElement('canvas');
         card.appendChild(cv);
         host.appendChild(card);
+
+        const units=new Set();
+        grp.forEach(ds => {
+            if (ds.unit){
+                units.add(ds.unit);
+            }
+        });
+
+        let yTitle ="Valor";
+        if (units.size===1){
+            yTitle=[...units][0];
+        }else if (units.size >1){
+            yTitle="unidades diversas";
+        }
 
         const chart = new Chart(cv.getContext('2d'), {
             type: 'line',
@@ -2248,7 +2259,19 @@ function renderGroupedCharts(groups, labels, titlePrefix){
                     title: { display: true, text: titlePrefix }
                 },
                 scales: {
-                    y: { beginAtZero: false },
+                    y: { beginAtZero: false,
+                        title: {
+                            display:true,
+                            text:yTitle,
+                            color:'#666'
+                        } 
+                    },
+                    x:{ticks: {autoSkip:true},
+                    title:{ 
+                        display: true,
+                        text:'Hora del día',
+                        color:'#666'
+                    }}
                 }
             }
         });
@@ -2256,7 +2279,7 @@ function renderGroupedCharts(groups, labels, titlePrefix){
         currentHistCharts.push(chart);
 
         const btn = document.createElement('button');
-        btn.innerText = "Descargar";
+        btn.innerText = "⤓";
         btn.className = "download-btn";
         btn.onclick = () => {
             const a = document.createElement('a');
@@ -2264,7 +2287,7 @@ function renderGroupedCharts(groups, labels, titlePrefix){
 
             // Nombre de archivo robusto (usa título + idx + labels de datasets)
             const dsNames = chart.config.data.datasets.map(d => d.label).join('_');
-            a.download = `${slug(titlePrefix)}_chart${idx + 1}_${slug(dsNames)}.png`;
+            a.download = `${slug(dsNames)}.png`;
 
             a.click();
         };
@@ -2329,12 +2352,13 @@ function createMeteoHistoricalChart(data) {
     Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
         if (selectedVariables.has(key) && data[key]) {
             datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                label: `${cfg.icon} ${cfg.label} `,
                 data: data[key],
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
                 tension: 0.4,
+                unit:cfg.unit
             });
         }
     });
@@ -2382,12 +2406,13 @@ function createChemHistoricalChart(data) {
     Object.entries(airQualityVariables).forEach(([key, cfg]) => {
         if (selectedVariables.has(key) && data[key]) {
             datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                label: `${cfg.icon} ${cfg.label}`,
                 data: data[key],
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
                 tension: 0.4,
+                fill:false,
                 unit: cfg.unit
             });
         }
