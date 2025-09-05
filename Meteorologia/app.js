@@ -997,11 +997,12 @@ function generateSmoothWeatherData(type, timeStep = 0) {
     const gridSize = 50;
     const range = weatherLayers[type].range;
     
-    const pueblaBounds = {
-        minLat: 17.6,
-        maxLat: 20.4,
-        minLng: -99.1,
-        maxLng: -96.9
+    const pueblaBounds = getPueblaBoundingBox();
+    const bounds = {
+        minLat: pueblaBounds[0][1],  // bottom-left lat
+        maxLat: pueblaBounds[1][1],  // top-right lat  
+        minLng: pueblaBounds[0][0],  // bottom-left lng
+        maxLng: pueblaBounds[1][0]   // top-right lng
     };
     
     const weatherCenters = [
@@ -1015,8 +1016,8 @@ function generateSmoothWeatherData(type, timeStep = 0) {
     
     for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
-            const lat = pueblaBounds.minLat + (i / gridSize) * (pueblaBounds.maxLat - pueblaBounds.minLat);
-            const lng = pueblaBounds.minLng + (j / gridSize) * (pueblaBounds.maxLng - pueblaBounds.minLng);
+            const lat = bounds.minLat + (i / gridSize) * (bounds.maxLat - bounds.minLat);
+            const lng = bounds.minLng + (j / gridSize) * (bounds.maxLng - bounds.minLng);
             
             if (isPointInPueblaAccurate(lat, lng)) {
                 let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
