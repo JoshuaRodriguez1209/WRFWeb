@@ -2963,7 +2963,7 @@ function updateHistoricalChart() {
     list.style.maxWidth = Math.max(r.width, 260) + 'px';
   }
 
-    function render(){
+    function render_search_map(){
     list.innerHTML = '';
     filtered.forEach((it, idx) => {
         const li = document.createElement('li');
@@ -2972,9 +2972,14 @@ function updateHistoricalChart() {
         li.style.padding = '12px 16px';
         li.style.cursor = 'pointer';
 
-        // Selección con mouse (mousedown, no click)
         li.addEventListener('mousedown', (e) => {
-        e.preventDefault();
+      e.preventDefault();
+      e.stopPropagation();
+      choose(idx);
+    });
+
+        li.addEventListener('click', (e) => {
+         e.preventDefault();
         e.stopPropagation();
         choose(idx);
         });
@@ -3002,27 +3007,36 @@ function updateHistoricalChart() {
     filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
     const exact = filtered.findIndex(m => norm(m.label) === nq);
     active = exact >= 0 ? exact : -1;
-    render();
+    render_search_map();
     if (open && !filtered.length) closeList();
   }
 
-    function choose(idx){
-    if (idx < 0 || idx >= filtered.length) return;
-    const it = filtered[idx];
-    input.value = it.label;
-    sel.value = it.value;
+    // Reemplazar la función choose en la sección del combobox del mapa
+function choose(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  const it = filtered[idx];
+  input.value = it.label;
+  sel.value = it.value;
 
-    // 👇 Aquí centras el mapa en el municipio seleccionado
-    const municipio = municipalitiesData.features.find(
-        f => f.properties.clave === it.value
-    );
-    if (municipio) {
-        const center = turf.center(municipio).geometry.coordinates;
-        map.flyTo({ center, zoom: 10 });
-    }
+  // Centrar el mapa en el municipio seleccionado (sin usar turf)
+  const municipio = municipalitiesData.features.find(
+    f => f.properties.clave === it.value
+  );
+  
+  if (municipio && window.map) {
+    // Obtener las coordenadas directamente del municipio
+    const coords = municipio.geometry.coordinates;
+    
+    // Centrar el mapa en esas coordenadas
+    window.map.flyTo({
+      center: coords,
+      zoom: 10,
+      duration: 1000
+    });
+  }
 
-    closeList();
-    }
+  closeList();
+}
 
 
 
@@ -3034,7 +3048,7 @@ function updateHistoricalChart() {
     input.addEventListener('focus', () => {
     if (!items.length) snapshotItems();       // <-- fuerza refresco
     filtered = items.slice();
-    render();
+    render_search_map();
     openList();
     });
 
@@ -3042,7 +3056,7 @@ function updateHistoricalChart() {
     if (!items.length) snapshotItems();       // <-- fuerza refresco
     if (!open) {
         filtered = items.slice();
-        render();
+        render_search_map();
         openList();
     }
     });
@@ -3055,8 +3069,8 @@ function updateHistoricalChart() {
 
   input.addEventListener('keydown', (e) => {
     switch(e.key){
-      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active=Math.min(filtered.length-1,active+1); render(); break;
-      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active=Math.max(0,active-1); render(); break;
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active=Math.min(filtered.length-1,active+1); render_search_map(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active=Math.max(0,active-1); render_search_map(); break;
       case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else {openList();}} else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
       case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
       case 'Tab':       closeList(); break;
@@ -3073,7 +3087,7 @@ function updateHistoricalChart() {
   if (sel.options.length) snapshotItems();
     const mo = new MutationObserver(() => {
     snapshotItems();
-    if (open) { render(); positionList(); }
+    if (open) { render_search_map(); positionList(); }
     });
     mo.observe(sel, { childList: true, subtree: false });  // <option> son hijos directos
 
@@ -3086,3 +3100,55 @@ function updateHistoricalChart() {
 // ===================================================================
 // END: New History Dashboard Functions
 // ===================================================================
+function improveMapComboboxFunctionality() {
+    // Esta función solo debe ejecutarse cuando el mapa está listo
+    if (!window.map) return;
+    
+    // Observamos el #map-combobox-list para detectar cuando se agrega a la página
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.type === 'childList' && document.getElementById('map-combobox-list')) {
+          setupComboboxListeners();
+        }
+      });
+    });
+    
+    // Iniciar observación del cuerpo del documento para detectar cambios
+    observer.observe(document.body, { childList: true });
+    
+    function setupComboboxListeners() {
+      const listItems = document.querySelectorAll('#map-combobox-list li');
+      
+      listItems.forEach(function(item) {
+        item.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const municipioName = this.textContent;
+          const municipio = window.municipalitiesData.features.find(
+            f => f.properties.nombre === municipioName
+          );
+          
+          if (municipio && window.map) {
+            // Obtener las coordenadas del municipio
+            const coords = municipio.geometry.coordinates;
+            
+            // Centrar el mapa en esas coordenadas con zoom apropiado
+            window.map.flyTo({
+              center: coords,
+              zoom: 10,
+              duration: 1000
+            });
+          }
+        });
+      });
+    }
+  }
+  
+  // Intentar mejorar el combobox cuando el mapa esté cargado
+  const checkMapInterval = setInterval(function() {
+    if (window.map && window.mapIsReady) {
+      improveMapComboboxFunctionality();
+      clearInterval(checkMapInterval);
+    }
+  }, 500);

@@ -312,48 +312,92 @@
 /* Asegura contexto para los overlays del mapa */
 #main-content { position: relative; }
 
-/* Barra superior dentro del mapa, debajo de la navbar fija */
+/* Añade esto a tu archivo estilos.css */
+
+/* Ajustes para el map-top-bar */
 #map-top-bar {
-  position: absolute;
-  top: 150px;           /* si tu navbar mide 150px, deja un margen */
-  right: 825px;           /* margen desde el borde izquierdo */
-  z-index: 3000;        /* por encima del mapa y controles */
+  position: fixed;
+  top: 170px; /* Exactamente debajo de la navbar que mide 150px */
+  left: 100px; /* Dejando espacio para el menú lateral */
+  z-index: 1200; /* Por encima del mapa pero debajo de la navbar */
   display: flex;
   align-items: center;
-  gap: 20px;            /* separación entre logo y selector */
+  gap: 20px;
+  transition: left 0.3s ease; /* Transición suave cuando el menú se expande */
+  width: 300px; /* Ancho fijo para el control */
 }
 
-/* Logo del mapa (ajusta tamaño a gusto) */
-#map-top-bar #map-watermark {
-  height: 56px;         /* o el alto que prefieras */
-  width: auto;
-  display: block;
+/* Ajustar cuando el menú lateral está expandido */
+.side-menu.expanded + #main-content #map-top-bar {
+  left: 210px; /* 200px del menú expandido + 10px de margen */
 }
 
 /* Selector con tarjetita */
 #map-top-bar #municipio-map-control {
   background: rgba(255,255,255,.95);
-  padding: 6px 10px;
+  padding: 10px 15px;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,.15);
-  min-width: 220px;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
 #map-top-bar #municipio-map-control label {
-  font-size: 12px;
-  margin-bottom: 4px;
+  font-size: 14px;
+  margin-bottom: 5px;
   font-weight: 600;
   color: #333;
 }
 
-#map-top-bar #municipio-map-control select {
-  height: 36px;
-  font-size: 14px;
+/* Combobox estilizado */
+#map-combobox {
+  width: 100%;
+}
+
+#map-combobox input.form-control {
+  height: 40px;
+  font-size: 15px;
   border: 1px solid #ccc;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 6px 12px;
+  width: 100%;
+}
+
+#map-combobox-list {
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  z-index: 3000;
+}
+
+#map-combobox-list li {
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+#map-combobox-list li:hover {
+  background-color: #f5f5f5;
+}
+
+#map-combobox-list li.active {
+  background-color: #007bff;
+  color: white;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px; /* Si la navbar se reduce en móvil */
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: 300px;
+  }
+  
+  #municipio-map-control {
+    width: 100%;
+  }
 }
 
 /* Responsive: si la pantalla es angosta, apila logo y selector */
