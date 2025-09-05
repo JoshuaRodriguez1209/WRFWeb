@@ -123,7 +123,14 @@
 
       <div id="main-content">
         <div id="map"></div>
-        <img id="map-watermark" src="https://smadsot.puebla.gob.mx/images/headers/2022/logo-puebla-contigo-blanco-2022.png" alt="Puebla Gobierno" />
+
+        <!-- Barra superior dentro del mapa -->
+        <div id="map-top-bar">
+          <div id="municipio-map-control">
+            <label for="hist-cabecera-map">Municipio</label>
+            <select id="hist-cabecera-map" class="form-control"></select>
+          </div>
+        </div>
         
         <div class="map-controls">
           <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
@@ -287,22 +294,22 @@
         </div>
         </div>
 
-    <div class="municipality-modal" id="municipalityModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <div>
-            <h2 class="modal-title" id="modalTitle">Ciudad de Rafael Lara</h2>
-            <button class="download-btn" id="downloadCsvBtn">
-              <i class="fa-solid fa-download"></i> Descargar (.CSV)
-            </button>
-          </div>
-          <button class="modal-close" id="modalClose">&times;</button>
-        </div>
-        <div class="modal-body">
-  <h4>Resumen de Promedios</h4>
-  <div class="pollutant-summary" id="pollutantSummary"></div>
-  <div id="modalChartsHost" class="chart-cards-group" style="width:100%; display:flex; flex-wrap:wrap; gap:24px; margin-top:18px;"></div>
-</div>
+        <div class="municipality-modal" id="municipalityModal">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div>
+                <h2 class="modal-title" id="modalTitle">Ciudad de Rafael Lara</h2>
+                <button class="download-btn" id="downloadCsvBtn">
+                  <i class="fa-solid fa-download"></i> Descargar (.CSV)
+                </button>
+              </div>
+              <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+      <h4>Resumen de Promedios</h4>
+      <div class="pollutant-summary" id="pollutantSummary"></div>
+      <div id="modalChartsHost" class="chart-cards-group" style="width:100%; display:flex; flex-wrap:wrap; gap:24px; margin-top:18px;"></div>
+    </div>
         
     </div>
 

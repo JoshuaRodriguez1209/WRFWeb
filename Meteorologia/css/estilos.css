@@ -309,6 +309,65 @@
   z-index: 1;
 }
 
+/* Asegura contexto para los overlays del mapa */
+#main-content { position: relative; }
+
+/* Barra superior dentro del mapa, debajo de la navbar fija */
+#map-top-bar {
+  position: absolute;
+  top: 150px;           /* si tu navbar mide 150px, deja un margen */
+  right: 825px;           /* margen desde el borde izquierdo */
+  z-index: 3000;        /* por encima del mapa y controles */
+  display: flex;
+  align-items: center;
+  gap: 20px;            /* separación entre logo y selector */
+}
+
+/* Logo del mapa (ajusta tamaño a gusto) */
+#map-top-bar #map-watermark {
+  height: 56px;         /* o el alto que prefieras */
+  width: auto;
+  display: block;
+}
+
+/* Selector con tarjetita */
+#map-top-bar #municipio-map-control {
+  background: rgba(255,255,255,.95);
+  padding: 6px 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+
+#map-top-bar #municipio-map-control label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: #333;
+}
+
+#map-top-bar #municipio-map-control select {
+  height: 36px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+/* Responsive: si la pantalla es angosta, apila logo y selector */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px;        /* reduce si tu navbar también reduce */
+    left: 10px;
+    right: 10px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* Controles dentro de #app */
 #app .controls-panel {
   display: flex;
@@ -827,4 +886,62 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s ease;
+}
+
+/* Input del combobox (igual que tus selects) */
+#hist-combobox input.form-control {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  left: 5px;
+  position: relative;
+  z-index: 4000; /* por encima de navbar/mapa */
+  color: #000;
+  background-color: #fff;
+
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Dropdown de opciones */
+#hist-combobox-list {
+  position: fixed; /* ya lo manejas en JS */
+  z-index: 50000;  /* más alto que todo */
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 16px;
+}
+
+/* Opciones individuales */
+#hist-combobox-list li {
+  padding: 12px 16px; /* similar a los selects grandes */
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#hist-combobox-list li:hover {
+  background: #f0f0f0;
+}
+
+/* Opción activa (con flechas) */
+#hist-combobox-list li.active {
+  background: #007bff;
+  color: #fff;
+}
+
+#map-combobox-list li.active {
+  background: #007bff;
+  color: #fff;
 }

@@ -108,29 +108,52 @@ async function loadHistoricalCabeceras() {
 }
         // Load JSON data
 // REPLACE this function
-async function loadJSONData() {
-    try {
-        // MODIFICATION: Added your 'puebla_state_boundary.json' to the files being fetched
-        const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
-            fetch('./cabeceras.json'),
-            fetch('./estaciones.json'),
-            fetch('./puebla_coordinates.json'),
-            fetch('./puebla_state_boundary.json') // <-- Add this line for your new file
-        ]);
-        
-        municipalitiesData = await municipalitiesResponse.json();
-        stationsData = await stationsResponse.json();
-        pueblaBoundaryData = await pueblaResponse.json(); 
-        pueblaSimpleBoundaryData = await pueblaStateResponse.json(); // <-- Store the new data
-        
-        console.log('JSON data loaded successfully');
-        return true;
-    } catch (error) {
-        console.error('Error loading JSON data:', error);
-        showNotification('Error cargando datos de municipios', 'error');
-        return false;
-    }
+function loadMapCabeceras() {
+  if (!municipalitiesData) return;
+  const select = document.getElementById('hist-cabecera-map');
+  if (!select) return;
+
+  select.innerHTML = ''; // limpiar
+
+  const cabeceras = municipalitiesData.features
+    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
+
+  cabeceras.forEach(feature => {
+    const option = document.createElement('option');
+    option.value = feature.properties.clave;
+    option.textContent = feature.properties.nombre;
+    select.appendChild(option);
+  });
 }
+
+
+async function loadJSONData() {
+  try {
+    const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
+      fetch('./cabeceras.json'),
+      fetch('./estaciones.json'),
+      fetch('./puebla_coordinates.json'),
+      fetch('./puebla_state_boundary.json')
+    ]);
+    
+    municipalitiesData = await municipalitiesResponse.json();
+    stationsData = await stationsResponse.json();
+    pueblaBoundaryData = await pueblaResponse.json(); 
+    pueblaSimpleBoundaryData = await pueblaStateResponse.json(); 
+
+    console.log('JSON data loaded successfully');
+
+    // 👇 llena el select del mapa en cuanto tengas datos
+    loadMapCabeceras();
+
+    return true;
+  } catch (error) {
+    console.error('Error loading JSON data:', error);
+    showNotification('Error cargando datos de municipios', 'error');
+    return false;
+  }
+}
+
 
 // Enhanced function to add realistic air quality data to municipalities
 function enrichMunicipalityData(municipality) {
@@ -2069,8 +2092,31 @@ function addClickAndTouch(id, handler) {
     });
 });
 
+// ——— Ignorar hotkeys cuando el usuario está escribiendo ———
+function shouldIgnoreHotkeys(e) {
+  if (e.defaultPrevented) return true;
+
+  const el = e.target;
+  if (!el) return false;
+
+  // 1) Campos escribibles nativos
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
+
+  // 2) Nuestro combobox del historial
+  if (el.closest('#hist-combobox')) return true; // wrapper del combo
+  if (el.id === 'hist-cabecera-search') return true; // si usaste input de búsqueda
+
+  // 3) Si el dropdown del combobox está abierto, también ignorar
+  const openList = document.getElementById('hist-combobox-list');
+  if (openList && openList.style.display !== 'none') return true;
+
+  return false;
+}
+
 // Enhanced keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+    if (shouldIgnoreHotkeys(e)) return;
     //if (!document.body.classList.contains('map-active')) return;
     
     switch(e.key) {
@@ -2239,10 +2285,10 @@ const meteorologicalVariables = {
 };
 
 const airQualityVariables = {
-    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
-    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
-    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
+    CO: { label: 'Monóxido de Carbono', color: '#8B4513', unit: 'ppm', icon: '🟤' },
+    NO2: { label: 'Dióxido de Nitrógeno', color: '#6A5ACD', unit: 'ppb', icon: '🟣' },
+    O3: { label: 'Ozono', color: '#32CD32', unit: 'ppb', icon: '🟢' },
+    SO2: { label: 'Dióxido de Azufre', color: '#4169E1', unit: 'ppb', icon: '🔵' },
     PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
     PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
 };
@@ -2374,7 +2420,7 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
         currentHistCharts.push(chart);
 
         const btn = document.createElement('button');
-        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar imagen';
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Grafica';
         btn.className = "download-btn";
         btn.onclick = () => {
             const a = document.createElement('a');
@@ -2640,6 +2686,402 @@ function updateHistoricalChart() {
     type === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
     updateStatsTable(type);
 }
+
+// === COMBOBOX ROBUSTO para #hist-cabecera-select (Historial) ===
+// - Espera a que el <select> tenga opciones (MutationObserver)
+// - "Portal": la lista se monta en <body> para evitar clipping por overflow/z-index
+// - Aísla eventos para que no cambien de vista ni afecten el mapa
+
+//opciones de escritura en el historial 
+(function makeHistComboboxRobusto(){
+  const sel = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.createElement('div');
+  wrap.id = 'hist-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  // Lista como "portal" en <body>
+  const list = document.createElement('ul');
+  list.id = 'hist-combobox-list';
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', // relativo al viewport
+    maxHeight:'260px',
+    overflowY:'auto',
+    margin:'0', padding:'0',
+    listStyle:'none',
+    display:'none',
+    background:'#fff',
+    border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px',
+    boxShadow:'0 8px 24px rgba(0,0,0,.15)',
+    zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+      });
+      li.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+    });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!filtered.length) return;
+    positionList();
+    list.style.display = 'block';
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+  }
+
+  // ----- Eventos (sin botón) -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', () => {
+    filtered = items.slice();
+    render();
+    openList();
+  });
+  input.addEventListener('click', () => {
+    if (!open) {
+      filtered = items.slice();
+      render();
+      openList();
+    }
+  });
+  input.addEventListener('input', () => {
+    filterNow(input.value);
+    filtered.length ? openList() : closeList();
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar (usar 'click', no 'mousedown')
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    // NO rellenes el input con "Seleccione..." — arrancamos vacío
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+})();
+
+//opciones de escritura en el mapa
+(function makeMapComboboxRobusto(){
+  const sel = document.getElementById('hist-cabecera-map');
+  if (!sel) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'map-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  const list = document.createElement('ul');
+  list.id = 'map-combobox-list';
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed',
+    maxHeight:'260px',
+    overflowY:'auto',
+    margin:'0', padding:'0',
+    listStyle:'none',
+    display:'none',
+    background:'#fff',
+    border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px',
+    boxShadow:'0 8px 24px rgba(0,0,0,.15)',
+    zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '')
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+    function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+        const li = document.createElement('li');
+        li.textContent = it.label;
+        li.className = (idx === active) ? 'active' : '';
+        li.style.padding = '12px 16px';
+        li.style.cursor = 'pointer';
+
+        // Selección con mouse (mousedown, no click)
+        li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+        });
+
+        list.appendChild(li);
+    });
+    }
+
+
+  function openList(){
+    if (!filtered.length) return;
+    positionList();
+    list.style.display = 'block';
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+    function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+
+    // 👇 Aquí centras el mapa en el municipio seleccionado
+    const municipio = municipalitiesData.features.find(
+        f => f.properties.clave === it.value
+    );
+    if (municipio) {
+        const center = turf.center(municipio).geometry.coordinates;
+        map.flyTo({ center, zoom: 10 });
+    }
+
+    closeList();
+    }
+
+
+
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown', e => e.stopPropagation(), { capture:true });
+  });
+
+    input.addEventListener('focus', () => {
+    if (!items.length) snapshotItems();       // <-- fuerza refresco
+    filtered = items.slice();
+    render();
+    openList();
+    });
+
+    input.addEventListener('click', () => {
+    if (!items.length) snapshotItems();       // <-- fuerza refresco
+    if (!open) {
+        filtered = items.slice();
+        render();
+        openList();
+    }
+    });
+
+    input.addEventListener('input', () => {
+    if (!items.length) snapshotItems();       // <-- por si llegan tarde
+    filterNow(input.value);
+    filtered.length ? openList() : closeList();
+    });
+
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active=Math.min(filtered.length-1,active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active=Math.max(0,active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else {openList();}} else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
+      case 'Tab':       closeList(); break;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  if (sel.options.length) snapshotItems();
+    const mo = new MutationObserver(() => {
+    snapshotItems();
+    if (open) { render(); positionList(); }
+    });
+    mo.observe(sel, { childList: true, subtree: false });  // <option> son hijos directos
+
+  mo.observe(sel, { childList: true });
+})();
+
+
+
 
 // ===================================================================
 // END: New History Dashboard Functions
