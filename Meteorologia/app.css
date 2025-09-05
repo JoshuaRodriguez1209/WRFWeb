@@ -1,6 +1,7 @@
 :root {
     --primary-brand-color: #5a1b30;
     --secondary-brand-color: #c19862;
+    --terciary-brand-color: #b03a61;
     --light-gray: #f8f9fa;
     --medium-gray: #e9ecef;
     --dark-gray: #6c757d;
@@ -204,13 +205,13 @@ body.map-active #main-content {
 }
 
 .layer-btn.active {
-  background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color));
+  background: linear-gradient(135deg, var(--primary-brand-color));
   color: white;
   border-color: transparent;
 }
 
 .animation-controls { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; }
-.play-btn { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color)); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3); flex-shrink: 0; font-size: 20px; }
+.play-btn { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, var(--primary-brand-color)); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3); flex-shrink: 0; font-size: 20px; }
 .play-btn:hover { transform: scale(1.1); box-shadow: 0 8px 20px rgba(90, 27, 48, 0.4); }
 .speed-slider { flex: 1; }
 .speed-slider input[type="range"] { width: 100%; }
@@ -350,7 +351,7 @@ body.map-active #main-content {
 }
 
 .menu-btn.active {
-    background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color));
+    background: linear-gradient(135deg, var(--primary-brand-color));
     color: white;
     border-color: transparent;
 }
@@ -533,6 +534,7 @@ body.map-active #main-content {
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
+/*botones temperatura graficas*/
 .variable-toggle {
     display: flex;
     align-items: center;
@@ -542,7 +544,7 @@ body.map-active #main-content {
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
-    background: white;
+    background: var(--terciary-brand-color);
 }
 
 .variable-toggle:hover {
@@ -553,8 +555,7 @@ body.map-active #main-content {
 
 .variable-toggle.active {
     border-color: var(--primary-brand-color);
-    background: linear-gradient(135deg, var(--primary-brand-color), var(--secondary-brand-color));
-    color: white;
+    background: linear-gradient(135deg, var(--primary-brand-color));
 }
 
 .variable-toggle .icon {

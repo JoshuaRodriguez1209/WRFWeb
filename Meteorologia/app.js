@@ -341,6 +341,7 @@ function addPueblaMunicipalities() {
     map.addLayer({
         id: 'municipality-points',
         type: 'circle',
+        minzoom: 8.5,
         source: 'puebla-municipalities',
         paint: {
             'circle-radius': [
@@ -388,10 +389,28 @@ function addPueblaMunicipalities() {
     });
 
     map.on('click', 'municipality-points', (e) => {
-        console.log('Municipality clicked:', e.features[0]); // Debug log
-        const properties = e.features[0].properties;
-        console.log('Properties:', properties); // Debug log
-        showMunicipalityModal(properties);
+        try {
+            console.log('Municipality clicked:', e.features[0]); // Debug log
+            console.log('Current map type:', tipoMapa); // Debug log
+            
+            const feature = e.features[0];
+            if (!feature) {
+                console.error('No feature found in click event');
+                return;
+            }
+            
+            // Ensure we have all required properties
+            const properties = {
+                ...feature.properties,
+                geometry: feature.geometry
+            };
+            
+            console.log('Properties prepared for modal:', properties); // Debug log
+            showMunicipalityModal(properties);
+        } catch (error) {
+            console.error('Error handling municipality click:', error);
+            showNotification('Error al mostrar información del municipio', 'error');
+        }
     });
 
     map.on('mouseenter', 'municipality-points', () => {
@@ -451,107 +470,217 @@ function addMonitoringStations() {
         showStationModal(properties);
     });
 }
+//--------------------------------------------------------------------------
+// Mapeo de claves para meteorología y calidad del aire
+const meteoKeyMap = {
+    t2m: 'temperature',
+    rh: 'humidity',
+    psl: 'pressure',
+    wnd: 'wind',
+    pre: 'precipitation',
+    sw: 'radiation'
+};
+const chemKeyMap = {
+    CO: 'co',
+    NO2: 'no2',
+    O3: 'o3',
+    SO2: 'so2',
+    PM10: 'pm10',
+    PM25: 'pm25'
+};
 
-// Show station modal
-function showStationModal(properties) {
-    showNotification(`Estación: ${properties.nombre} (${properties.clave})`, 'info');
-}
-
-// Enhanced municipality modal with real data structure
+// ---- MODAL MUNICIPIO PROFESIONAL ----
 function showMunicipalityModal(properties) {
+    console.log('Opening modal with properties:', properties); // Debug log
+    
     const modal = document.getElementById('municipalityModal');
     const title = document.getElementById('modalTitle');
-    const summary = document.getElementById('pollutantSummary');
+    const cardsContainer = document.getElementById('pollutantSummary');
+    const chartsContainer = document.getElementById('modalChartsHost');
     
-    const airQuality = typeof properties.airQuality === 'string' 
-        ? JSON.parse(properties.airQuality) 
-        : properties.airQuality;
+    // Limpiar contenido previo
+    if (chartsContainer) chartsContainer.innerHTML = '';
+    if (cardsContainer) cardsContainer.innerHTML = '';
     
-    title.textContent = properties.nombre;
-    summary.innerHTML = '';
+    // Establecer título
+    if (title) title.textContent = properties.nombre;
+
+    // Detectar tipo de mapa y variables
+    const tipo = window.tipoMapa || 'meteorologia'; 
+    const variables = tipo === 'meteorologia' ? meteorologicalVariables : airQualityVariables;
+    const keyMap = tipo === 'meteorologia' ? meteoKeyMap : chemKeyMap;
+
+    // Obtener coordenadas
+    let coords = [];
+    if (properties.geometry && properties.geometry.coordinates) {
+        coords = properties.geometry.coordinates;
+    } else if (properties.lat && properties.lng) {
+        coords = [properties.lng, properties.lat];
+    } else {
+        coords = [-98.2063, 19.0414];
+    }
+    const lat = coords[1];
+    const lng = coords[0];
+
+    try {
+        Object.entries(variables).forEach(([key, config]) => {
+            const weatherKey = keyMap[key];
+            if (!weatherKey || !weatherLayers[weatherKey]) return;
+
+            const value = generateRealisticValue(weatherKey, lat, lng, 0, 0);
+            const qualityLevel = getQualityLevel(value, weatherKey);
+            const qualityColors = {
+                good: '#00b894',
+                moderate: '#fdcb6e',
+                bad: '#d63031'
+            };
+
+            // Create summary card
+            const item = document.createElement('div');
+            item.className = 'pollutant-item';
+            item.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;background:#f8f9fa;border-radius:8px;';
+            item.innerHTML = `
+                <div style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
+                <div style="flex:1;">
+                    <div style="font-weight:bold;margin-bottom:4px;">${config.icon} ${config.label}</div>
+                    <div style="font-size:1.1em;color:#333;">${value.toFixed(2)} ${config.unit}</div>
+                </div>
+            `;
+            cardsContainer.appendChild(item);
+
+            // Create chart for this variable
+            const labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+            const data = generateTimeSeriesData(weatherKey, lat, lng);
+            createSingleVariableChart(chartsContainer, config, labels, data, properties.nombre);
+        });
+
+        modal.style.display = 'flex';
+        window.currentMunicipality = properties;
+
+    } catch (error) {
+        console.error('Error showing municipality modal:', error);
+        showNotification('Error al mostrar información del municipio', 'error');
+    }
     
-    const pollutants = [
-        { 
-            key: 'co', 
-            name: 'Monóxido de Carbono', 
-            unit: 'ppm',
-            color: '#8B4513', 
-            value: airQuality.co,
-            threshold: { good: 1, moderate: 2, bad: 3 }
-        },
-        { 
-            key: 'no2', 
-            name: 'Dióxido de Nitrógeno', 
-            unit: 'ppb',
-            color: '#6A5ACD', 
-            value: airQuality.no2,
-            threshold: { good: 0.3, moderate: 0.6, bad: 1.0 }
-        },
-        { 
-            key: 'o3', 
-            name: 'Ozono', 
-            unit: 'ppb',
-            color: '#32CD32', 
-            value: airQuality.o3,
-            threshold: { good: 8, moderate: 15, bad: 25 }
-        },
-        { 
-            key: 'so2', 
-            name: 'Dióxido de Azufre', 
-            unit: 'ppb',
-            color: '#4169E1', 
-            value: airQuality.so2,
-            threshold: { good: 0.1, moderate: 0.2, bad: 0.5 }
-        },
-        { 
-            key: 'pm10', 
-            name: 'PM 10', 
-            unit: 'μg/m³',
-            color: '#2F4F4F', 
-            value: airQuality.pm10,
-            threshold: { good: 0.15, moderate: 0.3, bad: 0.5 }
-        },
-        { 
-            key: 'pm25', 
-            name: 'PM 2.5', 
-            unit: 'μg/m³',
-            color: '#556B2F', 
-            value: airQuality.pm25,
-            threshold: { good: 0.1, moderate: 0.2, bad: 0.3 }
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
         }
-    ];
-    
-    pollutants.forEach(pollutant => {
-        const item = document.createElement('div');
-        item.className = 'pollutant-item';
-        
-        let qualityLevel = 'good';
-        if (pollutant.value > pollutant.threshold.bad) {
-            qualityLevel = 'bad';
-        } else if (pollutant.value > pollutant.threshold.moderate) {
-            qualityLevel = 'moderate';
-        }
-        
-        const qualityColors = {
-            good: '#00b894',
-            moderate: '#fdcb6e', 
-            bad: '#d63031'
-        };
-        
-        item.innerHTML = `
-            <div class="pollutant-color" style="background-color: ${qualityColors[qualityLevel]}"></div>
-            <div class="pollutant-info">
-                <div class="pollutant-name">${pollutant.name} (${pollutant.unit})</div>
-                <div class="pollutant-value">${pollutant.value}</div>
-            </div>
-        `;
-        summary.appendChild(item);
     });
-    
-    createEnhancedPollutantChart(pollutants, properties.nombre);
-    window.currentMunicipality = properties;
-    modal.style.display = 'flex';
 }
+
+// Gráfica profesional por variable (solo una por chart, limpia)
+function createSingleVariableChart(container, config, labels, data, municipioName) {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.style.flex = '1 1 350px';
+    card.style.minWidth = '320px';
+    card.style.maxWidth = '500px';
+    card.style.background = '#fff';
+    card.style.borderRadius = '12px';
+    card.style.padding = '16px';
+    card.style.boxShadow = '0 3px 12px rgba(0,0,0,0.08)';
+    card.style.display = 'flex';
+    card.style.flexDirection = 'column';
+    card.style.marginBottom = '12px';
+
+    const header = document.createElement('div');
+    header.style.marginBottom = '8px';
+    header.innerHTML = `<span style="font-size:1.3em">${config.icon}</span> <strong>${config.label}</strong> <span style="color:#666">(${config.unit})</span>`;
+    card.appendChild(header);
+
+    const canvas = document.createElement('canvas');
+    canvas.height = 220;
+    card.appendChild(canvas);
+    container.appendChild(card);
+
+    new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [{
+                label: `${config.label} (${config.unit})`,
+                data: data,
+                borderColor: config.color,
+                backgroundColor: hexToRgba(config.color, 0.08),
+                borderWidth: 3,
+                pointRadius: 3,
+                pointBackgroundColor: config.color,
+                pointBorderColor: '#fff',
+                fill: true,
+                tension: 0.32,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: '#efefef' },
+                    ticks: { color: '#444', font: { size: 13 } },
+                    title: { display: true, text: config.unit, color: '#444', font: { weight: 'bold' } }
+                },
+                x: {
+                    grid: { color: '#f6f6f6' },
+                    ticks: { color: '#888', font: { size: 11 } },
+                    title: { display: true, text: 'Hora del día', color: '#888', font: { weight: 'bold' } }
+                }
+            },
+            elements: {
+                line: { tension: 0.32 }
+            }
+        }
+    });
+}
+
+// Utilidad para color rgba
+function hexToRgba(hex, alpha) {
+    // hex: #RRGGBB
+    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+    if (!m) return hex;
+    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`;
+}
+
+// Función para determinar el nivel de calidad basado en el valor y tipo
+function getQualityLevel(value, type) {
+    const thresholds = {
+        temperature: { good: 20, moderate: 30, bad: 35 },
+        humidity: { good: 40, moderate: 60, bad: 80 },
+        pressure: { good: 1000, moderate: 1015, bad: 1025 },
+        wind: { good: 10, moderate: 20, bad: 30 },
+        precipitation: { good: 5, moderate: 15, bad: 30 },
+        radiation: { good: 300, moderate: 600, bad: 800 },
+        co: { good: 1, moderate: 2, bad: 3 },
+        no2: { good: 0.3, moderate: 0.6, bad: 1.0 },
+        o3: { good: 8, moderate: 15, bad: 25 },
+        so2: { good: 0.1, moderate: 0.2, bad: 0.5 },
+        pm10: { good: 0.15, moderate: 0.3, bad: 0.5 },
+        pm25: { good: 0.1, moderate: 0.2, bad: 0.3 }
+    };
+
+    const th = thresholds[type] || { good: 0.4, moderate: 0.7, bad: 1.1 };
+    if (value > th.bad) return 'bad';
+    if (value > th.moderate) return 'moderate';
+    return 'good';
+}
+
+// Función para generar datos de serie temporal
+function generateTimeSeriesData(type, lat, lng) {
+    const data = [];
+    for (let hour = 0; hour < 24; hour++) {
+        const timeStep = hour;
+        const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
+        data.push(generateRealisticValue(type, lat, lng, timeStep, timeVariation));
+    }
+    return data;
+}
+//---------------------------------------------------------------------------
+
 
 // Enhanced chart creation with realistic data patterns
 function createEnhancedPollutantChart(pollutants, cityName) {
@@ -868,11 +997,12 @@ function generateSmoothWeatherData(type, timeStep = 0) {
     const gridSize = 50;
     const range = weatherLayers[type].range;
     
-    const pueblaBounds = {
-        minLat: 17.6,
-        maxLat: 20.4,
-        minLng: -99.1,
-        maxLng: -96.9
+    const pueblaBounds = getPueblaBoundingBox();
+    const bounds = {
+        minLat: pueblaBounds[0][1],  // bottom-left lat
+        maxLat: pueblaBounds[1][1],  // top-right lat  
+        minLng: pueblaBounds[0][0],  // bottom-left lng
+        maxLng: pueblaBounds[1][0]   // top-right lng
     };
     
     const weatherCenters = [
@@ -886,8 +1016,8 @@ function generateSmoothWeatherData(type, timeStep = 0) {
     
     for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
-            const lat = pueblaBounds.minLat + (i / gridSize) * (pueblaBounds.maxLat - pueblaBounds.minLat);
-            const lng = pueblaBounds.minLng + (j / gridSize) * (pueblaBounds.maxLng - pueblaBounds.minLng);
+            const lat = bounds.minLat + (i / gridSize) * (bounds.maxLat - bounds.minLat);
+            const lng = bounds.minLng + (j / gridSize) * (bounds.maxLng - bounds.minLng);
             
             if (isPointInPueblaAccurate(lat, lng)) {
                 let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
@@ -1266,7 +1396,10 @@ async function initializeMap() {
         bearing: 0,
         minZoom: 7.5,
         // Use the new function to set the map's navigation boundaries
-        maxBounds: getPueblaBoundingBox()
+        maxBounds: getPueblaBoundingBox(),
+        scrollZoom: {
+            zoomRate: 0.08
+        }
     });
     
     map.on('load', () => {
@@ -1324,22 +1457,45 @@ function toggleMenu() {
     const navLinks = document.getElementById('nav-links');
     navLinks.classList.toggle('active');
 }
+// Variable global para el tipo de mapa
+window.tipoMapa = 'meteorologia'; // Valor por defecto
 
-function activateMap(type) {
+// Función global para activar el mapa
+window.activateMap = function(type) {
     document.body.classList.add('map-active');
     initializeMap();
     
-    /*if (type === 'meteorologia') {
+    // Set map type as soon as map is activated
+    window.tipoMapa = type;
+    
+    // Reset active layer
+    if (map && activeLayer && map.getLayer(activeLayer)) {
+        map.removeLayer(activeLayer);
+        activeLayer = null;
+    }
+    if (type == 'meteorologia'){
         setTimeout(() => {
-            const tempBtn = document.querySelector('[data-layer="temperature"]');
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn_atmos').classList.add('active');
+            document.getElementById('layer-buttons-meteo').style.display = 'grid';
+            document.getElementById('layer-buttons-aire').style.display = 'none';
+            //const tempBtn = document.querySelector('[data-layer="temperature"]');
             //if (tempBtn) tempBtn.click();
         }, 500);
-    } else if (type === 'calidad') {
+    }else if (type == 'calidad'){
         setTimeout(() => {
-            const pm25Btn = document.querySelector('[data-layer="pm25"]');
+            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn_aire').classList.add('active');
+            document.getElementById('layer-buttons-meteo').style.display = 'none';
+            document.getElementById('layer-buttons-aire').style.display = 'grid';
+            //const pm25Btn = document.querySelector('[data-layer="pm25"]');
             //if (pm25Btn) pm25Btn.click();
         }, 500);
-    }*/
+
+    }
+    setTimeout(()=>{
+        map.resize();
+    },500)
 }
 
 function showLoadingIndicator() {
@@ -1582,7 +1738,21 @@ document.addEventListener('DOMContentLoaded', () => {
             addEnhancedWeatherLayer(layerType);
         });
     });
-    
+function addClickAndTouch(id, handler) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("click", handler);
+    el.addEventListener("touchstart", handler); // soporte móvil
+    }
+
+    // ejemplo para historial
+    addClickAndTouch("btn_historial", function() {
+    document.getElementById("map").style.display = "none";
+    document.getElementById("panel-historial").style.display = "block";
+
+    // forzar resize de gráficas al mostrarlas
+    window.dispatchEvent(new Event("resize"));
+    });    
     document.getElementById('playBtn').addEventListener('click', () => {
         isPlaying ? stopAnimation() : startAnimation();
     });
@@ -1657,7 +1827,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'none';
         dashboard.classList.remove('active');
-        if (map) map.resize();
+        
+        // Limpiar estado del mapa
+        if (map) {
+            if (activeLayer && map.getLayer(activeLayer)) {
+                map.removeLayer(activeLayer);
+                if (map.getLayer(activeLayer + '-points')) {
+                    map.removeLayer(activeLayer + '-points');
+                }
+            }
+            activeLayer = null;
+            map.resize();
+        }
     }
 
     // Back button functionality
@@ -1687,13 +1868,23 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.add('active');
 
         //limpiar el mapa 
-        map.removeLayer(activeLayer);
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+        }
 
         //muestra mapa
         showMapa();
         //muestra botones divididos      
-        showMeteorologiaButtons()
+        showMeteorologiaButtons();
 
+        // Set map type immediately
+        tipoMapa = 'meteorologia';
+        
+        // Wait for map to be ready
+        setTimeout(() => {
+            const tempBtn = document.querySelector('[data-layer="temperature"]');
+            if (tempBtn) tempBtn.click();
+        }, 300);
     });
 
     document.getElementById('btn_aire').addEventListener('click', function() {
@@ -1702,24 +1893,38 @@ document.addEventListener('DOMContentLoaded', () => {
         this.classList.add('active');
 
         //limpiar el mapa
-        map.removeLayer(activeLayer);
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+        }
 
         //muestra mapa
         showMapa();
         //muestra botones divididos      
-        showAireButtons()
+        showAireButtons();
 
+        // Set map type immediately
+        tipoMapa = 'calidad';
+        
+        // Wait for map to be ready
+        setTimeout(() => {
+            const pm25Btn = document.querySelector('[data-layer="pm25"]');
+            if (pm25Btn) pm25Btn.click();
+        }, 300);
     });
 
- document.getElementById('btn_hist').addEventListener('click', function() {
+    document.getElementById('btn_hist').addEventListener('click', function() {
         document.body.classList.add('map-active');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
 
         //limpiar el mapa
-        map.removeLayer(activeLayer);
-
-        // Hide map content and show the dashboard
+        if (map && activeLayer && map.getLayer(activeLayer)) {
+            map.removeLayer(activeLayer);
+            if (map.getLayer(activeLayer + '-points')) {
+                map.removeLayer(activeLayer + '-points');
+            }
+            activeLayer = null;
+        }        // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
 
         const dashboard = document.getElementById('historial-dashboard');
@@ -2054,8 +2259,8 @@ function fetchHistoricalData(municipalityId, type) {
     return new Promise(resolve => {
         setTimeout(() => {
             const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            
-            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            //const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
 
             let data;
             if (type === 'meteo') {
@@ -2107,6 +2312,9 @@ function groupDatasetsByRange(datasets, threshold = 30) {
     });
     return groups;
 }
+function slug(s) {
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').toLowerCase();
+}
 
 // Renders the charts based on the groups generated above.
 function renderGroupedCharts(groups, labels, titlePrefix) {
@@ -2115,16 +2323,30 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
     currentHistCharts.forEach(chart => chart.destroy());
     currentHistCharts = [];
 
-    groups.forEach(group => {
+    groups.forEach((grp, idx) => {
         const card = document.createElement('div');
         card.className = 'chart-card';
-        const canvas = document.createElement('canvas');
-        card.appendChild(canvas);
+        const cv = document.createElement('canvas');
+        card.appendChild(cv);
         host.appendChild(card);
 
-        const chart = new Chart(canvas, {
+        const units=new Set();
+        grp.forEach(ds => {
+            if (ds.unit){
+                units.add(ds.unit);
+            }
+        });
+
+        let yTitle ="Valor";
+        if (units.size===1){
+            yTitle=[...units][0];
+        }else if (units.size >1){
+            yTitle="unidades diversas";
+        }
+
+        const chart = new Chart(cv.getContext('2d'), {
             type: 'line',
-            data: { labels, datasets: group },
+            data: { labels, datasets: grp },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -2132,12 +2354,42 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
                     legend: { position: 'top' },
                     title: { display: true, text: titlePrefix }
                 },
-                scales: { y: { beginAtZero: false } }
+                scales: {
+                    y: { beginAtZero: false,
+                        title: {
+                            display:true,
+                            text:yTitle,
+                            color:'#666'
+                        } 
+                    },
+                    x:{ticks: {autoSkip:true},
+                    title:{ 
+                        display: true,
+                        text:'Hora del día',
+                        color:'#666'
+                    }}
+                }
             }
         });
         currentHistCharts.push(chart);
+
+        const btn = document.createElement('button');
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar imagen';
+        btn.className = "download-btn";
+        btn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = chart.toBase64Image();
+
+            // Nombre de archivo robusto (usa título + idx + labels de datasets)
+            const dsNames = chart.config.data.datasets.map(d => d.label).join('_');
+            a.download = `${slug(dsNames)}.png`;
+
+            a.click();
+        };
+        card.appendChild(btn);
     });
 }
+
 
 // --- 4. Statistical Logic ---
 function calculateStats(values) {
@@ -2195,22 +2447,53 @@ function createMeteoHistoricalChart(data) {
     Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
         if (selectedVariables.has(key) && data[key]) {
             datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                label: `${cfg.icon} ${cfg.label} `,
                 data: data[key],
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
-                tension: 0.4
+                tension: 0.4,
+                unit:cfg.unit
             });
         }
     });
-    // Group Pressure (psl) separately because its range is huge
-    const pslDataset = datasets.find(d => d.label.includes('Presión'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Presión'));
-    const groups = groupDatasetsByRange(otherDatasets, 50);
-    if (pslDataset) groups.push([pslDataset]);
+
+    // Agrupar datasets por tipo de variable
+    const pressureDatasets = datasets.filter(d => d.label.includes('Presión'));
+    const tempDatasets = datasets.filter(d => d.label.includes('Temperatura'));
+    const windDatasets = datasets.filter(d => d.label.includes('Viento'));
+    const otherDatasets = datasets.filter(d => 
+        !d.label.includes('Presión') && 
+        !d.label.includes('Temperatura') && 
+        !d.label.includes('Viento')
+    );
+
+    // Crear grupos
+    const groups = [];
     
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
+    // Grupo 1: Presión (si existe)
+    if (pressureDatasets.length > 0) {
+        groups.push(pressureDatasets);
+    }
+    
+    // Grupo 2: Temperatura (si existe)
+    if (tempDatasets.length > 0) {
+        groups.push(tempDatasets);
+    }
+    
+    // Grupo 3: Viento (si existe)
+    if (windDatasets.length > 0) {
+        groups.push(windDatasets);
+    }
+    
+    // Grupo 4: Otras variables (agrupadas por rango)
+    if (otherDatasets.length > 0) {
+        const otherGroups = groupDatasetsByRange(otherDatasets, 30);
+        groups.push(...otherGroups);
+    }
+
+    // Renderizar todos los grupos
+    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas (simuladas)');
 }
 
 function createChemHistoricalChart(data) {
@@ -2218,22 +2501,137 @@ function createChemHistoricalChart(data) {
     Object.entries(airQualityVariables).forEach(([key, cfg]) => {
         if (selectedVariables.has(key) && data[key]) {
             datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+                label: `${cfg.icon} ${cfg.label}`,
                 data: data[key],
                 borderColor: cfg.color,
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
-                tension: 0.4
+                tension: 0.4,
+                fill:false,
+                unit: cfg.unit
             });
         }
     });
-    // Group Ozone (O3) separately
-    const o3Dataset = datasets.find(d => d.label.includes('Ozono'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Ozono'));
-    const groups = [otherDatasets];
-    if (o3Dataset) groups.push([o3Dataset]);
 
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+    // Si no hay datasets, mostrar mensaje
+    if (datasets.length === 0) {
+        document.getElementById('chartsHost').innerHTML = 
+            '<p style="text-align:center; color:#777; padding:20px;">No hay datos disponibles para las variables seleccionadas</p>';
+        return;
+    }
+
+    // Agrupar por tipo de unidad primero
+    const groupsByUnit = {};
+    
+    datasets.forEach(dataset => {
+        const unit = dataset.unit;
+        if (!groupsByUnit[unit]) {
+            groupsByUnit[unit] = [];
+        }
+        groupsByUnit[unit].push(dataset);
+    });
+
+    // Para cada grupo de unidad, aplicar agrupamiento por rango
+    const finalGroups = [];
+    
+    Object.values(groupsByUnit).forEach(unitGroup => {
+        if (unitGroup.length <= 2) {
+            // Grupos pequeños van directo
+            finalGroups.push(unitGroup);
+        } else {
+            // Grupos grandes se dividen por rango
+            const rangedGroups = groupDatasetsByRange(unitGroup, 20);
+            finalGroups.push(...rangedGroups);
+        }
+    });
+
+    renderGroupedCharts(finalGroups, data.labels, 'Tendencias de Calidad del Aire (simuladas)');
+}
+
+// Función mejorada de agrupamiento con manejo de errores
+function groupDatasetsByRange(datasets, threshold = 30) {
+    const groups = [];
+    
+    // Filtrar datasets vacíos o inválidos
+    const validDatasets = datasets.filter(dataset => {
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        return validData.length > 0;
+    });
+    
+    validDatasets.forEach(dataset => {
+        let placed = false;
+        
+        // Calcular rango del dataset actual
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        const minVal = Math.min(...validData);
+        const maxVal = Math.max(...validData);
+        const range = maxVal - minVal;
+        
+        // Buscar grupo compatible
+        for (const group of groups) {
+            // Obtener todos los valores válidos del grupo
+            const groupValues = group.flatMap(d => 
+                d.data.filter(v => v !== null && v !== undefined)
+            );
+            
+            if (groupValues.length === 0) continue;
+            
+            // Calcular rango combinado
+            const combinedMin = Math.min(...groupValues, minVal);
+            const combinedMax = Math.max(...groupValues, maxVal);
+            const combinedRange = combinedMax - combinedMin;
+            
+            // Verificar si son compatibles
+            if (combinedRange <= threshold) {
+                group.push(dataset);
+                placed = true;
+                break;
+            }
+        }
+        
+        if (!placed) {
+            groups.push([dataset]);
+        }
+    });
+    
+    return groups;
+}
+
+// Función alternativa para agrupamiento más inteligente
+function groupDatasetsSmart(datasets, maxGroups = 4) {
+    if (datasets.length <= maxGroups) {
+        return datasets.map(dataset => [dataset]);
+    }
+    
+    // Calcular el rango de cada dataset
+    const datasetsWithRange = datasets.map(dataset => {
+        const validData = dataset.data.filter(v => v !== null && v !== undefined);
+        if (validData.length === 0) return { dataset, range: 0, avg: 0 };
+        
+        const minVal = Math.min(...validData);
+        const maxVal = Math.max(...validData);
+        const avgVal = validData.reduce((a, b) => a + b, 0) / validData.length;
+        
+        return {
+            dataset,
+            range: maxVal - minVal,
+            avg: avgVal
+        };
+    }).filter(item => item.range > 0);
+    
+    // Ordenar por valor promedio
+    datasetsWithRange.sort((a, b) => a.avg - b.avg);
+    
+    // Dividir en grupos
+    const groups = [];
+    const groupSize = Math.ceil(datasetsWithRange.length / maxGroups);
+    
+    for (let i = 0; i < datasetsWithRange.length; i += groupSize) {
+        const group = datasetsWithRange.slice(i, i + groupSize).map(item => item.dataset);
+        groups.push(group);
+    }
+    
+    return groups;
 }
 
 function updateHistoricalChart() {
