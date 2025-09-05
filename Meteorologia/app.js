@@ -2312,6 +2312,9 @@ function groupDatasetsByRange(datasets, threshold = 30) {
     });
     return groups;
 }
+function slug(s) {
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').toLowerCase();
+}
 
 // Renders the charts based on the groups generated above.
 function renderGroupedCharts(groups, labels, titlePrefix) {
@@ -2343,7 +2346,7 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
 
         const chart = new Chart(cv.getContext('2d'), {
             type: 'line',
-            data: { labels, datasets: group },
+            data: { labels, datasets: grp },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -2371,7 +2374,7 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
         currentHistCharts.push(chart);
 
         const btn = document.createElement('button');
-        btn.innerText = "⤓";
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar imagen';
         btn.className = "download-btn";
         btn.onclick = () => {
             const a = document.createElement('a');
