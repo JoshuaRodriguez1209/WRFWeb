@@ -317,15 +317,16 @@
 /* Ajustes para el map-top-bar */
 #map-top-bar {
   position: fixed;
-  top: 170px; /* Exactamente debajo de la navbar que mide 150px */
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
   left: 100px; /* Dejando espacio para el menú lateral */
-  z-index: 1200; /* Por encima del mapa pero debajo de la navbar */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
   display: flex;
   align-items: center;
   gap: 20px;
   transition: left 0.3s ease; /* Transición suave cuando el menú se expande */
   width: 300px; /* Ancho fijo para el control */
 }
+
 
 /* Ajustar cuando el menú lateral está expandido */
 .side-menu.expanded + #main-content #map-top-bar {
@@ -989,3 +990,19 @@
   background: #007bff;
   color: #fff;
 }
+
+/* Ajustes para el map-top-bar en vista móvil */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 160px; /* Un valor más bajo y más apropiado para móviles */
+    left: 10px; /* Ajuste el espacio lateral */
+    right: 10px;
+    width: 300px; /* Permite que el ancho se ajuste */
+    /*max-width: none; /* Elimina la restricción de ancho máximo */
+    flex-direction: column; /* Apila los elementos verticalmente */
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+
