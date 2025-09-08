@@ -76,7 +76,7 @@ body.map-active #main-content {
 /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
 .map-controls {
     position: absolute;
-    top: 180px;
+    top: 160px;
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -685,12 +685,12 @@ body.map-active #main-content {
     
     .map-controls {
         position: absolute;
-        top: 20px;
+        top: 80px;
         right: 20px;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        z-index: 1001;
+        z-index: 900;
     }
     
     .data-panel { 
@@ -727,10 +727,26 @@ body.map-active #main-content {
         gap: 10px;
     }
 
+
     .download-btn {
-        align-self: flex-end;
-        margin-top: 10px;
+        font-size: 0;       /* oculta texto */
+        padding: 10px; 
+        width: 30px;
+        height: 35px;
+        border-radius: 6px; /* esquinas cuadradas, puedes ajustar */
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+
+    .download-btn::before {
+        font-size: 18px;
+        content: "\f019";   /* código unicode de FontAwesome fa-download */
+        font-family: "Font Awesome 5 Free"; 
+        font-weight: 900;
+    }
+    
+
 
     #historial-dashboard {
         top: 150px;
@@ -739,4 +755,3 @@ body.map-active #main-content {
         padding: 15px;
     }
 }
-
