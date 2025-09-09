@@ -127,7 +127,7 @@
         <!-- Barra superior dentro del mapa -->
         <div id="map-top-bar">
           <div id="municipio-map-control">
-            <label for="hist-cabecera-map">Municipio</label>
+            <label for="hist-cabecera-map">Buscar municipio</label>
             <select id="hist-cabecera-map" class="form-control"></select>
           </div>
         </div>
@@ -165,7 +165,7 @@
               </select>
             </div>
             <div class="control-group">
-              <label for="selectHora">Pronósticos a (horas)</label>
+              <label for="selectHora">Pronósticos a</label>
               <select id="selectHora">
                 <option value="12">12 horas</option>
                 <option value="24" selected>24 horas</option>
@@ -173,6 +173,7 @@
                 <option value="72">72 horas</option>
               </select>
             </div>
+            <!--voy a configurar esto para que tambien funcione como los botones-->
             <div class="control-group">
               <label for="select_dat">Parámetro</label>
               <select id="select_dat">
@@ -182,6 +183,7 @@
             </div>
             <div class="control-group">
               <label for="select_var">Sub-parámetro</label>
+             
               <select id="select_var">
                 <option value="temperature">Temperatura</option>
                 <option value="humidity">Humedad</option>
@@ -227,7 +229,7 @@
         </div>
         
         <div class="data-panel" id="dataPanel">
-          <h4>Datos Actuales (Punto Central)</h4>
+          <h4>Datos Actuales (Puebla, Puebla)</h4>
           <div class="data-value"><span class="data-label">Temperatura</span><span class="data-number" id="tempValue">--°C</span></div>
           <div class="data-value"><span class="data-label">Humedad</span><span class="data-number" id="humidityValue">--%</span></div>
           <div class="data-value"><span class="data-label">Viento</span><span class="data-number" id="windValue">-- km/h</span></div>
@@ -294,24 +296,26 @@
         </div>
         </div>
 
-        <div class="municipality-modal" id="municipalityModal">
-          <div class="modal-content">
-            <div class="modal-header">
-              <div>
-                <h2 class="modal-title" id="modalTitle">Ciudad de Rafael Lara</h2>
-                <button class="download-btn" id="downloadCsvBtn">
-                  <i class="fa-solid fa-download"></i> Descargar (.CSV)
-                </button>
-              </div>
-              <button class="modal-close" id="modalClose">&times;</button>
-            </div>
-            <div class="modal-body">
-      <h4>Resumen de Promedios</h4>
-      <div class="pollutant-summary" id="pollutantSummary"></div>
-      <div id="modalChartsHost" class="chart-cards-group" style="width:100%; display:flex; flex-wrap:wrap; gap:24px; margin-top:18px;"></div>
+    <!--dejen de cambiar de version, ya se habian chingado el glosario, me llevo 2 horas descubrir que era-->
+    <div class="municipality-modal" id="municipalityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" id="modalTitle">Ciudad de Rafael Lara</h2>
+            <button class="download-btn" id="downloadCsvBtn">
+              <i class="fa-solid fa-download"></i> Descargar (.CSV)
+            </button>
+          </div>
+          <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h4>Resumen de Promedios</h4>
+          <div class="pollutant-summary" id="pollutantSummary"></div>
+            <div id="modalChartsHost" class="chart-cards-group" style="width:100%; display:flex; flex-wrap:wrap; gap:24px; margin-top:18px;"></div>
+        </div>
+      </div>
     </div>
-        
-    </div>
+
 
     <div class="municipality-modal" id="glossaryModal">
       <div class="modal-content">

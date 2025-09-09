@@ -1139,6 +1139,31 @@ function isPointInPueblaAccurate(lat, lng) {
     }
     return inside;
 }
+
+function safeRemoveLayer(id) {
+  if (!map || !id) return;
+  // quita dependientes primero
+  if (map.getLayer(id + '-points')) map.removeLayer(id + '-points');
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+}
+
+// Re-agrega desde cero (idempotente y con timing correcto)
+function addLayerFresh({ sourceId, data, layerId, type='fill', paint={}, layout={}, beforeId }) {
+  // Espera a que el estilo esté listo (importante si usas setStyle o cambias de tema)
+  if (!map.isStyleLoaded()) {
+    map.once('styledata', () => addLayerFresh({ sourceId, data, layerId, type, paint, layout, beforeId }));
+    return;
+  }
+
+  // Limpieza defensiva
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+  map.addSource(sourceId, { type: 'geojson', data });
+  map.addLayer({ id: layerId, type, source: sourceId, paint, layout }, beforeId);
+}
+
         
 // REPLACE this entire function
 function addEnhancedWeatherLayer(type) {
@@ -1418,6 +1443,7 @@ async function initializeMap() {
         pitch: 0,
         bearing: 0,
         minZoom: 7.5,
+        maxZoom:15,
         // Use the new function to set the map's navigation boundaries
         maxBounds: getPueblaBoundingBox(),
         scrollZoom: {
@@ -1450,18 +1476,39 @@ async function initializeMap() {
 }
 
 //cerrar el panel cuando se da clic fuera de este
-document.addEventListener("click",function(event){
-    const panel = document.getElementById("weather-controls");
-    const toggleBtn = document.getElementById("toggle-controls-btn");
+document.addEventListener('click', (e) => {
+  const wcPanel   = document.getElementById('weather-controls');
+  const wcToggle  = document.getElementById('toggle-controls-btn');
+  const glossary  = document.getElementById('glossaryModal');
 
-    //si el panel esta abierto
-    if (panel.classList.contains("is-open")) {
-        //click no fue dentro ni en el boton que lo abre
-        if(!panel.contains(event.target) && !toggleBtn.contains(event.target)){
-            panel.classList.remove("is-open"); //cierre del panel
-        }
+  // Si el clic ocurrió en el modal del glosario (overlay o contenido), NO cierres el weather
+  if (e.target.closest('#glossaryModal')) return;
+
+  // Si el glosario está abierto, tampoco cierres el weather
+  const glossaryOpen = glossary && (
+    glossary.classList.contains('is-open') || glossary.style.display === 'flex'
+  );
+  if (glossaryOpen) return;
+
+  if (wcPanel && wcPanel.classList.contains('is-open')) {
+    if (!wcPanel.contains(e.target) && !wcToggle.contains(e.target)) {
+      wcPanel.classList.remove('is-open');
     }
+  }
 });
+
+
+// cerrar el glosario cuando se da clic fuera de este
+const panel = document.getElementById("glossaryModal");
+
+if (panel) {
+  panel.addEventListener("click", function (event) {
+    // si el clic fue exactamente sobre el overlay, cerramos
+    if (event.target === panel) {
+      panel.style.display = 'none';
+    }
+  });
+}
 
 //cerrar el navlinks cuando se da clic fuera de este
 document.addEventListener('click',(event) =>{
@@ -1492,10 +1539,10 @@ window.activateMap = function(type) {
     window.tipoMapa = type;
     
     // Reset active layer
-    if (map && activeLayer && map.getLayer(activeLayer)) {
-        map.removeLayer(activeLayer);
-        activeLayer = null;
-    }
+    if (activeLayer) safeRemoveLayer(activeLayer);
+    activeLayer = null;
+
+
     if (type == 'meteorologia'){
         setTimeout(() => {
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -1579,7 +1626,6 @@ function updateHistoricalChart() {
     } else {
         createChemHistoricalChart(currentHistData);
     }
-    
     updateStatsTable(tipoSeleccionado);
 }
 
@@ -1761,21 +1807,22 @@ document.addEventListener('DOMContentLoaded', () => {
             addEnhancedWeatherLayer(layerType);
         });
     });
-function addClickAndTouch(id, handler) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("click", handler);
-    el.addEventListener("touchstart", handler); // soporte móvil
-    }
+
+    function addClickAndTouch(id, handler) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("click", handler);
+        el.addEventListener("touchstart", handler); // soporte móvil
+        }
 
     // ejemplo para historial
     addClickAndTouch("btn_historial", function() {
     document.getElementById("map").style.display = "none";
     document.getElementById("panel-historial").style.display = "block";
-
     // forzar resize de gráficas al mostrarlas
     window.dispatchEvent(new Event("resize"));
     });    
+
     document.getElementById('playBtn').addEventListener('click', () => {
         isPlaying ? stopAnimation() : startAnimation();
     });
@@ -1864,6 +1911,17 @@ function addClickAndTouch(id, handler) {
         }
     }
 
+    function showHistorial() {
+        document.getElementById("app").style.display = "none";
+        document.getElementById("historial-dashboard").style.display = "block";
+        // Cargar municipios
+        loadHistoricalCabeceras();
+        // Inicializar toggles y primera gráfica (por defecto meteorología)
+        createVariableToggles("meteo");
+        updateHistoricalChart();
+        document.getElementById("nav-links").classList.remove("active");
+    }
+
     // Back button functionality
     document.getElementById('btn_back').addEventListener('click', () => {
         document.body.classList.remove('map-active');
@@ -1871,7 +1929,12 @@ function addClickAndTouch(id, handler) {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
 
         //limpiar mapa
-        map.removeLayer(activeLayer);
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+
+        //limpiar combobox
+        clearHistCombobox();
+        clearMapCombobox();
 
         stopAnimation();
         currentTimeStep = 0;
@@ -1888,13 +1951,17 @@ function addClickAndTouch(id, handler) {
     document.getElementById('btn_atmos').addEventListener('click', function() {
         if (!mapInitialized) activateMap('meteorologia');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
+        controlsPanel.classList.remove('is-open');
         this.classList.add('active');
 
         //limpiar el mapa 
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-        }
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
 
+        //limpiar combobox historial
+        clearHistCombobox();
         //muestra mapa
         showMapa();
         //muestra botones divididos      
@@ -1903,22 +1970,27 @@ function addClickAndTouch(id, handler) {
         // Set map type immediately
         tipoMapa = 'meteorologia';
         
-        // Wait for map to be ready
+        /*// Wait for map to be ready
         setTimeout(() => {
             const tempBtn = document.querySelector('[data-layer="temperature"]');
             if (tempBtn) tempBtn.click();
-        }, 300);
+        }, 300);*/
     });
 
     document.getElementById('btn_aire').addEventListener('click', function() {
         if (!mapInitialized) activateMap('calidad');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
+        controlsPanel.classList.remove('is-open');
         this.classList.add('active');
 
         //limpiar el mapa
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-        }
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+
+        //limpiar combobox historial
+        clearHistCombobox();
 
         //muestra mapa
         showMapa();
@@ -1928,27 +2000,29 @@ function addClickAndTouch(id, handler) {
         // Set map type immediately
         tipoMapa = 'calidad';
         
-        // Wait for map to be ready
+        /*// Wait for map to be ready
         setTimeout(() => {
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
             if (pm25Btn) pm25Btn.click();
-        }, 300);
+        }, 300);*/
     });
 
     document.getElementById('btn_hist').addEventListener('click', function() {
         document.body.classList.add('map-active');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
         this.classList.add('active');
 
         //limpiar el mapa
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-            if (map.getLayer(activeLayer + '-points')) {
-                map.removeLayer(activeLayer + '-points');
-            }
-            activeLayer = null;
-        }        // Hide map content and show the dashboard
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
         document.getElementById('main-content').style.display = 'none';
+
+        //limpiar combobox del mapa
+        clearMapCombobox();
+
+
 
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
@@ -1991,9 +2065,15 @@ function addClickAndTouch(id, handler) {
         }
     });
     // END: New event listener block
-        
+        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
+        if (tipoSeleccionado === 'meteo') {
+            createVariableToggles('meteo');
+        } else {
+            createVariableToggles('aire');
+        }
+        updateStatsTable(tipoSeleccionado);
         // Initial setup
-        createVariableToggles('meteo');
+        //createVariableToggles('meteo');
         // Clear previous charts and table
         document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
         document.getElementById('histStatsTable').innerHTML = '';
@@ -2009,20 +2089,100 @@ function addClickAndTouch(id, handler) {
     document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         activateMap('meteorologia');
+        showMapa("meteorologia");
         toggleMenu();
+        //limpia el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        //cambio de botones del weatehr panel
+        showMeteorologiaButtons();
+        //quitar filtro 
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearHistCombobox ();
     });
 
     document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         activateMap('calidad');
+        showMapa("calidad");
         toggleMenu();
+        //limpia el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        //cambio de botones del weather panel 
+        showAireButtons();
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearHistCombobox ();
     });
 
     document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         toggleMenu();
-        showNotification('Funcionalidad de Historial en desarrollo', 'info');
+        showHistorial();
+        //limpiar el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearMapCombobox();
+
+        // Hide map content and show the dashboard
+        document.getElementById('main-content').style.display = 'none';
+        const dashboard = document.getElementById('historial-dashboard');
+        dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
+        dashboard.classList.add('active');
+        // Populate municipality dropdown if it's empty
+        const cabeceraSelect = document.getElementById('hist-cabecera-select');
+        if (cabeceraSelect.options.length <= 1 && municipalitiesData) { // Check if already populated
+            cabeceraSelect.innerHTML = '<option value="">Seleccione un municipio...</option>';
+            municipalitiesData.features
+                .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre))
+                .forEach(feature => {
+                    const option = document.createElement('option');
+                    option.value = feature.properties.clave;
+                    option.textContent = feature.properties.nombre;
+                    cabeceraSelect.appendChild(option);
+                });
+        }
+         // ADD these new listeners for the dashboard controls
+        document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
+            const muncipalityId = this.value;
+            const type = document.getElementById('hist-tipo-select').value;
+            if (!muncipalityId) return;
+
+            // Show a loading indicator
+            document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
+
+            currentHistData = await fetchHistoricalData(muncipalityId, type);
+            updateHistoricalChart();
+        });
+
+    document.getElementById('hist-tipo-select').addEventListener('change', function() {
+        const type = this.value;
+        createVariableToggles(type);
+        // If a municipality is already selected, refetch and update data for the new type
+        const cabeceraSelect = document.getElementById('hist-cabecera-select');
+        if (cabeceraSelect.value) {
+            cabeceraSelect.dispatchEvent(new Event('change'));
+        }
     });
+    // END: New event listener block
+        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
+        if (tipoSeleccionado === 'meteo') {
+            createVariableToggles('meteo');
+        } else {
+            createVariableToggles('aire');
+        }
+        // Initial setup
+        //createVariableToggles('meteo');
+        // Clear previous charts and table
+        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
+        document.getElementById('histStatsTable').innerHTML = '';
+    });
+
+    
 
     // Update parameter selection functionality
     document.getElementById('select_dat').addEventListener('change', function() {
@@ -2180,6 +2340,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+//no lo quito, es lo que abre el panel cuando deslizas de izquierda a derecha pero es imposible navegar en el mapa porque abre el panel de control siempre
+/*
 // Enhanced touch gestures for mobile
 let touchStartX = 0;
 let touchStartY = 0;
@@ -2212,7 +2374,7 @@ document.addEventListener('touchend', (e) => {
             controlsPanel.classList.add('is-open');
         }
     }
-});
+});*/
 
 // Performance optimization: Debounce resize events
 let resizeTimeout;
@@ -2305,8 +2467,8 @@ function fetchHistoricalData(municipalityId, type) {
     return new Promise(resolve => {
         setTimeout(() => {
             const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            //const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
-            const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
+            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            //const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
 
             let data;
             if (type === 'meteo') {
@@ -2896,11 +3058,12 @@ function updateHistoricalChart() {
   mo.observe(sel, { childList: true });
 })();
 
-//opciones de escritura en el mapa
+// Combobox robusto para el MAPA (independiente del de historial)
 (function makeMapComboboxRobusto(){
   const sel = document.getElementById('hist-cabecera-map');
   if (!sel) return;
 
+  // UI
   const wrap = document.createElement('div');
   wrap.id = 'map-combobox';
   wrap.style.position = 'relative';
@@ -2916,36 +3079,28 @@ function updateHistoricalChart() {
   input.autocomplete = 'off';
 
   const list = document.createElement('ul');
-  list.id = 'map-combobox-list';
+  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
   list.setAttribute('role','listbox');
   Object.assign(list.style, {
-    position:'fixed',
-    maxHeight:'260px',
-    overflowY:'auto',
-    margin:'0', padding:'0',
-    listStyle:'none',
-    display:'none',
-    background:'#fff',
-    border:'1px solid rgba(0,0,0,.15)',
-    borderRadius:'8px',
-    boxShadow:'0 8px 24px rgba(0,0,0,.15)',
-    zIndex:'50000'
+    position:'fixed', maxHeight:'260px', overflowY:'auto',
+    margin:'0', padding:'0', listStyle:'none', display:'none',
+    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
   });
   document.body.appendChild(list);
 
+  // Oculta select y monta wrapper
   sel.style.display = 'none';
   sel.parentNode.insertBefore(wrap, sel);
   wrap.appendChild(input);
   wrap.appendChild(sel);
 
+  // Lógica
   const norm = s => (s||'').toString()
     .normalize('NFD').replace(/\p{Diacritic}/gu,'')
     .toLowerCase().replace(/\s+/g,' ').trim();
 
-  let items = [];
-  let filtered = [];
-  let open = false;
-  let active = -1;
+  let items = [], filtered = [], open = false, active = -1;
 
   function snapshotItems(){
     items = Array.from(sel.options)
@@ -2963,60 +3118,39 @@ function updateHistoricalChart() {
     list.style.maxWidth = Math.max(r.width, 260) + 'px';
   }
 
-    function render_search_map(){
+  function render(){
     list.innerHTML = '';
     filtered.forEach((it, idx) => {
-        const li = document.createElement('li');
-        li.textContent = it.label;
-        li.className = (idx === active) ? 'active' : '';
-        li.style.padding = '12px 16px';
-        li.style.cursor = 'pointer';
-
-        li.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      choose(idx);
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
+      list.appendChild(li);
     });
-
-        li.addEventListener('click', (e) => {
-         e.preventDefault();
-        e.stopPropagation();
-        choose(idx);
-        });
-
-        list.appendChild(li);
-    });
-    }
-
-
-  function openList(){
-    if (!filtered.length) return;
-    positionList();
-    list.style.display = 'block';
-    open = true;
   }
 
-  function closeList(){
-    list.style.display = 'none';
-    open = false;
-    active = -1;
-  }
+  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
+  function closeList(){ list.style.display='none'; open = false; active = -1; }
 
   function filterNow(q){
     const nq = norm(q);
     filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
     const exact = filtered.findIndex(m => norm(m.label) === nq);
     active = exact >= 0 ? exact : -1;
-    render_search_map();
+    render();
     if (open && !filtered.length) closeList();
   }
 
-    // Reemplazar la función choose en la sección del combobox del mapa
 function choose(idx) {
   if (idx < 0 || idx >= filtered.length) return;
   const it = filtered[idx];
   input.value = it.label;
   sel.value = it.value;
+
+  sel.dispatchEvent(new Event('change',{ bubbles:true}));
 
   // Centrar el mapa en el municipio seleccionado (sin usar turf)
   const municipio = municipalitiesData.features.find(
@@ -3026,52 +3160,40 @@ function choose(idx) {
   if (municipio && window.map) {
     // Obtener las coordenadas directamente del municipio
     const coords = municipio.geometry.coordinates;
+    //limpiar combobox historial
+    //clearMapCombobox();
     
     // Centrar el mapa en esas coordenadas
     window.map.flyTo({
       center: coords,
-      zoom: 10,
-      duration: 1000
+      zoom: 11,
+      bearing:0,
+      pitch:0,
+      duration: 3000,
+      essential: true
     });
   }
 
   closeList();
 }
 
-
-
+  // Aislar clicks internos
   [wrap, input, list].forEach(el => {
     el.addEventListener('click', e => e.stopPropagation(), { capture:true });
-    el.addEventListener('mousedown', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
   });
 
-    input.addEventListener('focus', () => {
-    if (!items.length) snapshotItems();       // <-- fuerza refresco
-    filtered = items.slice();
-    render_search_map();
-    openList();
-    });
-
-    input.addEventListener('click', () => {
-    if (!items.length) snapshotItems();       // <-- fuerza refresco
-    if (!open) {
-        filtered = items.slice();
-        render_search_map();
-        openList();
-    }
-    });
-
-    input.addEventListener('input', () => {
-    if (!items.length) snapshotItems();       // <-- por si llegan tarde
-    filterNow(input.value);
-    filtered.length ? openList() : closeList();
-    });
+  // Abrir/filtrar/teclado
+  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
+  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
+  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
 
   input.addEventListener('keydown', (e) => {
     switch(e.key){
-      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active=Math.min(filtered.length-1,active+1); render_search_map(); break;
-      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active=Math.max(0,active-1); render_search_map(); break;
-      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else {openList();}} else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
       case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
       case 'Tab':       closeList(); break;
     }
@@ -3084,71 +3206,77 @@ function choose(idx) {
   window.addEventListener('scroll', () => { if (open) positionList(); }, true);
   window.addEventListener('resize', () => { if (open) positionList(); });
 
+  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
   if (sel.options.length) snapshotItems();
-    const mo = new MutationObserver(() => {
-    snapshotItems();
-    if (open) { render_search_map(); positionList(); }
-    });
-    mo.observe(sel, { childList: true, subtree: false });  // <option> son hijos directos
-
+  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
   mo.observe(sel, { childList: true });
 })();
 
 
+// Limpia el combobox del HISTORIAL
+window.clearHistCombobox = function () {
+  const sel   = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';         // borra el texto
+  sel.value = '';                      // deselecciona (si tu placeholder tiene value="")
+  sel.dispatchEvent(new Event('change', { bubbles: true })); // notifica cambios
+  const list = document.getElementById('hist-combobox-list');
+  if (list) list.style.display = 'none'; // cierra la lista si estaba abierta
+};
+
+// Limpia el combobox del MAPA
+window.clearMapCombobox = function () {
+  const sel   = document.getElementById('hist-cabecera-map');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('map-combobox-list');
+  if (list) list.style.display = 'none';
+};
 
 
 // ===================================================================
 // END: New History Dashboard Functions
 // ===================================================================
-function improveMapComboboxFunctionality() {
-    // Esta función solo debe ejecutarse cuando el mapa está listo
-    if (!window.map) return;
-    
-    // Observamos el #map-combobox-list para detectar cuando se agrega a la página
-    const observer = new MutationObserver(function(mutations) {
-      mutations.forEach(function(mutation) {
-        if (mutation.type === 'childList' && document.getElementById('map-combobox-list')) {
-          setupComboboxListeners();
-        }
-      });
+
+(function wireGlossaryModal() {
+  // Puede haber 1 o varios, nos enganchamos a todos por si acaso:
+  const modals = Array.from(document.querySelectorAll('#glossaryModal'));
+  const openers = Array.from(document.querySelectorAll('#btn_glosario'));
+  const closers = Array.from(document.querySelectorAll('#glossaryClose'));
+
+  function openAll()  { modals.forEach(m => m.classList.add('is-open')); }
+  function closeAll() { modals.forEach(m => m.classList.remove('is-open')); }
+
+  // Abrir desde cualquier botón “Glosario”
+  openers.forEach(btn => btn.addEventListener('click', openAll));
+
+  // Cerrar desde cualquier botón ✕
+  closers.forEach(btn => btn.addEventListener('click', closeAll));
+
+  // Cerrar con Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeAll();
+  });
+
+  // Cerrar al hacer clic en el fondo (overlay), pero NO dentro del contenido
+  modals.forEach(modal => {
+    // Si haces click en el overlay (target === modal), cerramos
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeAll();
     });
-    
-    // Iniciar observación del cuerpo del documento para detectar cambios
-    observer.observe(document.body, { childList: true });
-    
-    function setupComboboxListeners() {
-      const listItems = document.querySelectorAll('#map-combobox-list li');
-      
-      listItems.forEach(function(item) {
-        item.addEventListener('mousedown', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          const municipioName = this.textContent;
-          const municipio = window.municipalitiesData.features.find(
-            f => f.properties.nombre === municipioName
-          );
-          
-          if (municipio && window.map) {
-            // Obtener las coordenadas del municipio
-            const coords = municipio.geometry.coordinates;
-            
-            // Centrar el mapa en esas coordenadas con zoom apropiado
-            window.map.flyTo({
-              center: coords,
-              zoom: 10,
-              duration: 1000
-            });
-          }
-        });
-      });
+
+    // Prevenir que clicks dentro del contenido burbujeen al overlay
+    const content = modal.querySelector('.modal-content, .municipality-modal-content');
+    if (content) {
+      content.addEventListener('click', (e) => e.stopPropagation());
     }
-  }
-  
-  // Intentar mejorar el combobox cuando el mapa esté cargado
-  const checkMapInterval = setInterval(function() {
-    if (window.map && window.mapIsReady) {
-      improveMapComboboxFunctionality();
-      clearInterval(checkMapInterval);
-    }
-  }, 500);
+  });
+})();

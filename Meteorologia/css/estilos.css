@@ -317,15 +317,16 @@
 /* Ajustes para el map-top-bar */
 #map-top-bar {
   position: fixed;
-  top: 170px; /* Exactamente debajo de la navbar que mide 150px */
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
   left: 100px; /* Dejando espacio para el menú lateral */
-  z-index: 1200; /* Por encima del mapa pero debajo de la navbar */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
   display: flex;
   align-items: center;
   gap: 20px;
   transition: left 0.3s ease; /* Transición suave cuando el menú se expande */
   width: 300px; /* Ancho fijo para el control */
 }
+
 
 /* Ajustar cuando el menú lateral está expandido */
 .side-menu.expanded + #main-content #map-top-bar {
@@ -988,4 +989,89 @@
 #map-combobox-list li.active {
   background: #007bff;
   color: #fff;
+}
+
+/* Ajustes para el map-top-bar en vista móvil */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 160px; /* Un valor más bajo y más apropiado para móviles */
+    left: 10px; /* Ajuste el espacio lateral */
+    right: 10px;
+    width: 300px; /* Permite que el ancho se ajuste */
+    /*max-width: none; /* Elimina la restricción de ancho máximo */
+    flex-direction: column; /* Apila los elementos verticalmente */
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: #c1986256 !important;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;   /* fuerza el color */
+  border-radius: 4px;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: c1986256 !important;
+}
+
+/* ancho del scroll */
+::-webkit-scrollbar {
+  width: 20px;
+  height: 10px;
+}
+
+/* Scrollbars del historial */
+#historial-dashboard::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+#historial-dashboard::-webkit-scrollbar-track {
+  background: #c1986256 !important;
+}
+
+#historial-dashboard::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;
+  border-radius: 4px;
+}
+
+#historial-dashboard::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
+}
+
+/* Scrollbars del mapa/controles */
+#controlsPanel::-webkit-scrollbar,
+#weather-controls::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+#controlsPanel::-webkit-scrollbar-track,
+#weather-controls::-webkit-scrollbar-track {
+  background: #c1986256 !important;
+}
+
+#controlsPanel::-webkit-scrollbar-thumb,
+#weather-controls::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;
+  border-radius: 4px;
+}
+
+#controlsPanel::-webkit-scrollbar-thumb:hover,
+#weather-controls::-webkit-scrollbar-thumb:hover {
+  background: #555 !important;
 }
