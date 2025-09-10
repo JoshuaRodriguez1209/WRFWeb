@@ -3242,41 +3242,35 @@ window.clearMapCombobox = function () {
 };
 
 
+
+// Desactivar controles de mapa e historial si el menú hamburguesa está abierto
+const navLinks = document.getElementById('nav-links');
+const mapComboInput  = document.querySelector('#map-combobox input');
+const histComboInput = document.querySelector('#hist-combobox input');
+const histSelect     = document.getElementById('hist-tipo-select');
+const histButtons    = document.querySelectorAll('#variable-toggles button');
+
+const observer = new MutationObserver(() => {
+  const menuOpen = navLinks.classList.contains('active');
+
+  // Agrupamos todos los inputs/selects
+  const allInputs = [mapComboInput, histComboInput, histSelect, ...histButtons];
+
+  allInputs.forEach(el => {
+    if (!el) return;
+    if (menuOpen) {
+      el.setAttribute('disabled', 'true');
+      el.style.opacity = '0.5';          // se ven apagados
+      el.style.pointerEvents = 'none';   // no clickeables
+    } else {
+      el.removeAttribute('disabled');
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  });
+});
+
+
 // ===================================================================
 // END: New History Dashboard Functions
 // ===================================================================
-
-(function wireGlossaryModal() {
-  // Puede haber 1 o varios, nos enganchamos a todos por si acaso:
-  const modals = Array.from(document.querySelectorAll('#glossaryModal'));
-  const openers = Array.from(document.querySelectorAll('#btn_glosario'));
-  const closers = Array.from(document.querySelectorAll('#glossaryClose'));
-
-  function openAll()  { modals.forEach(m => m.classList.add('is-open')); }
-  function closeAll() { modals.forEach(m => m.classList.remove('is-open')); }
-
-  // Abrir desde cualquier botón “Glosario”
-  openers.forEach(btn => btn.addEventListener('click', openAll));
-
-  // Cerrar desde cualquier botón ✕
-  closers.forEach(btn => btn.addEventListener('click', closeAll));
-
-  // Cerrar con Escape
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeAll();
-  });
-
-  // Cerrar al hacer clic en el fondo (overlay), pero NO dentro del contenido
-  modals.forEach(modal => {
-    // Si haces click en el overlay (target === modal), cerramos
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeAll();
-    });
-
-    // Prevenir que clicks dentro del contenido burbujeen al overlay
-    const content = modal.querySelector('.modal-content, .municipality-modal-content');
-    if (content) {
-      content.addEventListener('click', (e) => e.stopPropagation());
-    }
-  });
-})();
