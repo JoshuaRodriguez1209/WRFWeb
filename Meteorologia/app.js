@@ -1951,6 +1951,9 @@ document.addEventListener('DOMContentLoaded', () => {
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
 
+        //parar animacion
+        stopAnimation();
+
         stopAnimation();
         currentTimeStep = 0;
         colorFilter = null;
@@ -1987,6 +1990,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -2020,6 +2026,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -2045,6 +2054,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
 
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
@@ -2124,6 +2136,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistCombobox ();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //parar animacion
+        stopAnimation();
     });
 
     document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
@@ -2141,12 +2155,19 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistCombobox ();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //parar animacion
+        stopAnimation();
     });
 
-    document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
+    document.getElementById('btn_hist_mobile')?.addEventListener('click', async (e) => {
         e.preventDefault();
-        toggleMenu();
-        showHistorial();
+        //carga de datos al historial sin necesidad de cargar el mapa
+        if (!window.municipalitiesData) {
+            await loadJSONData();            
+        }
+        //activar el mapa para que se oculte y muestre el historial
+        activateMap('calidad');
+        toggleMenu()
         //limpiar el mapa
         if (activeLayer) safeRemoveLayer(activeLayer);
         activeLayer = null;
@@ -2155,6 +2176,13 @@ document.addEventListener('DOMContentLoaded', () => {
         clearMapCombobox();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //activar combobox del historial 
+        loadHistoricalCabeceras();
+        loadMapCabeceras();
+        //mostrar historial
+        showHistorial();
+        //parar animacion
+        stopAnimation();
 
         // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
