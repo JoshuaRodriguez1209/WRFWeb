@@ -4,7 +4,7 @@ let stationsData = null;
 let mapInitialized = false;
 let mapIsReady = false; // <-- Add this line
 const initialCenter = [-98.2063, 19.0414];
-const initialZoom = 8.5;
+const initialZoom = 7.5;
 let colorFilter = null;
 let activeLayer = null;
 let animationInterval = null;
@@ -371,11 +371,12 @@ function addPueblaMunicipalities() {
                 'interpolate',
                 ['linear'],
                 ['get', 'population'],
-                10000, 4,
+                10000, 6,
                 50000, 8,
-                100000, 12,
-                500000, 16,
-                1500000, 20
+                100000, 10,
+                500000, 12,
+                1500000, 16
+
             ],
             'circle-color': '#c19862', // Use fixed color instead of complex expression
             'circle-stroke-color': '#ffffff',
@@ -443,6 +444,21 @@ function addPueblaMunicipalities() {
     map.on('mouseleave', 'municipality-points', () => {
         map.getCanvas().style.cursor = '';
     });
+
+    const MUNIC_MIN_ZOOM = 8.5;
+
+    function setLayerVisibilityByZoom(layerIds, minZoom) {
+    const z = map.getZoom();
+    const vis = z >= minZoom ? 'visible' : 'none';
+    layerIds.forEach(id => {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
+    });
+    }
+
+    // Llama en load y en cambios de zoom
+    map.on('load', () => setLayerVisibilityByZoom(['municipality-points','municipality-labels'], MUNIC_MIN_ZOOM));
+    map.on('zoom', () => setLayerVisibilityByZoom(['municipality-points','municipality-labels'], MUNIC_MIN_ZOOM));
+
 }
 
 // Add monitoring stations from JSON
@@ -491,6 +507,14 @@ function addMonitoringStations() {
     map.on('click', 'station-points', (e) => {
         const properties = e.features[0].properties;
         showStationModal(properties);
+    });
+
+    map.on('mouseenter', 'station-points', () => {
+        map.getCanvas().style.cursor = 'pointer';
+    });
+
+    map.on('mouseleave', 'station-points', () => {
+        map.getCanvas().style.cursor = '';
     });
 }
 //--------------------------------------------------------------------------
@@ -591,6 +615,100 @@ function showMunicipalityModal(properties) {
         }
     });
 }
+
+function showStationModal(properties, geometry) {
+  console.log('Opening STATION modal with properties:', properties);
+
+  const modal = document.getElementById('municipalityModal');
+  const titleEl = document.getElementById('modalTitle');
+  const cardsContainer = document.getElementById('pollutantSummary');
+  const chartsContainer = document.getElementById('modalChartsHost');
+
+  // Limpiar contenido previo
+  if (chartsContainer) chartsContainer.innerHTML = '';
+  if (cardsContainer)  cardsContainer.innerHTML  = '';
+
+  // Nombre a mostrar (intenta varias claves comunes)
+  const displayName =
+    properties?.nombre ||
+    properties?.estacion ||
+    properties?.station_name ||
+    properties?.name ||
+    'Estación';
+
+  if (titleEl) titleEl.textContent = `Estación ${displayName}`;
+
+  // Tipo de mapa y mapas de variables (mismo patrón que municipio)
+  const tipo = (window.tipoMapa || 'meteorologia'); // 'meteorologia' | 'calidad'
+  const variables = tipo === 'meteorologia' ? meteorologicalVariables : airQualityVariables;
+  const keyMap = tipo === 'meteorologia' ? meteoKeyMap : chemKeyMap;
+
+  // Coordenadas (de geometry, o de props, o fallback)
+  let coords = [];
+  if (geometry && geometry.type === 'Point' && Array.isArray(geometry.coordinates)) {
+    coords = geometry.coordinates; // [lng, lat]
+  } else if (properties?.lng != null && properties?.lat != null) {
+    coords = [Number(properties.lng), Number(properties.lat)];
+  } else if (properties?.longitud != null && properties?.latitud != null) {
+    coords = [Number(properties.longitud), Number(properties.latitud)];
+  } else {
+    coords = [-98.2063, 19.0414]; // fallback Puebla
+  }
+  const [lng, lat] = coords;
+
+  try {
+    const qualityColors = {
+      good:     '#00b894',
+      moderate: '#fdcb6e',
+      bad:      '#d63031'
+    };
+
+    // Repite exactamente la misma construcción de tarjetas + chart por variable
+    Object.entries(variables).forEach(([key, config]) => {
+      const weatherKey = keyMap[key];
+      if (!weatherKey || !weatherLayers[weatherKey]) return;
+
+      const value        = generateRealisticValue(weatherKey, lat, lng, 0, 0);
+      const qualityLevel = getQualityLevel(value, weatherKey);
+
+      // Tarjeta resumen
+      const item = document.createElement('div');
+      item.className = 'pollutant-item';
+      item.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;background:#f8f9fa;border-radius:8px;';
+      item.innerHTML = `
+        <div style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
+        <div style="flex:1;">
+          <div style="font-weight:bold;margin-bottom:4px;">${config.icon} ${config.label}</div>
+          <div style="font-size:1.1em;color:#333;">${value.toFixed(2)} ${config.unit}</div>
+        </div>
+      `;
+      cardsContainer.appendChild(item);
+
+      // Serie temporal y gráfica
+      const labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+      const data   = generateTimeSeriesData(weatherKey, lat, lng);
+      createSingleVariableChart(chartsContainer, config, labels, data, displayName);
+    });
+
+    // Mostrar modal (mismo que municipio)
+    modal.style.display = 'flex';
+    window.currentStation = properties;
+
+  } catch (err) {
+    console.error('Error showing station modal:', err);
+    showNotification('Error al mostrar información de la estación', 'error');
+  }
+
+  // Cerrar al click fuera (igual que municipio)
+  modal.addEventListener('click', function onBackdrop(e) {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      modal.removeEventListener('click', onBackdrop);
+    }
+  });
+}
+
+
 
 // Gráfica profesional por variable (solo una por chart, limpia)
 function createSingleVariableChart(container, config, labels, data, municipioName) {
@@ -1951,6 +2069,9 @@ document.addEventListener('DOMContentLoaded', () => {
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
 
+        //parar animacion
+        stopAnimation();
+
         stopAnimation();
         currentTimeStep = 0;
         colorFilter = null;
@@ -1987,6 +2108,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -2020,6 +2144,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -2045,6 +2172,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+
+        //parar animacion
+        stopAnimation();
 
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
@@ -2124,6 +2254,8 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistCombobox ();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //parar animacion
+        stopAnimation();
     });
 
     document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
@@ -2141,12 +2273,19 @@ document.addEventListener('DOMContentLoaded', () => {
         clearHistCombobox ();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //parar animacion
+        stopAnimation();
     });
 
-    document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
+    document.getElementById('btn_hist_mobile')?.addEventListener('click', async (e) => {
         e.preventDefault();
-        toggleMenu();
-        showHistorial();
+        //carga de datos al historial sin necesidad de cargar el mapa
+        if (!window.municipalitiesData) {
+            await loadJSONData();            
+        }
+        //activar el mapa para que se oculte y muestre el historial
+        activateMap('calidad');
+        toggleMenu()
         //limpiar el mapa
         if (activeLayer) safeRemoveLayer(activeLayer);
         activeLayer = null;
@@ -2155,6 +2294,13 @@ document.addEventListener('DOMContentLoaded', () => {
         clearMapCombobox();
         //cerrar el menu hamburguesa
         closeHamburgerMenu()
+        //activar combobox del historial 
+        loadHistoricalCabeceras();
+        loadMapCabeceras();
+        //mostrar historial
+        showHistorial();
+        //parar animacion
+        stopAnimation();
 
         // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
