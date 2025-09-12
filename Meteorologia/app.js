@@ -108,29 +108,52 @@ async function loadHistoricalCabeceras() {
 }
         // Load JSON data
 // REPLACE this function
-async function loadJSONData() {
-    try {
-        // MODIFICATION: Added your 'puebla_state_boundary.json' to the files being fetched
-        const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
-            fetch('./cabeceras.json'),
-            fetch('./estaciones.json'),
-            fetch('./puebla_coordinates.json'),
-            fetch('./puebla_state_boundary.json') // <-- Add this line for your new file
-        ]);
-        
-        municipalitiesData = await municipalitiesResponse.json();
-        stationsData = await stationsResponse.json();
-        pueblaBoundaryData = await pueblaResponse.json(); 
-        pueblaSimpleBoundaryData = await pueblaStateResponse.json(); // <-- Store the new data
-        
-        console.log('JSON data loaded successfully');
-        return true;
-    } catch (error) {
-        console.error('Error loading JSON data:', error);
-        showNotification('Error cargando datos de municipios', 'error');
-        return false;
-    }
+function loadMapCabeceras() {
+  if (!municipalitiesData) return;
+  const select = document.getElementById('hist-cabecera-map');
+  if (!select) return;
+
+  select.innerHTML = ''; // limpiar
+
+  const cabeceras = municipalitiesData.features
+    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
+
+  cabeceras.forEach(feature => {
+    const option = document.createElement('option');
+    option.value = feature.properties.clave;
+    option.textContent = feature.properties.nombre;
+    select.appendChild(option);
+  });
 }
+
+
+async function loadJSONData() {
+  try {
+    const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
+      fetch('./cabeceras.json'),
+      fetch('./estaciones.json'),
+      fetch('./puebla_coordinates.json'),
+      fetch('./puebla_state_boundary.json')
+    ]);
+    
+    municipalitiesData = await municipalitiesResponse.json();
+    stationsData = await stationsResponse.json();
+    pueblaBoundaryData = await pueblaResponse.json(); 
+    pueblaSimpleBoundaryData = await pueblaStateResponse.json(); 
+
+    console.log('JSON data loaded successfully');
+
+    // 👇 llena el select del mapa en cuanto tengas datos
+    loadMapCabeceras();
+
+    return true;
+  } catch (error) {
+    console.error('Error loading JSON data:', error);
+    showNotification('Error cargando datos de municipios', 'error');
+    return false;
+  }
+}
+
 
 // Enhanced function to add realistic air quality data to municipalities
 function enrichMunicipalityData(municipality) {
@@ -1116,6 +1139,31 @@ function isPointInPueblaAccurate(lat, lng) {
     }
     return inside;
 }
+
+function safeRemoveLayer(id) {
+  if (!map || !id) return;
+  // quita dependientes primero
+  if (map.getLayer(id + '-points')) map.removeLayer(id + '-points');
+  if (map.getLayer(id)) map.removeLayer(id);
+  if (map.getSource(id)) map.removeSource(id);
+}
+
+// Re-agrega desde cero (idempotente y con timing correcto)
+function addLayerFresh({ sourceId, data, layerId, type='fill', paint={}, layout={}, beforeId }) {
+  // Espera a que el estilo esté listo (importante si usas setStyle o cambias de tema)
+  if (!map.isStyleLoaded()) {
+    map.once('styledata', () => addLayerFresh({ sourceId, data, layerId, type, paint, layout, beforeId }));
+    return;
+  }
+
+  // Limpieza defensiva
+  if (map.getLayer(layerId)) map.removeLayer(layerId);
+  if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+  map.addSource(sourceId, { type: 'geojson', data });
+  map.addLayer({ id: layerId, type, source: sourceId, paint, layout }, beforeId);
+}
+
         
 // REPLACE this entire function
 function addEnhancedWeatherLayer(type) {
@@ -1395,6 +1443,7 @@ async function initializeMap() {
         pitch: 0,
         bearing: 0,
         minZoom: 7.5,
+        maxZoom:15,
         // Use the new function to set the map's navigation boundaries
         maxBounds: getPueblaBoundingBox(),
         scrollZoom: {
@@ -1427,18 +1476,39 @@ async function initializeMap() {
 }
 
 //cerrar el panel cuando se da clic fuera de este
-document.addEventListener("click",function(event){
-    const panel = document.getElementById("weather-controls");
-    const toggleBtn = document.getElementById("toggle-controls-btn");
+document.addEventListener('click', (e) => {
+  const wcPanel   = document.getElementById('weather-controls');
+  const wcToggle  = document.getElementById('toggle-controls-btn');
+  const glossary  = document.getElementById('glossaryModal');
 
-    //si el panel esta abierto
-    if (panel.classList.contains("is-open")) {
-        //click no fue dentro ni en el boton que lo abre
-        if(!panel.contains(event.target) && !toggleBtn.contains(event.target)){
-            panel.classList.remove("is-open"); //cierre del panel
-        }
+  // Si el clic ocurrió en el modal del glosario (overlay o contenido), NO cierres el weather
+  if (e.target.closest('#glossaryModal')) return;
+
+  // Si el glosario está abierto, tampoco cierres el weather
+  const glossaryOpen = glossary && (
+    glossary.classList.contains('is-open') || glossary.style.display === 'flex'
+  );
+  if (glossaryOpen) return;
+
+  if (wcPanel && wcPanel.classList.contains('is-open')) {
+    if (!wcPanel.contains(e.target) && !wcToggle.contains(e.target)) {
+      wcPanel.classList.remove('is-open');
     }
+  }
 });
+
+
+// cerrar el glosario cuando se da clic fuera de este
+const panel = document.getElementById("glossaryModal");
+
+if (panel) {
+  panel.addEventListener("click", function (event) {
+    // si el clic fue exactamente sobre el overlay, cerramos
+    if (event.target === panel) {
+      panel.style.display = 'none';
+    }
+  });
+}
 
 //cerrar el navlinks cuando se da clic fuera de este
 document.addEventListener('click',(event) =>{
@@ -1469,10 +1539,10 @@ window.activateMap = function(type) {
     window.tipoMapa = type;
     
     // Reset active layer
-    if (map && activeLayer && map.getLayer(activeLayer)) {
-        map.removeLayer(activeLayer);
-        activeLayer = null;
-    }
+    if (activeLayer) safeRemoveLayer(activeLayer);
+    activeLayer = null;
+
+
     if (type == 'meteorologia'){
         setTimeout(() => {
             document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -1556,7 +1626,6 @@ function updateHistoricalChart() {
     } else {
         createChemHistoricalChart(currentHistData);
     }
-    
     updateStatsTable(tipoSeleccionado);
 }
 
@@ -1738,21 +1807,22 @@ document.addEventListener('DOMContentLoaded', () => {
             addEnhancedWeatherLayer(layerType);
         });
     });
-function addClickAndTouch(id, handler) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener("click", handler);
-    el.addEventListener("touchstart", handler); // soporte móvil
-    }
+
+    function addClickAndTouch(id, handler) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener("click", handler);
+        el.addEventListener("touchstart", handler); // soporte móvil
+        }
 
     // ejemplo para historial
     addClickAndTouch("btn_historial", function() {
     document.getElementById("map").style.display = "none";
     document.getElementById("panel-historial").style.display = "block";
-
     // forzar resize de gráficas al mostrarlas
     window.dispatchEvent(new Event("resize"));
     });    
+
     document.getElementById('playBtn').addEventListener('click', () => {
         isPlaying ? stopAnimation() : startAnimation();
     });
@@ -1822,12 +1892,16 @@ function addClickAndTouch(id, handler) {
     document.getElementById('layer-buttons-aire').style.display = 'grid';
     }
 
+    //funcion para mostrar,dimensionar el mapa y ocultar el historial 
     function showMapa() {
         document.getElementById('main-content').style.display = 'block';
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'none';
-        dashboard.classList.remove('active');
-        
+        dashboard.classList.remove('active')
+    
+       //cerrar el menu hamburguesa
+        closeHamburgerMenu()    
+
         // Limpiar estado del mapa
         if (map) {
             if (activeLayer && map.getLayer(activeLayer)) {
@@ -1841,6 +1915,25 @@ function addClickAndTouch(id, handler) {
         }
     }
 
+    //funcion para mostrar el historial y ocultar el mapa
+    function showHistorial() {
+        document.getElementById("app").style.display = "none";
+        document.getElementById("historial-dashboard").style.display = "block";
+        // Cargar municipios
+        loadHistoricalCabeceras();
+        // Inicializar toggles y primera gráfica (por defecto meteorología)
+        createVariableToggles("meteo");
+        updateHistoricalChart();
+        document.getElementById("nav-links").classList.remove("active");
+    }
+
+    //funcion para cerrar el menu hamburguesa (especial para movil)
+    function closeHamburgerMenu() {
+    const navLinks = document.getElementById('nav-links');
+    navLinks.classList.remove('active');
+    }
+
+
     // Back button functionality
     document.getElementById('btn_back').addEventListener('click', () => {
         document.body.classList.remove('map-active');
@@ -1848,7 +1941,15 @@ function addClickAndTouch(id, handler) {
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
 
         //limpiar mapa
-        map.removeLayer(activeLayer);
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+
+        //limpiar combobox
+        clearHistCombobox();
+        clearMapCombobox();
+    
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
 
         stopAnimation();
         currentTimeStep = 0;
@@ -1865,13 +1966,17 @@ function addClickAndTouch(id, handler) {
     document.getElementById('btn_atmos').addEventListener('click', function() {
         if (!mapInitialized) activateMap('meteorologia');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
+        controlsPanel.classList.remove('is-open');
         this.classList.add('active');
 
         //limpiar el mapa 
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-        }
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
 
+        //limpiar combobox historial
+        clearHistCombobox();
         //muestra mapa
         showMapa();
         //muestra botones divididos      
@@ -1879,23 +1984,31 @@ function addClickAndTouch(id, handler) {
 
         // Set map type immediately
         tipoMapa = 'meteorologia';
+
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
         
-        // Wait for map to be ready
+        /*// Wait for map to be ready
         setTimeout(() => {
             const tempBtn = document.querySelector('[data-layer="temperature"]');
             if (tempBtn) tempBtn.click();
-        }, 300);
+        }, 300);*/
     });
 
     document.getElementById('btn_aire').addEventListener('click', function() {
         if (!mapInitialized) activateMap('calidad');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
+        controlsPanel.classList.remove('is-open');
         this.classList.add('active');
 
         //limpiar el mapa
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-        }
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+
+        //limpiar combobox historial
+        clearHistCombobox();
 
         //muestra mapa
         showMapa();
@@ -1904,28 +2017,34 @@ function addClickAndTouch(id, handler) {
 
         // Set map type immediately
         tipoMapa = 'calidad';
+
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
         
-        // Wait for map to be ready
+        /*// Wait for map to be ready
         setTimeout(() => {
             const pm25Btn = document.querySelector('[data-layer="pm25"]');
             if (pm25Btn) pm25Btn.click();
-        }, 300);
+        }, 300);*/
     });
 
     document.getElementById('btn_hist').addEventListener('click', function() {
         document.body.classList.add('map-active');
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('legend').style.display = 'none';
         this.classList.add('active');
 
         //limpiar el mapa
-        if (map && activeLayer && map.getLayer(activeLayer)) {
-            map.removeLayer(activeLayer);
-            if (map.getLayer(activeLayer + '-points')) {
-                map.removeLayer(activeLayer + '-points');
-            }
-            activeLayer = null;
-        }        // Hide map content and show the dashboard
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
         document.getElementById('main-content').style.display = 'none';
+
+        //limpiar combobox del mapa
+        clearMapCombobox();
+
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
 
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
@@ -1968,9 +2087,15 @@ function addClickAndTouch(id, handler) {
         }
     });
     // END: New event listener block
-        
+        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
+        if (tipoSeleccionado === 'meteo') {
+            createVariableToggles('meteo');
+        } else {
+            createVariableToggles('aire');
+        }
+        updateStatsTable(tipoSeleccionado);
         // Initial setup
-        createVariableToggles('meteo');
+        //createVariableToggles('meteo');
         // Clear previous charts and table
         document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
         document.getElementById('histStatsTable').innerHTML = '';
@@ -1986,20 +2111,106 @@ function addClickAndTouch(id, handler) {
     document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         activateMap('meteorologia');
+        showMapa("meteorologia");
         toggleMenu();
+        //limpia el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        //cambio de botones del weatehr panel
+        showMeteorologiaButtons();
+        //quitar filtro 
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearHistCombobox ();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
     });
 
     document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         activateMap('calidad');
+        showMapa("calidad");
         toggleMenu();
+        //limpia el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        //cambio de botones del weather panel 
+        showAireButtons();
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearHistCombobox ();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
     });
 
     document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
         e.preventDefault();
         toggleMenu();
-        showNotification('Funcionalidad de Historial en desarrollo', 'info');
+        showHistorial();
+        //limpiar el mapa
+        if (activeLayer) safeRemoveLayer(activeLayer);
+        activeLayer = null;
+        document.getElementById('legend').style.display = 'none';
+        //limpiar combobox del historial 
+        clearMapCombobox();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
+
+        // Hide map content and show the dashboard
+        document.getElementById('main-content').style.display = 'none';
+        const dashboard = document.getElementById('historial-dashboard');
+        dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
+        dashboard.classList.add('active');
+        // Populate municipality dropdown if it's empty
+        const cabeceraSelect = document.getElementById('hist-cabecera-select');
+        if (cabeceraSelect.options.length <= 1 && municipalitiesData) { // Check if already populated
+            cabeceraSelect.innerHTML = '<option value="">Seleccione un municipio...</option>';
+            municipalitiesData.features
+                .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre))
+                .forEach(feature => {
+                    const option = document.createElement('option');
+                    option.value = feature.properties.clave;
+                    option.textContent = feature.properties.nombre;
+                    cabeceraSelect.appendChild(option);
+                });
+        }
+         // ADD these new listeners for the dashboard controls
+        document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
+            const muncipalityId = this.value;
+            const type = document.getElementById('hist-tipo-select').value;
+            if (!muncipalityId) return;
+
+            // Show a loading indicator
+            document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
+
+            currentHistData = await fetchHistoricalData(muncipalityId, type);
+            updateHistoricalChart();
+        });
+
+    document.getElementById('hist-tipo-select').addEventListener('change', function() {
+        const type = this.value;
+        createVariableToggles(type);
+        // If a municipality is already selected, refetch and update data for the new type
+        const cabeceraSelect = document.getElementById('hist-cabecera-select');
+        if (cabeceraSelect.value) {
+            cabeceraSelect.dispatchEvent(new Event('change'));
+        }
     });
+    // END: New event listener block
+        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
+        if (tipoSeleccionado === 'meteo') {
+            createVariableToggles('meteo');
+        } else {
+            createVariableToggles('aire');
+        }
+        // Initial setup
+        //createVariableToggles('meteo');
+        // Clear previous charts and table
+        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
+        document.getElementById('histStatsTable').innerHTML = '';
+    });
+
+    
 
     // Update parameter selection functionality
     document.getElementById('select_dat').addEventListener('change', function() {
@@ -2069,8 +2280,31 @@ function addClickAndTouch(id, handler) {
     });
 });
 
+// ——— Ignorar hotkeys cuando el usuario está escribiendo ———
+function shouldIgnoreHotkeys(e) {
+  if (e.defaultPrevented) return true;
+
+  const el = e.target;
+  if (!el) return false;
+
+  // 1) Campos escribibles nativos
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
+
+  // 2) Nuestro combobox del historial
+  if (el.closest('#hist-combobox')) return true; // wrapper del combo
+  if (el.id === 'hist-cabecera-search') return true; // si usaste input de búsqueda
+
+  // 3) Si el dropdown del combobox está abierto, también ignorar
+  const openList = document.getElementById('hist-combobox-list');
+  if (openList && openList.style.display !== 'none') return true;
+
+  return false;
+}
+
 // Enhanced keyboard shortcuts
 document.addEventListener('keydown', (e) => {
+    if (shouldIgnoreHotkeys(e)) return;
     //if (!document.body.classList.contains('map-active')) return;
     
     switch(e.key) {
@@ -2134,6 +2368,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+//no lo quito, es lo que abre el panel cuando deslizas de izquierda a derecha pero es imposible navegar en el mapa porque abre el panel de control siempre
+/*
 // Enhanced touch gestures for mobile
 let touchStartX = 0;
 let touchStartY = 0;
@@ -2166,7 +2402,7 @@ document.addEventListener('touchend', (e) => {
             controlsPanel.classList.add('is-open');
         }
     }
-});
+});*/
 
 // Performance optimization: Debounce resize events
 let resizeTimeout;
@@ -2239,10 +2475,10 @@ const meteorologicalVariables = {
 };
 
 const airQualityVariables = {
-    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
-    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
-    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
+    CO: { label: 'Monóxido de Carbono', color: '#8B4513', unit: 'ppm', icon: '🟤' },
+    NO2: { label: 'Dióxido de Nitrógeno', color: '#6A5ACD', unit: 'ppb', icon: '🟣' },
+    O3: { label: 'Ozono', color: '#32CD32', unit: 'ppb', icon: '🟢' },
+    SO2: { label: 'Dióxido de Azufre', color: '#4169E1', unit: 'ppb', icon: '🔵' },
     PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
     PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
 };
@@ -2259,8 +2495,8 @@ function fetchHistoricalData(municipalityId, type) {
     return new Promise(resolve => {
         setTimeout(() => {
             const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            //const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
-            const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
+            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
+            //const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
 
             let data;
             if (type === 'meteo') {
@@ -2374,7 +2610,7 @@ function renderGroupedCharts(groups, labels, titlePrefix) {
         currentHistCharts.push(chart);
 
         const btn = document.createElement('button');
-        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar imagen';
+        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Grafica';
         btn.className = "download-btn";
         btn.onclick = () => {
             const a = document.createElement('a');
@@ -2640,6 +2876,434 @@ function updateHistoricalChart() {
     type === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
     updateStatsTable(type);
 }
+
+// === COMBOBOX ROBUSTO para #hist-cabecera-select (Historial) ===
+// - Espera a que el <select> tenga opciones (MutationObserver)
+// - "Portal": la lista se monta en <body> para evitar clipping por overflow/z-index
+// - Aísla eventos para que no cambien de vista ni afecten el mapa
+
+//opciones de escritura en el historial 
+(function makeHistComboboxRobusto(){
+  const sel = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.createElement('div');
+  wrap.id = 'hist-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  // Lista como "portal" en <body>
+  const list = document.createElement('ul');
+  list.id = 'hist-combobox-list';
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', // relativo al viewport
+    maxHeight:'260px',
+    overflowY:'auto',
+    margin:'0', padding:'0',
+    listStyle:'none',
+    display:'none',
+    background:'#fff',
+    border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px',
+    boxShadow:'0 8px 24px rgba(0,0,0,.15)',
+    zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+      });
+      li.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+    });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!filtered.length) return;
+    positionList();
+    list.style.display = 'block';
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+  }
+
+  // ----- Eventos (sin botón) -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', () => {
+    filtered = items.slice();
+    render();
+    openList();
+  });
+  input.addEventListener('click', () => {
+    if (!open) {
+      filtered = items.slice();
+      render();
+      openList();
+    }
+  });
+  input.addEventListener('input', () => {
+    filterNow(input.value);
+    filtered.length ? openList() : closeList();
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar (usar 'click', no 'mousedown')
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    // NO rellenes el input con "Seleccione..." — arrancamos vacío
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+})();
+
+// Combobox robusto para el MAPA (independiente del de historial)
+(function makeMapComboboxRobusto(){
+  const sel = document.getElementById('hist-cabecera-map');
+  if (!sel) return;
+
+  // UI
+  const wrap = document.createElement('div');
+  wrap.id = 'map-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  const list = document.createElement('ul');
+  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', maxHeight:'260px', overflowY:'auto',
+    margin:'0', padding:'0', listStyle:'none', display:'none',
+    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Oculta select y monta wrapper
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // Lógica
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [], filtered = [], open = false, active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '')
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
+  function closeList(){ list.style.display='none'; open = false; active = -1; }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+function choose(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  const it = filtered[idx];
+  input.value = it.label;
+  sel.value = it.value;
+
+  sel.dispatchEvent(new Event('change',{ bubbles:true}));
+
+  // Centrar el mapa en el municipio seleccionado (sin usar turf)
+  const municipio = municipalitiesData.features.find(
+    f => f.properties.clave === it.value
+  );
+  
+  if (municipio && window.map) {
+    // Obtener las coordenadas directamente del municipio
+    const coords = municipio.geometry.coordinates;
+    //limpiar combobox historial
+    //clearMapCombobox();
+    
+    // Centrar el mapa en esas coordenadas
+    window.map.flyTo({
+      center: coords,
+      zoom: 11,
+      bearing:0,
+      pitch:0,
+      duration: 3000,
+      essential: true
+    });
+  }
+
+  closeList();
+}
+
+  // Aislar clicks internos
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir/filtrar/teclado
+  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
+  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
+  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
+
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
+      case 'Tab':       closeList(); break;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
+  mo.observe(sel, { childList: true });
+})();
+
+
+// Limpia el combobox del HISTORIAL
+window.clearHistCombobox = function () {
+  const sel   = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';         // borra el texto
+  sel.value = '';                      // deselecciona (si tu placeholder tiene value="")
+  sel.dispatchEvent(new Event('change', { bubbles: true })); // notifica cambios
+  const list = document.getElementById('hist-combobox-list');
+  if (list) list.style.display = 'none'; // cierra la lista si estaba abierta
+};
+
+// Limpia el combobox del MAPA
+window.clearMapCombobox = function () {
+  const sel   = document.getElementById('hist-cabecera-map');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('map-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+
+
+// Desactivar controles de mapa e historial si el menú hamburguesa está abierto
+const navLinks = document.getElementById('nav-links');
+const mapComboInput  = document.querySelector('#map-combobox input');
+const histComboInput = document.querySelector('#hist-combobox input');
+const histSelect     = document.getElementById('hist-tipo-select');
+
+const observer = new MutationObserver(() => {
+  const menuOpen = navLinks.classList.contains('active');
+
+  // Toma todos los botones de variables del historial
+  const histButtons = document.querySelectorAll('#variable-toggles .variable-toggle');
+
+  // Agrupa todo
+  const allInputs = [mapComboInput, histComboInput, histSelect, ...histButtons];
+
+  allInputs.forEach(el => {
+    if (!el) return;
+    if (menuOpen) {
+      el.setAttribute('disabled', 'true');
+      el.style.opacity = '0.5';
+      el.style.pointerEvents = 'none';
+    } else {
+      el.removeAttribute('disabled');
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
+    }
+  });
+});
+
+observer.observe(navLinks, { attributes: true, attributeFilter: ['class'] });
+
+
+
 
 // ===================================================================
 // END: New History Dashboard Functions

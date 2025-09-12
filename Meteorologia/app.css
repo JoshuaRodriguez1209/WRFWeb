@@ -1,7 +1,7 @@
 :root {
     --primary-brand-color: #5a1b30;
-    --secondary-brand-color: #c19862;
-    --terciary-brand-color: #b03a61;
+    --secondary-brand-color: #c19862be;
+    --terciary-brand-color: rgba(92, 31, 51, 0.637);
     --light-gray: #f8f9fa;
     --medium-gray: #e9ecef;
     --dark-gray: #6c757d;
@@ -76,12 +76,13 @@ body.map-active #main-content {
 /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
 .map-controls {
     position: absolute;
-    top: 180px;
+    top: 160px;
+    top: 160px;
     right: 20px;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 1001;
+    z-index: 999;
 }
 
 .control-btn {
@@ -164,6 +165,7 @@ body.map-active #main-content {
 .control-group label { display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 500; font-size: 14px; }
 .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
 .control-group select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
+.control-group hist-select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
 .layer-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* siempre 2 botones por fila */
@@ -525,7 +527,7 @@ body.map-active #main-content {
 
 .variables-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 15px;
     margin-bottom: 30px;
     padding: 20px;
@@ -685,12 +687,12 @@ body.map-active #main-content {
     
     .map-controls {
         position: absolute;
-        top: 20px;
+        top: 100px;
         right: 20px;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        z-index: 1001;
+        z-index: 1;
     }
     
     .data-panel { 
@@ -727,10 +729,24 @@ body.map-active #main-content {
         gap: 10px;
     }
 
+
     .download-btn {
-        align-self: flex-end;
-        margin-top: 10px;
+        font-size: 0;       /* oculta texto */
+        padding: 10px; 
+        width: 30px;
+        height: 35px;
+        border-radius: 6px; /* esquinas cuadradas, puedes ajustar */
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
+
+    .download-btn::before {
+        font-size: 18px;
+        content: "\f019";   /* código unicode de FontAwesome fa-download */
+        font-family: "Font Awesome 5 Free"; 
+        font-weight: 900;
+    } 
 
     #historial-dashboard {
         top: 150px;
@@ -740,3 +756,15 @@ body.map-active #main-content {
     }
 }
 
+#historial-dashboard .variable-toggle,
+#historial-dashboard .variable-toggle .label {
+  font-size: 12px;          /* tamaño del texto */
+  line-height: 1.1;         /* altura de línea compacta */
+  text-align: center;       /* centra el texto */
+  white-space: normal;      /* permite varias líneas */
+  text-overflow: ellipsis;
+  overflow: hidden; 
+  display: -webkit-box;        /* comportamiento tipo caja flexible */
+    -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}

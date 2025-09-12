@@ -2,9 +2,12 @@
 .navbar {
   background-color: white;
   padding: 0;
+  top: 0;
+  left: 0;
   position: fixed;
   height: 150px;
   width: 100%;
+  max-width: 100%;
   z-index: 1001;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   font-family: "Poppins", sans-serif;
@@ -37,6 +40,7 @@
   justify-content: space-between;
   width: 35px;
   height: 24px;
+  z-index: 1000;
 }
 
 .hamburger-menu .bar {
@@ -115,7 +119,7 @@
 }
 
 /* Estilo para el menú móvil */
-@media (max-width: 768px) {
+@media (max-width: 1500px) {
   .nav-links {
     position: fixed;
     top: 0;
@@ -309,11 +313,134 @@
   z-index: 1;
 }
 
+/* Asegura contexto para los overlays del mapa */
+#main-content { position: relative; }
+
+/* Añade esto a tu archivo estilos.css */
+
+/* Ajustes para el map-top-bar */
+#map-top-bar {
+  position: fixed;
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
+  left: 100px; /* Dejando espacio para el menú lateral */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: left 0.3s ease; /* Transición suave cuando el menú se expande */
+  width: 300px; /* Ancho fijo para el control */
+}
+
+
+
+/* Ajustar cuando el menú lateral está expandido */
+.side-menu.expanded + #main-content #map-top-bar {
+  left: 210px; /* 200px del menú expandido + 10px de margen */
+}
+
+/* Selector con tarjetita */
+#map-top-bar #municipio-map-control {
+  background: rgba(255,255,255,.95);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+
+#map-top-bar #municipio-map-control label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+#map-combobox,
+#hist-combobox {
+  width: 100%;
+}
+
+#map-combobox input.form-control,
+#hist-combobox input.form-control {
+  height: 40px;
+  font-size: 15px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  box-shadow: none;
+}
+
+#map-combobox input.form-control:focus,
+#hist-combobox input.form-control:focus {
+  border-color: #c19862be;
+  outline: none;
+}
+
+/* Listas */
+#map-combobox-list,
+#hist-combobox-list {
+  background: white;
+  border: 1px solid #cf1717;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  z-index: 3000;
+}
+
+#map-combobox-list li,
+#hist-combobox-list li {
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+#map-combobox-list li:hover,
+#hist-combobox-list li:hover {
+  background-color: #f5f5f5;
+}
+
+#map-combobox-list li.active,
+#hist-combobox-list li.active {
+  background-color: #e0e0e0;
+  color: white;
+}
+
+
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px; /* Si la navbar se reduce en móvil */
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: 300px;
+  }
+  
+  #municipio-map-control {
+    width: 100%;
+  }
+}
+
+/* Responsive: si la pantalla es angosta, apila logo y selector */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px;        /* reduce si tu navbar también reduce */
+    left: 10px;
+    right: 10px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* Controles dentro de #app */
 #app .controls-panel {
   display: flex;
   position: absolute;
-  top: 170px;
+  top: 180px;
   left: auto;
   margin-right: 20px;
   right: 20px;
@@ -321,7 +448,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 15px;
-  z-index: 1000;
+  z-index: 50;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -828,3 +955,187 @@
   gap: 8px;
   transition: all 0.2s ease;
 }
+
+/* Input del combobox (igual que tus selects) */
+#hist-combobox input.form-control {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  left: 5px;
+  position: relative;
+  z-index: 4000; /* por encima de navbar/mapa */
+  color: #000;
+  background-color: #fff;
+
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Dropdown de opciones */
+#hist-combobox-list {
+  position: fixed; /* ya lo manejas en JS */
+  z-index: 50000;  /* más alto que todo */
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 16px;
+}
+
+/* Opciones individuales */
+#hist-combobox-list li {
+  padding: 12px 16px; /* similar a los selects grandes */
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#hist-combobox-list li:hover {
+  background: #f0f0f0;
+}
+
+/* Opción activa (con flechas) */
+#hist-combobox-list li.active {
+  background: #007bff;
+  color: #fff;
+}
+
+#map-combobox-list li.active {
+  background: #007bff;
+  color: #fff;
+}
+
+/* Ajustes para el map-top-bar en vista móvil */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 160px; /* Un valor más bajo y más apropiado para móviles */
+    left: 10px; /* Ajuste el espacio lateral */
+    right: 10px;
+    width: 300px; /* Permite que el ancho se ajuste */
+    /*max-width: none; /* Elimina la restricción de ancho máximo */
+    flex-direction: column; /* Apila los elementos verticalmente */
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+/* Scrollbars del index */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 12px;
+  height: 8px;
+}
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: #c19862be !important;
+}
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;   /* fuerza el color */
+  border-radius: 4px;
+}
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: #8b294a !important;
+}
+#historial-dashboard,
+#controlsPanel {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
+}
+
+/* Scrollbars del historial */
+#historial-dashboard::-webkit-scrollbar {
+  width: 12px;
+  height: 8px;
+}
+#historial-dashboard::-webkit-scrollbar-track {
+  background: #c1986256 !important;
+}
+#historial-dashboard::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;
+  border-radius: 4px;
+}
+#historial-dashboard::-webkit-scrollbar-thumb:hover {
+  background: #8b294a !important;
+}
+#historial-dashboard {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
+}
+
+/* Scrollbars de los combobox (mapa e historial) */
+#map-combobox-list::-webkit-scrollbar,
+#hist-combobox-list::-webkit-scrollbar {
+  width: 12px;
+  height: 8px;
+}
+#map-combobox-list::-webkit-scrollbar-track,
+#hist-combobox-list::-webkit-scrollbar-track {
+  background: #c19862be !important;  /* mismo tono semitransparente */
+}
+#map-combobox-list::-webkit-scrollbar-thumb,
+#hist-combobox-list::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;   /* color vino */
+  border-radius: 4px;
+}
+#map-combobox-list::-webkit-scrollbar-thumb:hover,
+#hist-combobox-list::-webkit-scrollbar-thumb:hover {
+  background: #8b294a !important;   /* tono más claro al pasar el mouse */
+}
+#map-combobox-list,
+#hist-combobox-list {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c19862be;
+}
+
+/* Scrollbar del Weather Control */
+#weather-controls::-webkit-scrollbar {
+  width: 20px;
+  height: 8px;
+}
+#weather-controls::-webkit-scrollbar-track {
+  background: #c1986256 !important;  /* fondo semitransparente */
+}
+#weather-controls::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;    /* color vino */
+  border-radius: 4px;
+}
+#weather-controls::-webkit-scrollbar-thumb:hover {
+  background: #8b294a !important;    /* más claro al pasar el mouse */
+}
+#weather-controls {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
+}
+
+/* Selects estilizado del Historial */
+#hist-tipo-select {
+  height: 50px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  background-color: #ffffffbe;
+  color: #333;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+#hist-tipo-select:focus {
+  border-color: #c19862be;
+  outline: none;
+  box-shadow: none;
+}
+
