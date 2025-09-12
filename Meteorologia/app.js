@@ -1892,12 +1892,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('layer-buttons-aire').style.display = 'grid';
     }
 
+    //funcion para mostrar,dimensionar el mapa y ocultar el historial 
     function showMapa() {
         document.getElementById('main-content').style.display = 'block';
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'none';
-        dashboard.classList.remove('active');
-        
+        dashboard.classList.remove('active')
+    
+       //cerrar el menu hamburguesa
+        closeHamburgerMenu()    
+
         // Limpiar estado del mapa
         if (map) {
             if (activeLayer && map.getLayer(activeLayer)) {
@@ -1911,6 +1915,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    //funcion para mostrar el historial y ocultar el mapa
     function showHistorial() {
         document.getElementById("app").style.display = "none";
         document.getElementById("historial-dashboard").style.display = "block";
@@ -1921,6 +1926,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateHistoricalChart();
         document.getElementById("nav-links").classList.remove("active");
     }
+
+    //funcion para cerrar el menu hamburguesa (especial para movil)
+    function closeHamburgerMenu() {
+    const navLinks = document.getElementById('nav-links');
+    navLinks.classList.remove('active');
+    }
+
 
     // Back button functionality
     document.getElementById('btn_back').addEventListener('click', () => {
@@ -1935,6 +1947,9 @@ document.addEventListener('DOMContentLoaded', () => {
         //limpiar combobox
         clearHistCombobox();
         clearMapCombobox();
+    
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
 
         stopAnimation();
         currentTimeStep = 0;
@@ -1969,6 +1984,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set map type immediately
         tipoMapa = 'meteorologia';
+
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -1999,6 +2017,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Set map type immediately
         tipoMapa = 'calidad';
+
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
         
         /*// Wait for map to be ready
         setTimeout(() => {
@@ -2022,7 +2043,8 @@ document.addEventListener('DOMContentLoaded', () => {
         //limpiar combobox del mapa
         clearMapCombobox();
 
-
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
 
         const dashboard = document.getElementById('historial-dashboard');
         dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
@@ -2100,6 +2122,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('legend').style.display = 'none';
         //limpiar combobox del historial 
         clearHistCombobox ();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
     });
 
     document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
@@ -2115,6 +2139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('legend').style.display = 'none';
         //limpiar combobox del historial 
         clearHistCombobox ();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
     });
 
     document.getElementById('btn_hist_mobile')?.addEventListener('click', (e) => {
@@ -2127,6 +2153,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('legend').style.display = 'none';
         //limpiar combobox del historial 
         clearMapCombobox();
+        //cerrar el menu hamburguesa
+        closeHamburgerMenu()
 
         // Hide map content and show the dashboard
         document.getElementById('main-content').style.display = 'none';
@@ -3248,20 +3276,22 @@ const navLinks = document.getElementById('nav-links');
 const mapComboInput  = document.querySelector('#map-combobox input');
 const histComboInput = document.querySelector('#hist-combobox input');
 const histSelect     = document.getElementById('hist-tipo-select');
-const histButtons    = document.querySelectorAll('#variable-toggles button');
 
 const observer = new MutationObserver(() => {
   const menuOpen = navLinks.classList.contains('active');
 
-  // Agrupamos todos los inputs/selects
+  // Toma todos los botones de variables del historial
+  const histButtons = document.querySelectorAll('#variable-toggles .variable-toggle');
+
+  // Agrupa todo
   const allInputs = [mapComboInput, histComboInput, histSelect, ...histButtons];
 
   allInputs.forEach(el => {
     if (!el) return;
     if (menuOpen) {
       el.setAttribute('disabled', 'true');
-      el.style.opacity = '0.5';          // se ven apagados
-      el.style.pointerEvents = 'none';   // no clickeables
+      el.style.opacity = '0.5';
+      el.style.pointerEvents = 'none';
     } else {
       el.removeAttribute('disabled');
       el.style.opacity = '';
@@ -3269,6 +3299,10 @@ const observer = new MutationObserver(() => {
     }
   });
 });
+
+observer.observe(navLinks, { attributes: true, attributeFilter: ['class'] });
+
+
 
 
 // ===================================================================

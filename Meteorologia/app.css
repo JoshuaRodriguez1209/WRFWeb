@@ -82,7 +82,7 @@ body.map-active #main-content {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    z-index: 1001;
+    z-index: 999;
 }
 
 .control-btn {
@@ -165,6 +165,7 @@ body.map-active #main-content {
 .control-group label { display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 500; font-size: 14px; }
 .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
 .control-group select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
+.control-group hist-select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
 .layer-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* siempre 2 botones por fila */
@@ -686,12 +687,12 @@ body.map-active #main-content {
     
     .map-controls {
         position: absolute;
-        top: 80px;
+        top: 100px;
         right: 20px;
         display: flex;
         flex-direction: column;
         gap: 10px;
-        z-index: 900;
+        z-index: 1;
     }
     
     .data-panel { 
@@ -764,7 +765,6 @@ body.map-active #main-content {
   text-overflow: ellipsis;
   overflow: hidden; 
   display: -webkit-box;        /* comportamiento tipo caja flexible */
-    -webkit-line-clamp: 2;       /* 🔥 limita a 2 líneas */
     -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
 }

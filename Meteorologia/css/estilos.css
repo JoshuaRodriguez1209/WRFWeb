@@ -2,9 +2,12 @@
 .navbar {
   background-color: white;
   padding: 0;
+  top: 0;
+  left: 0;
   position: fixed;
   height: 150px;
   width: 100%;
+  max-width: 100%;
   z-index: 1001;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   font-family: "Poppins", sans-serif;
@@ -37,6 +40,7 @@
   justify-content: space-between;
   width: 35px;
   height: 24px;
+  z-index: 1000;
 }
 
 .hamburger-menu .bar {
@@ -115,7 +119,7 @@
 }
 
 /* Estilo para el menú móvil */
-@media (max-width: 768px) {
+@media (max-width: 1500px) {
   .nav-links {
     position: fixed;
     top: 0;
@@ -345,6 +349,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
+  z-index: 1;
 }
 
 #map-top-bar #municipio-map-control label {
@@ -354,41 +359,56 @@
   color: #333;
 }
 
-/* Combobox estilizado */
-#map-combobox {
+#map-combobox,
+#hist-combobox {
   width: 100%;
 }
 
-#map-combobox input.form-control {
+#map-combobox input.form-control,
+#hist-combobox input.form-control {
   height: 40px;
   font-size: 15px;
-  border: 1px solid #ccc;
+  border: 2px solid #ccc;
   border-radius: 6px;
   padding: 6px 12px;
   width: 100%;
+  box-shadow: none;
 }
 
-#map-combobox-list {
+#map-combobox input.form-control:focus,
+#hist-combobox input.form-control:focus {
+  border-color: #c19862be;
+  outline: none;
+}
+
+/* Listas */
+#map-combobox-list,
+#hist-combobox-list {
   background: white;
-  border: 1px solid #ccc;
+  border: 1px solid #cf1717;
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,.2);
   z-index: 3000;
 }
 
-#map-combobox-list li {
+#map-combobox-list li,
+#hist-combobox-list li {
   padding: 10px 15px;
   cursor: pointer;
 }
 
-#map-combobox-list li:hover {
+#map-combobox-list li:hover,
+#hist-combobox-list li:hover {
   background-color: #f5f5f5;
 }
 
-#map-combobox-list li.active {
-  background-color: #007bff;
+#map-combobox-list li.active,
+#hist-combobox-list li.active {
+  background-color: #e0e0e0;
   color: white;
 }
+
+
 
 /* Responsive para móviles */
 @media (max-width: 768px) {
@@ -420,7 +440,7 @@
 #app .controls-panel {
   display: flex;
   position: absolute;
-  top: 170px;
+  top: 180px;
   left: auto;
   margin-right: 20px;
   right: 20px;
@@ -428,7 +448,7 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   padding: 15px;
-  z-index: 1000;
+  z-index: 50;
   flex-wrap: wrap;
   gap: 10px;
 }
@@ -1008,89 +1028,114 @@
   }
 }
 
-
+/* Scrollbars del index */
 html::-webkit-scrollbar,
 body::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
   height: 8px;
 }
-
 html::-webkit-scrollbar-track,
 body::-webkit-scrollbar-track {
-  background: #c1986256 !important;
+  background: #c19862be !important;
 }
-
 html::-webkit-scrollbar-thumb,
 body::-webkit-scrollbar-thumb {
   background: #5a1b30 !important;   /* fuerza el color */
   border-radius: 4px;
 }
-
 html::-webkit-scrollbar-thumb:hover,
 body::-webkit-scrollbar-thumb:hover {
-  background: c1986256 !important;
+  background: #8b294a !important;
 }
-
-/* ancho del scroll */
-::-webkit-scrollbar {
-  width: 20px;
-  height: 10px;
+#historial-dashboard,
+#controlsPanel {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
 }
 
 /* Scrollbars del historial */
 #historial-dashboard::-webkit-scrollbar {
-  width: 8px;
+  width: 12px;
   height: 8px;
 }
-
 #historial-dashboard::-webkit-scrollbar-track {
   background: #c1986256 !important;
 }
-
 #historial-dashboard::-webkit-scrollbar-thumb {
   background: #5a1b30 !important;
   border-radius: 4px;
 }
-
 #historial-dashboard::-webkit-scrollbar-thumb:hover {
-  background: #555 !important;
+  background: #8b294a !important;
+}
+#historial-dashboard {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
 }
 
-/* Scrollbars del mapa/controles */
-#controlsPanel::-webkit-scrollbar,
-#weather-controls::-webkit-scrollbar {
-  width: 8px;
+/* Scrollbars de los combobox (mapa e historial) */
+#map-combobox-list::-webkit-scrollbar,
+#hist-combobox-list::-webkit-scrollbar {
+  width: 12px;
   height: 8px;
 }
-
-#controlsPanel::-webkit-scrollbar-track,
-#weather-controls::-webkit-scrollbar-track {
-  background: #c1986256 !important;
+#map-combobox-list::-webkit-scrollbar-track,
+#hist-combobox-list::-webkit-scrollbar-track {
+  background: #c19862be !important;  /* mismo tono semitransparente */
 }
-
-#controlsPanel::-webkit-scrollbar-thumb,
-#weather-controls::-webkit-scrollbar-thumb {
-  background: #5a1b30 !important;
+#map-combobox-list::-webkit-scrollbar-thumb,
+#hist-combobox-list::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;   /* color vino */
   border-radius: 4px;
 }
+#map-combobox-list::-webkit-scrollbar-thumb:hover,
+#hist-combobox-list::-webkit-scrollbar-thumb:hover {
+  background: #8b294a !important;   /* tono más claro al pasar el mouse */
+}
+#map-combobox-list,
+#hist-combobox-list {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c19862be;
+}
 
-#controlsPanel::-webkit-scrollbar-thumb:hover,
+/* Scrollbar del Weather Control */
+#weather-controls::-webkit-scrollbar {
+  width: 20px;
+  height: 8px;
+}
+#weather-controls::-webkit-scrollbar-track {
+  background: #c1986256 !important;  /* fondo semitransparente */
+}
+#weather-controls::-webkit-scrollbar-thumb {
+  background: #5a1b30 !important;    /* color vino */
+  border-radius: 4px;
+}
 #weather-controls::-webkit-scrollbar-thumb:hover {
-  background: #555 !important;
+  background: #8b294a !important;    /* más claro al pasar el mouse */
+}
+#weather-controls {
+  scrollbar-width: auto;
+  scrollbar-color: #5a1b30 #c1986256;
 }
 
-/* Ajustes para el map-top-bar en vista móvil */
-@media (max-width: 768px) {
-  #map-top-bar {
-    top: 160px; /* Un valor más bajo y más apropiado para móviles */
-    left: 10px; /* Ajuste el espacio lateral */
-    right: 10px;
-    width: 300px; /* Permite que el ancho se ajuste */
-    /*max-width: none; /* Elimina la restricción de ancho máximo */
-    flex-direction: column; /* Apila los elementos verticalmente */
-    align-items: flex-start;
-    gap: 10px;
-  }
+/* Selects estilizado del Historial */
+#hist-tipo-select {
+  height: 50px;
+  font-size: 16px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  background-color: #ffffffbe;
+  color: #333;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
-
+#hist-tipo-select:focus {
+  border-color: #c19862be;
+  outline: none;
+  box-shadow: none;
+}
 
