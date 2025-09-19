@@ -3068,3 +3068,445 @@ observer.observe(navLinks, { attributes: true, attributeFilter: ['class'] });
 // ===================================================================
 // END: New History Dashboard Functions
 // ===================================================================
+// ====== CONFIG & STATE (runs/variables) ======
+const API_URL = `./api/api.php`; // apunta a /Meteorologia/api.php
+// estado actual
+let currentRunDir = null;      // carpeta del run seleccionado
+let currentYYYYMMDD = null;    // fecha del run (YYYYMMDD)
+let currentCycle = null;       // '12z' | '00z'
+let currentLevel = null;       // subparámetro activo (p.ej. '500', 'sfc', 'temmax', etc.)
+// ====== MODELO DE VARIABLES ======
+// kind:
+//  - 'flat'       -> PNGs directos en la carpeta base (sin /sfc/)
+//  - 'flat_sfc'   -> PNGs dentro de /sfc/
+//  - 'levels'     -> necesita sub-parámetro: niveles detectados por subcarpetas + 'sfc' opcional
+//  - 'temp'       -> especial: niveles + extras temmax/temmin (ambas sin sfc)
+//  - 'radiation'  -> especial: dos opciones (radsw/radlw), ambas con /sfc/
+const VAR_MODEL = {
+  temperature: { kind: 'temp',      base: 'temp' },
+  precipitation:{ kind: 'flat',     base: 'preacum' }, // (4) PNGs directos
+  wind:        { kind: 'levels',    base: 'wnd' },     // (5) niveles + sfc (si existe)
+  pressure:    { kind: 'flat',      base: 'psfc' },    // (6) PNGs directos
+  radiation:   { kind: 'radiation', base: null },      // (7) radsw/radlw con /sfc/
+  // calidad del aire (si las usas aquí):
+  co:          { kind: 'flat_sfc',  base: 'CO' },
+  no2:         { kind: 'flat_sfc',  base: 'NO2' },
+  o3:          { kind: 'flat_sfc',  base: 'O3'  },
+  pm25:        { kind: 'flat_sfc',  base: 'PM25'}
+};
+
+
+// Mapear botones -> carpetas de variable en /runs/<RUN>/<variable>/
+const LAYER_TO_FOLDER = {
+  // Meteo
+  temperature: 'temp', humidity: 'hum', precipitation: 'preacum',
+  wind: 'wnd', pressure: 'psfc', radiation: 'radsw',
+  tmax: 'temmax', tmin: 'temmin', // (por si algún día agregas botones directos)
+  // Aire
+  co: 'CO', no2: 'NO2', o3: 'O3', pm25: 'PM25'
+};
+
+// Variables que TIENEN subcarpetas (niveles) y sus niveles válidos:
+const VARIABLE_LEVELS = {
+  temp:  { levels: ['200','300','400','500','600','700'], extras: [{label:'T. máxima', value:'temmax'}, {label:'T. mínima', value:'temmin'}] },
+  wnd:   { levels: ['200','300','400','500','600','700','sfc'], extras: [] }
+};
+
+
+// ====== API helper ======
+async function apiPost(tipo, body = {}) {
+  const fd = new FormData();
+  Object.entries(body).forEach(([k,v]) => fd.append(k, v));
+  const res = await fetch(`${API_URL}?tipo_solicitud=${encodeURIComponent(tipo)}`, { method: 'POST', body: fd });
+  const txt = await res.text();
+  if (!res.ok || txt.startsWith('error')) throw new Error(`API ${tipo}: ${txt || res.status}`);
+  return txt;
+}
+
+// ====== utils de fecha / nombres ======
+function extractYYYYMMDD(str) {
+  // busca 8 dígitos seguidos (YYYYMMDD) en el nombre de la carpeta
+  const m = (str||'').replace(/\D+/g,'').match(/(\d{8})/);
+  return m ? m[1] : null;
+}
+function yyyymmddToHuman(yyyymmdd) {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd || '';
+  const y = yyyymmdd.slice(0,4), m = yyyymmdd.slice(4,6), d = yyyymmdd.slice(6,8);
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  return `${Number(d)} ${meses[Number(m)-1]} ${y}`;
+}
+
+
+// ====== Helpers UI (placeholders/visibilidad) ======
+function setHoraPlaceholder(text) {
+  const sel = document.getElementById('selectHora');
+  sel.innerHTML = '';
+  const opt = document.createElement('option');
+  opt.value = '';
+  opt.disabled = true;
+  opt.selected = true;
+  opt.textContent = text;
+  sel.appendChild(opt);
+}
+
+function showSubparamUI(show) {
+  const lbl = document.getElementById('label-subparam');
+  const host = document.getElementById('subparam-poker');
+  if (!lbl || !host) return;
+  lbl.style.display  = show ? 'block' : 'none';
+  host.style.display = show ? 'flex'  : 'none';
+  if (!show) host.innerHTML = '';
+}
+
+// lista PNGs (Apache autoindex)
+async function listPngIn(url) {
+  const html = await (await fetch(url, { cache:'no-store' })).text();
+  return [...html.matchAll(/href="([^"]+\.png)"/gi)].map(m => decodeURIComponent(m[1]));
+}
+
+// lista subcarpetas directas del índice
+async function listDirsIn(url) {
+  const html = await (await fetch(url, { cache:'no-store' })).text();
+  // enlaces que terminan con "/"
+  return [...html.matchAll(/href="([^"]+\/)"/gi)]
+    .map(m => decodeURIComponent(m[1]))
+    .map(x => x.replace(/\/$/,''))
+    .filter(n => !['.','..'].includes(n));
+}
+
+// Devuelve horas disponibles (["000","003","006",...]) y ciclo detectado ('12z'/'00z') a partir de nombres wrf_..._YYYYMMDD_12z_HHH.png
+function parseHoursAndCycle(pngNames, yyyymmdd) {
+  const hours = new Set();
+  let cycle = null;
+  const re = new RegExp(`_${yyyymmdd}_(\\d{2})z_(\\d{3})\\.png$`, 'i');
+  for (const name of pngNames) {
+    const m = name.match(re);
+    if (m) {
+      if (!cycle) cycle = `${m[1]}z`;
+      hours.add(m[2]);
+    }
+  }
+  return { cycle, hours: Array.from(hours).sort((a,b)=>Number(a)-Number(b)) };
+}
+// Pide a la API el listado de carpetas de /runs y llena #select_run
+async function loadRunsIntoSelect() {
+  const raw = await apiPost('listado_runs', { fecha: 'x' }); // tu API ya la tienes
+  // formato esperado: "runs/20250628|runs/20250701|..."
+  const runs = raw.split('|').filter(Boolean).map(p => p.replace(/^.*\//,'')).sort(); // asc
+  if (!runs.length) throw new Error('No hay runs disponibles');
+
+  const sel = document.getElementById('select_run');
+  sel.innerHTML = '';
+
+  // de más nuevo a más viejo
+  runs.reverse().forEach(runDir => {
+    const ymd = extractYYYYMMDD(runDir);
+    const opt = document.createElement('option');
+    opt.value = runDir;                 // guardamos carpeta
+    opt.textContent = yyyymmddToHuman(ymd || runDir);
+    sel.appendChild(opt);
+  });
+
+  // set estado inicial
+  currentRunDir = sel.value;
+  currentYYYYMMDD = extractYYYYMMDD(currentRunDir);
+
+  sel.addEventListener('change', () => {
+    currentRunDir = sel.value;
+    currentYYYYMMDD = extractYYYYMMDD(currentRunDir);
+    // al cambiar run, si hay variable activa, refrescamos sus horas
+    if (activeLayer) populateForecastHoursForLayer(activeLayer);
+  });
+}
+
+function layerToFolder(layerKey){
+  return LAYER_TO_FOLDER[layerKey] || layerKey;
+}
+function variableHasLevels(folder){
+  return Boolean(VARIABLE_LEVELS[folder]);
+}
+
+function renderSubparamPickerFor(folder, onChoose){
+  const host = document.getElementById('subparam');
+  host.innerHTML = '';
+
+  const cfg = VARIABLE_LEVELS[folder];
+  if (!cfg){ host.style.display='none'; currentLevel=null; return; }
+
+  const buttons = [];
+  // 1) niveles estándar (200..700, sfc)
+  cfg.levels.forEach(level => {
+    buttons.push({label: level.toUpperCase(), value: level});
+  });
+  // 2) extras (temmax/temmin)
+  (cfg.extras || []).forEach(e => buttons.push(e)); // {label:'T. máxima', value:'temmax'}
+
+  // pintar
+  host.style.display = 'flex';
+  buttons.forEach(btnCfg => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-sm btn-outline-secondary';
+    btn.textContent = btnCfg.label;
+    btn.dataset.value = btnCfg.value;
+    btn.addEventListener('click', () => {
+      currentLevel = btnCfg.value;
+      [...host.children].forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      onChoose(currentLevel);
+    });
+    host.appendChild(btn);
+  });
+
+  // selección por defecto
+  currentLevel = (folder === 'temp') ? 'temmax' : // por UX empezamos con T. máxima
+                 (cfg.levels.includes('sfc') ? 'sfc' : cfg.levels[0]);
+  const first = [...host.children].find(b => b.dataset.value === currentLevel);
+  if (first) first.classList.add('active');
+}
+
+
+async function populateForecastHoursForLayer(layerKey){
+  if (!currentRunDir) await loadRunsIntoSelect();
+
+  const folder = layerToFolder(layerKey);           // p.ej. 'temp', 'CO'
+  const ymd = currentYYYYMMDD;
+
+  // Mostrar/ocultar póker según variable y cargar horas
+  if (variableHasLevels(folder)){
+    renderSubparamPickerFor(folder, async (chosenLevel) => {
+      await fillHorasFromFolder(currentRunDir, folder, ymd, chosenLevel);
+    });
+    // primer disparo
+    await fillHorasFromFolder(currentRunDir, folder, ymd, currentLevel);
+  } else {
+    const host = document.getElementById('subparam');
+    const label = document.getElementById('subparam-label');
+    host.style.display = 'none';
+    host.style.display = 'none';
+    currentLevel = 'sfc';
+    await fillHorasFromFolder(currentRunDir, folder, ymd, currentLevel);
+  }
+}
+
+
+// Construye la URL del directorio donde viven los PNG de la variable/nivel
+function dirUrlForVariable(runDir, folder, level){
+  // TEMPERATURA:
+  // - niveles 200..700: runs/<run>/temp/<nivel>/
+  // - T. max/min: runs/<run>/temmax/  ó  runs/<run>/temmin/   (SIN sfc)
+  if (folder === 'temp'){
+    if (level === 'temmax') return `./runs/${runDir}/temmax/`;
+    if (level === 'temmin') return `./runs/${runDir}/temmin/`;
+    return `./runs/${runDir}/temp/${level}/`;
+  }
+
+  // VIENTO con niveles 200..700 y sfc
+  if (folder === 'wnd'){
+    return `./runs/${runDir}/wnd/${level}/`;
+  }
+
+  // RESTO de variables (CO, NO2, PM25, hum, preacum, radsw, psfc...):
+  // usan /sfc/
+  return `./runs/${runDir}/${folder}/sfc/`;
+}
+
+async function fillHorasFromFolder(runDir, folder, yyyymmdd, level){
+  const horasSelect = document.getElementById('selectHora');
+  horasSelect.innerHTML = '<option>Cargando...</option>';
+
+  const dirUrl = dirUrlForVariable(runDir, folder, level);
+  const files = await listPngIn(dirUrl);          // lee índice del directorio
+  const { cycle, hours } = parseHoursAndCycle(files, yyyymmdd);
+
+  currentCycle = cycle || currentCycle || '12z';
+
+  horasSelect.innerHTML = '';
+  if (!hours.length){
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Sin imágenes';
+    horasSelect.appendChild(opt);
+    return;
+  }
+  hours.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = String(Number(h));     // "072" -> "72"
+    opt.textContent = `${Number(h)} horas`;
+    horasSelect.appendChild(opt);
+  });
+  // Por defecto, selecciona la mayor (ej. 72)
+  horasSelect.value = String(Number(hours[hours.length-1]));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+document.getElementById('select_run').addEventListener('change', () => {
+  currentCycle = null;
+  setHoraPlaceholder('Selecciona parámetro'); // (1) resetea placeholder
+  if (activeLayer) renderSubparamsAndHours(activeLayer);
+});
+
+  // METEOROLOGÍA
+document.querySelectorAll('#layer-buttons-meteo .layer-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#layer-buttons-meteo .layer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeLayer = btn.dataset.layer;               // 'temperature', 'wind', etc.
+    currentCycle = null;                            // resetea ciclo al cambiar de variable
+    populateForecastHoursForLayer(activeLayer).catch(console.error);
+  });
+});
+
+// CALIDAD DEL AIRE
+document.querySelectorAll('#layer-buttons-air .layer-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#layer-buttons-air .layer-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeLayer = btn.dataset.layer;               // 'co','no2','o3','pm25'
+    currentCycle = null;
+    populateForecastHoursForLayer(activeLayer).catch(console.error);
+  });
+});
+// Al arrancar o cuando abras el panel de capas:
+setHoraPlaceholder('Selecciona parámetro'); // (1)
+showSubparamUI(false);
+
+
+});
+
+
+
+function dirFor(runDir, folder, subparam, kind) {
+  // Construye la URL del directorio que contiene PNGs según el kind
+  if (kind === 'flat')      return `./runs/${runDir}/${folder}/`;
+  if (kind === 'flat_sfc')  return `./runs/${runDir}/${folder}/sfc/`;
+  if (kind === 'levels')    return `./runs/${runDir}/${folder}/${subparam}/`; // incluye 'sfc' o '200'...'700'
+  if (kind === 'temp') {
+    // niveles 200..700 o extras temmax/temmin (ambas sin sfc)
+    if (subparam === 'temmax') return `./runs/${runDir}/temmax/`;
+    if (subparam === 'temmin') return `./runs/${runDir}/temmin/`;
+    return `./runs/${runDir}/temp/${subparam}/`;
+  }
+  if (kind === 'radiation') {
+    // subparam = 'radsw' | 'radlw', ambas con /sfc/
+    return `./runs/${runDir}/${subparam}/sfc/`;
+  }
+  return `./runs/${runDir}/${folder}/`;
+}
+
+async function populateHorasFrom(dirUrl) {
+  const sel = document.getElementById('selectHora');
+  const files = await listPngIn(dirUrl);
+  const { cycle, hours } = parseHoursAndCycle(files, currentYYYYMMDD);
+  currentCycle = cycle || currentCycle || '12z';
+
+  sel.innerHTML = '';
+  if (!hours.length) { setHoraPlaceholder('Sin imágenes'); return; }
+  for (const h of hours) {
+    const opt = document.createElement('option');
+    opt.value = String(Number(h));     // "072" -> "72"
+    opt.textContent = `${Number(h)} horas`;
+    sel.appendChild(opt);
+  }
+  // deja seleccionado el mayor (ej. 72)
+  sel.value = String(Number(hours[hours.length-1]));
+}
+
+// Renderiza el póker de subparámetros según la variable y llena horas
+async function renderSubparamsAndHours(layerKey) {
+  const model = VAR_MODEL[layerKey];
+  if (!model) { showSubparamUI(false); setHoraPlaceholder('Selecciona parámetro'); return; }
+
+  const selRun = document.getElementById('select_run');
+  currentRunDir = selRun && selRun.value ? selRun.value : currentRunDir;
+  currentYYYYMMDD = currentYYYYMMDD || (currentRunDir ? (currentRunDir.replace(/\D+/g,'').slice(0,8)) : null);
+
+  const host = document.getElementById('subparam-poker');
+
+  // --- casos sin subparámetro ---
+  if (model.kind === 'flat') {
+    showSubparamUI(false);
+    setHoraPlaceholder('Cargando horas...');
+    const dirUrl = dirFor(currentRunDir, model.base, null, 'flat'); // directo (3)(4)(6)
+    await populateHorasFrom(dirUrl);
+    return;
+  }
+  if (model.kind === 'flat_sfc') {
+    showSubparamUI(false);
+    setHoraPlaceholder('Cargando horas...');
+    const dirUrl = dirFor(currentRunDir, model.base, null, 'flat_sfc'); // con sfc
+    await populateHorasFrom(dirUrl);
+    return;
+  }
+
+  // --- casos con subparámetro ---
+  showSubparamUI(true);
+  setHoraPlaceholder('Seleccione subparámetro');  // (2)
+
+  host.innerHTML = ''; // vaciar póker
+  const addBtn = (label, value) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn btn-sm btn-outline-secondary';
+    b.textContent = label;
+    b.dataset.value = value;
+    b.addEventListener('click', async () => {
+      [...host.children].forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      currentLevel = value;
+      setHoraPlaceholder('Cargando horas...');
+      const dirUrl = dirFor(currentRunDir, model.base, currentLevel, model.kind);
+      await populateHorasFrom(dirUrl);
+    });
+    host.appendChild(b);
+  };
+
+  if (model.kind === 'temp') {
+    // niveles dinámicos (200..700) segun subcarpetas de /temp/
+    const baseUrl = `./runs/${currentRunDir}/temp/`;
+    const dirs = (await listDirsIn(baseUrl)).filter(n => /^\d{3}$/.test(n)); // 200..700
+    dirs.sort((a,b)=>Number(a)-Number(b));
+    // extras: temmax / temmin (si existen)
+    const extras = [];
+    // Comprobación de existencia real (opcionales)
+    const hasMax  = (await listDirsIn(`./runs/${currentRunDir}/`)).includes('temmax');
+    const hasMin  = (await listDirsIn(`./runs/${currentRunDir}/`)).includes('temmin');
+    if (hasMax) extras.push({label:'Temperatura máxima', value:'temmax'});
+    if (hasMin) extras.push({label:'Temperatura mínima', value:'temmin'});
+
+    // pinta extras primero
+    extras.forEach(e => addBtn(e.label, e.value));
+    // luego niveles
+    dirs.forEach(n => addBtn(n, n));
+
+    // preselección por UX: temmax si existe; si no, el primer botón
+    const first = host.children[0];
+    if (first) first.click();
+    return;
+  }
+
+  if (model.kind === 'levels') {
+    // niveles + sfc dinámico en /wnd/
+    const baseUrl = `./runs/${currentRunDir}/${model.base}/`;
+    const dirs = await listDirsIn(baseUrl); // ['200','300',...,'sfc'?]
+    const numeric = dirs.filter(d => /^\d{3}$/.test(d)).sort((a,b)=>Number(a)-Number(b));
+    const hasSfc = dirs.includes('sfc');
+
+    numeric.forEach(n => addBtn(n, n));
+    if (hasSfc) addBtn('sfc', 'sfc');
+
+    // preselección: sfc si existe; si no, el primer nivel
+    const prefer = [...host.children].find(b => b.dataset.value==='sfc') || host.children[0];
+    if (prefer) prefer.click();
+    return;
+  }
+
+  if (model.kind === 'radiation') {
+    // dos opciones: radsw (corta) y radlw (larga), ambas con /sfc/
+    addBtn('Onda corta', 'radsw');
+    addBtn('Onda larga', 'radlw');
+    // preselección: corta
+    const first = host.children[0]; if (first) first.click();
+    return;
+  }
+}
