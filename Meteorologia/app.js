@@ -155,62 +155,9 @@ async function loadJSONData() {
 }
 
 
-// Enhanced function to add realistic air quality data to municipalities
-function enrichMunicipalityData(municipality) {
-    const coords = municipality.geometry.coordinates;
-    const lng = coords[0];
-    const lat = coords[1];
-    
-    let baseMultiplier = 1;
-    
-    const majorCities = ['Heroica Puebla de Zaragoza', 'TehuacÃ¡n', 'Atlixco', 'San MartÃ­n Texmelucan de Labastida'];
-    if (majorCities.some(city => municipality.properties.nombre.includes(city.split(' ')[0]))) {
-        baseMultiplier = 2.5;
-    }
-    
-    const distanceFromCenter = Math.sqrt(Math.pow(lat - 19.04, 2) + Math.pow(lng + 98.2, 2));
-    const urbanEffect = Math.max(0.5, 2 - distanceFromCenter * 2);
-    
-    const randomFactor = 0.8 + Math.random() * 0.4;
-    const multiplier = baseMultiplier * urbanEffect * randomFactor;
-    
-    return {
-        ...municipality.properties,
-        population: estimatePopulation(municipality.properties.nombre),
-        airQuality: {
-            co: Math.round((0.5 + Math.random() * 2) * multiplier * 10) / 10,
-            no2: Math.round((0.1 + Math.random() * 0.8) * multiplier * 10) / 10,
-            o3: Math.round((5 + Math.random() * 15) * multiplier * 10) / 10,
-            so2: Math.round(Math.random() * 0.3 * multiplier * 10) / 10,
-            pm10: Math.round((0.05 + Math.random() * 0.4) * multiplier * 100) / 100,
-            pm25: Math.round((0.02 + Math.random() * 0.2) * multiplier * 100) / 100
-        }
-    };
-}
-
-// Estimate population based on city name and type
-function estimatePopulation(cityName) {
-    const majorCities = {
-        'Heroica Puebla de Zaragoza': 1576259,
-        'TehuacÃ¡n': 274906,
-        'Atlixco': 127062,
-        'San MartÃ­n Texmelucan de Labastida': 141112
-    };
-    
-    for (const [name, pop] of Object.entries(majorCities)) {
-        if (cityName.includes(name.split(' ')[0])) {
-            return pop;
-        }
-    }
-    
-    if (cityName.includes('Ciudad de')) {
-        return 50000 + Math.random() * 100000;
-    } else if (cityName.includes('San ') || cityName.includes('Santa ')) {
-        return 20000 + Math.random() * 60000;
-    } else {
-        return 10000 + Math.random() * 40000;
-    }
-}
+// Enhanced function to add realistic air quality data to municipalities - REMOVED
+// These functions generated fake population and air quality data - now disabled
+// The actual municipality visualization will use real data when available
 
 
 
@@ -346,19 +293,10 @@ function addPueblaMunicipalities() {
         return;
     }
 
-    const enrichedFeatures = municipalitiesData.features.map(feature => ({
-        ...feature,
-        properties: enrichMunicipalityData(feature)
-    }));
-
-    const enrichedData = {
-        ...municipalitiesData,
-        features: enrichedFeatures
-    };
-
+    // Use original data without fake enrichment
     map.addSource('puebla-municipalities', {
         type: 'geojson',
-        data: enrichedData
+        data: municipalitiesData
     });
 
     map.addLayer({
@@ -367,18 +305,8 @@ function addPueblaMunicipalities() {
         minzoom: 8.5,
         source: 'puebla-municipalities',
         paint: {
-            'circle-radius': [
-                'interpolate',
-                ['linear'],
-                ['get', 'population'],
-                10000, 6,
-                50000, 8,
-                100000, 10,
-                500000, 12,
-                1500000, 16
-
-            ],
-            'circle-color': '#c19862', // Use fixed color instead of complex expression
+            'circle-radius': 8, // Fixed size since we don't have population data
+            'circle-color': '#c19862',
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 2,
             'circle-opacity': 0.8
@@ -392,16 +320,7 @@ function addPueblaMunicipalities() {
         layout: {
             'text-field': ['get', 'nombre'],
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': [
-                'interpolate',
-                ['linear'],
-                ['get', 'population'],
-                10000, 10,
-                50000, 12,
-                100000, 14,
-                500000, 16,
-                1500000, 18
-            ],
+            'text-size': 12, // Fixed size since we don't have population data
             'text-offset': [0, 2.5],
             'text-anchor': 'top'
         },
@@ -570,36 +489,21 @@ function showMunicipalityModal(properties) {
     const lng = coords[0];
 
     try {
-        Object.entries(variables).forEach(([key, config]) => {
-            const weatherKey = keyMap[key];
-            if (!weatherKey || !weatherLayers[weatherKey]) return;
-
-            const value = generateRealisticValue(weatherKey, lat, lng, 0, 0);
-            const qualityLevel = getQualityLevel(value, weatherKey);
-            const qualityColors = {
-                good: '#00b894',
-                moderate: '#fdcb6e',
-                bad: '#d63031'
-            };
-
-            // Create summary card
-            const item = document.createElement('div');
-            item.className = 'pollutant-item';
-            item.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;background:#f8f9fa;border-radius:8px;';
-            item.innerHTML = `
-                <div style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
-                <div style="flex:1;">
-                    <div style="font-weight:bold;margin-bottom:4px;">${config.icon} ${config.label}</div>
-                    <div style="font-size:1.1em;color:#333;">${value.toFixed(2)} ${config.unit}</div>
-                </div>
-            `;
-            cardsContainer.appendChild(item);
-
-            // Create chart for this variable
-            const labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-            const data = generateTimeSeriesData(weatherKey, lat, lng);
-            createSingleVariableChart(chartsContainer, config, labels, data, properties.nombre);
-        });
+        // Show message that data will be loaded from real sources
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
+        messageDiv.innerHTML = `
+            <p><i class="fas fa-info-circle"></i> Los datos en tiempo real se cargarán desde fuentes oficiales.</p>
+            <p>Esta funcionalidad estará disponible próximamente con datos reales.</p>
+        `;
+        cardsContainer.appendChild(messageDiv);
+        
+        const chartMessageDiv = document.createElement('div');
+        chartMessageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
+        chartMessageDiv.innerHTML = `
+            <p><i class="fas fa-chart-line"></i> Las gráficas históricas se mostrarán con datos reales.</p>
+        `;
+        chartsContainer.appendChild(chartMessageDiv);
 
         modal.style.display = 'flex';
         window.currentMunicipality = properties;
@@ -657,38 +561,21 @@ function showStationModal(properties, geometry) {
   const [lng, lat] = coords;
 
   try {
-    const qualityColors = {
-      good:     '#00b894',
-      moderate: '#fdcb6e',
-      bad:      '#d63031'
-    };
-
-    // Repite exactamente la misma construcción de tarjetas + chart por variable
-    Object.entries(variables).forEach(([key, config]) => {
-      const weatherKey = keyMap[key];
-      if (!weatherKey || !weatherLayers[weatherKey]) return;
-
-      const value        = generateRealisticValue(weatherKey, lat, lng, 0, 0);
-      const qualityLevel = getQualityLevel(value, weatherKey);
-
-      // Tarjeta resumen
-      const item = document.createElement('div');
-      item.className = 'pollutant-item';
-      item.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:12px;background:#f8f9fa;border-radius:8px;';
-      item.innerHTML = `
-        <div style="background-color:${qualityColors[qualityLevel]};width:24px;height:24px;border-radius:50%;"></div>
-        <div style="flex:1;">
-          <div style="font-weight:bold;margin-bottom:4px;">${config.icon} ${config.label}</div>
-          <div style="font-size:1.1em;color:#333;">${value.toFixed(2)} ${config.unit}</div>
-        </div>
-      `;
-      cardsContainer.appendChild(item);
-
-      // Serie temporal y gráfica
-      const labels = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
-      const data   = generateTimeSeriesData(weatherKey, lat, lng);
-      createSingleVariableChart(chartsContainer, config, labels, data, displayName);
-    });
+    // Show message that data will be loaded from real sources
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
+    messageDiv.innerHTML = `
+        <p><i class="fas fa-info-circle"></i> Los datos de la estación se cargarán desde fuentes oficiales.</p>
+        <p>Esta funcionalidad estará disponible próximamente con datos reales.</p>
+    `;
+    cardsContainer.appendChild(messageDiv);
+    
+    const chartMessageDiv = document.createElement('div');
+    chartMessageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
+    chartMessageDiv.innerHTML = `
+        <p><i class="fas fa-chart-line"></i> Las gráficas de la estación se mostrarán con datos reales.</p>
+    `;
+    chartsContainer.appendChild(chartMessageDiv);
 
     // Mostrar modal (mismo que municipio)
     modal.style.display = 'flex';
@@ -810,160 +697,26 @@ function getQualityLevel(value, type) {
     return 'good';
 }
 
-// Función para generar datos de serie temporal
+// Function to generate time series data - DISABLED
+// This generated fake time series data - will use real historical data
 function generateTimeSeriesData(type, lat, lng) {
-    const data = [];
-    for (let hour = 0; hour < 24; hour++) {
-        const timeStep = hour;
-        const timeVariation = Math.sin(timeStep * 0.3) * 0.3;
-        data.push(generateRealisticValue(type, lat, lng, timeStep, timeVariation));
-    }
-    return data;
+    // Return empty array - real data will come from actual sources
+    return [];
 }
 //---------------------------------------------------------------------------
 
 
-// Enhanced chart creation with realistic data patterns
+// Enhanced chart creation - DISABLED
+// These functions generated fake pollution charts - will use real data
 function createEnhancedPollutantChart(pollutants, cityName) {
-    // Check if Chart.js is available
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js not loaded');
-        showNotification('Error: Chart.js no está disponible', 'error');
-        return;
-    }
-
-    const ctx = document.getElementById('pollutantChart').getContext('2d');
-    
-    // Destroy existing chart if it exists and has destroy method
-    if (window.pollutantChart && typeof window.pollutantChart.destroy === 'function') {
-        window.pollutantChart.destroy();
-    }
-    
-    const timeLabels = [];
-    const datasets = [];
-    
-    for (let i = 0; i < 24; i++) {
-        const hour = i.toString().padStart(2, '0') + ':00';
-        timeLabels.push(hour);
-    }
-    
-    pollutants.forEach(pollutant => {
-        const data = generateRealistic24HourData(pollutant);
-        
-        datasets.push({
-            label: `${pollutant.name} (${pollutant.unit})`,
-            data: data,
-            borderColor: pollutant.color,
-            backgroundColor: pollutant.color + '20',
-            borderWidth: 2,
-            fill: false,
-            tension: 0.4,
-            pointBackgroundColor: pollutant.color,
-            pointBorderColor: '#ffffff',
-            pointBorderWidth: 2,
-            pointRadius: 4
-        });
-    });
-    
-    window.pollutantChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: timeLabels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `Niveles de Contaminantes - ${cityName}`,
-                    font: { size: 16, weight: 'bold' },
-                    color: '#5a1b30'
-                },
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        usePointStyle: true,
-                        padding: 15
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Concentración',
-                        color: '#666'
-                    },
-                    grid: {
-                        color: '#f0f0f0'
-                    },
-                    ticks: {
-                        color: '#666'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Hora del día',
-                        color: '#666'
-                    },
-                    grid: {
-                        color: '#f0f0f0'
-                    },
-                    ticks: {
-                        color: '#666'
-                    }
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index'
-            },
-            elements: {
-                line: {
-                    tension: 0.4
-                }
-            }
-        }
-    });
+    console.log('Chart creation disabled - will use real data sources');
+    return;
 }
 
-// Generate realistic 24-hour pollution data patterns
+// Generate realistic 24-hour pollution data patterns - DISABLED
 function generateRealistic24HourData(pollutant) {
-    const data = [];
-    const baseValue = pollutant.value;
-    
-    for (let hour = 0; hour < 24; hour++) {
-        let multiplier = 1;
-        
-        if (hour >= 6 && hour <= 9) {
-            multiplier = 1.4; // Morning rush
-        } else if (hour >= 17 && hour <= 20) {
-            multiplier = 1.3; // Evening rush
-        } else if (hour >= 22 || hour <= 5) {
-            multiplier = 0.7; // Night time
-        }
-        
-        const variation = 0.8 + Math.random() * 0.4;
-        const noiseFactor = Math.sin(hour * 0.5) * 0.1 + 1;
-        
-        let value = baseValue * multiplier * variation * noiseFactor;
-        value = Math.max(value, baseValue * 0.3);
-        
-        if (pollutant.unit === 'ppm' || pollutant.unit === 'ppb') {
-            value = Math.round(value * 10) / 10;
-        } else {
-            value = Math.round(value * 100) / 100;
-        }
-        
-        data.push(value);
-    }
-    
-    return data;
+    // Return empty array - real data will come from actual sources
+    return [];
 }
 
 // Enhanced CSV download with proper data structure
@@ -1116,8 +869,35 @@ const weatherLayers = {
             1, '#2d3436'
         ]
     },
+    so2: { 
+        name: 'Dióxido de Azufre', 
+        unit: 'ppb', 
+        gradient: 'linear-gradient(to right, #fe9bf1ff, #915ce7ff, #798dfdff, #4385e8ff, #2d3636ff)', 
+        range: [0, 150],
+        heatmapColors: [
+            0, 'rgba(162, 155, 254, 0)',
+            0.25, '#a29bfe',
+            0.5, '#6c5ce7',
+            0.75, '#e84393',
+            1, '#2d3436'
+        ]
+    },
     pm25: { 
         name: 'PM2.5', 
+        unit: 'μg/m³', 
+        gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
+        range: [0, 200],
+        heatmapColors: [
+            0, 'rgba(0, 184, 148, 0)',
+            0.2, '#00b894',
+            0.4, '#fdcb6e',
+            0.6, '#e17055',
+            0.8, '#d63031',
+            1, '#2d3436'
+        ]
+    },
+    pm10: { 
+        name: 'PM10', 
         unit: 'μg/m³', 
         gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
         range: [0, 200],
@@ -1132,55 +912,11 @@ const weatherLayers = {
     }
 };
 
-// Generate smooth, interpolated weather data
+// Generate smooth, interpolated weather data - DISABLED
+// This function generated fake weather data for visualization
 function generateSmoothWeatherData(type, timeStep = 0) {
-    const data = [];
-    const gridSize = 50;
-    const range = weatherLayers[type].range;
-    
-    const pueblaBounds = getPueblaBoundingBox();
-    const bounds = {
-        minLat: pueblaBounds[0][1],  // bottom-left lat
-        maxLat: pueblaBounds[1][1],  // top-right lat  
-        minLng: pueblaBounds[0][0],  // bottom-left lng
-        maxLng: pueblaBounds[1][0]   // top-right lng
-    };
-    
-    const weatherCenters = [
-        { lat: 19.0414, lng: -98.2063, intensity: 0.8 },
-        { lat: 18.4622, lng: -97.3953, intensity: 0.6 },
-        { lat: 19.9311, lng: -97.9578, intensity: 0.7 },
-        { lat: 18.9117, lng: -98.4307, intensity: 0.5 }
-    ];
-    
-    const timeVariation = Math.sin(timeStep * 0.2) * 0.3;
-    
-    for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-            const lat = bounds.minLat + (i / gridSize) * (bounds.maxLat - bounds.minLat);
-            const lng = bounds.minLng + (j / gridSize) * (bounds.maxLng - bounds.minLng);
-            
-            if (isPointInPueblaAccurate(lat, lng)) {
-                let value = generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters);
-                value = Math.max(range[0], Math.min(range[1], value));
-                
-                if (colorFilter && !isValueInColorFilter(value, range)) {
-                    continue;
-                }
-                
-                data.push({
-                    type: 'Feature',
-                    geometry: { type: 'Point', coordinates: [lng, lat] },
-                    properties: { 
-                        value: value, 
-                        intensity: (value - range[0]) / (range[1] - range[0]),
-                        weight: Math.random() * 0.5 + 0.5
-                    }
-                });
-            }
-        }
-    }
-    return { type: 'FeatureCollection', features: data };
+    // Return empty data - real data will be loaded from actual sources
+    return { type: 'FeatureCollection', features: [] };
 }
 
 function isValueInColorFilter(value, range) {
@@ -1189,53 +925,11 @@ function isValueInColorFilter(value, range) {
     return normalizedValue >= colorFilter.min && normalizedValue <= colorFilter.max;
 }
 
+// Function to generate weather values - DISABLED
+// This generated fake weather data - will be replaced with real data sources
 function generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters) {
-    const range = weatherLayers[type].range;
-    let baseValue = range[0] + (range[1] - range[0]) * 0.5;
-    
-    let centerInfluence = 0;
-    weatherCenters.forEach(center => {
-        const distance = Math.sqrt(
-            Math.pow(lat - center.lat, 2) + Math.pow(lng - center.lng, 2)
-        );
-        const influence = center.intensity * Math.exp(-distance * 5);
-        centerInfluence += influence;
-    });
-    
-    const altitudeEffect = (lat - 18.5) * 0.1;
-    const coastDistance = Math.abs(lng + 97.5);
-    
-    const noise1 = Math.sin(lat * 5 + lng * 4 + timeStep * 0.3) * 0.2;
-    const noise2 = Math.sin(lat * 8 + lng * 6 + timeStep * 0.5) * 0.1;
-    const noise3 = Math.sin(lat * 12 + lng * 10 + timeStep * 0.7) * 0.05;
-    const totalNoise = noise1 + noise2 + noise3;
-    
-    switch (type) {
-        case 'temperature':
-            baseValue = 22 + altitudeEffect * -2 + centerInfluence * 5 + timeVariation * 6 + totalNoise * 4;
-            break;
-        case 'humidity':
-            baseValue = 60 + coastDistance * -8 + centerInfluence * 15 + timeVariation * 15 + totalNoise * 10;
-            break;
-        case 'precipitation':
-            baseValue = Math.max(0, 3 + centerInfluence * 20 + timeVariation * 25 + totalNoise * 15);
-            break;
-        case 'wind':
-            baseValue = 12 + centerInfluence * 10 + Math.abs(timeVariation) * 15 + totalNoise * 8;
-            break;
-        case 'pressure':
-            baseValue = 1013 + altitudeEffect * -3 + centerInfluence * 8 + timeVariation * 10 + totalNoise * 5;
-            break;
-        case 'radiation':
-            baseValue = 500 + centerInfluence * 200 + timeVariation * 250 + totalNoise * 100;
-            break;
-        default:
-            baseValue = baseValue + centerInfluence * (range[1] - range[0]) * 0.4 + 
-                               timeVariation * (range[1] - range[0]) * 0.25 + 
-                               totalNoise * (range[1] - range[0]) * 0.15;
-    }
-    
-    return baseValue;
+    // Return null - real data will come from actual weather sources
+    return null;
 }
 
 // Replace the old function with this one
@@ -1283,7 +977,7 @@ function addLayerFresh({ sourceId, data, layerId, type='fill', paint={}, layout=
 }
 
         
-// REPLACE this entire function
+// Enhanced weather layer function - MODIFIED for real data
 function addEnhancedWeatherLayer(type) {
     if (!map || !mapIsReady) { return; } 
 
@@ -1294,39 +988,48 @@ function addEnhancedWeatherLayer(type) {
     }
     
     const layerConfig = weatherLayers[type];
-    const data = generateSmoothWeatherData(type, currentTimeStep);
     
-    map.addSource(type, { type: 'geojson', data: data });
+    // Instead of generating fake data, we get empty data structure
+    // Real implementation will load data from actual weather/air quality sources
+    const data = generateSmoothWeatherData(type, currentTimeStep); // Returns empty now
     
-    // This layer draws the main heatmap
-    map.addLayer({
-        id: type,
-        type: 'heatmap',
-        source: type,
-        paint: {
-            'heatmap-weight': ['interpolate',['linear'],['get', 'weight'],0, 0.1,1, 1],
-            'heatmap-intensity': ['interpolate',['exponential', 1.5],['zoom'],6, 0.8,10, 1.2,14, 1.8],
-            'heatmap-color': ['interpolate',['linear'],['heatmap-density'],...layerConfig.heatmapColors],
-            'heatmap-radius': ['interpolate',['exponential', 1.75],['zoom'],6, 25,10, 45,14, 80],
-            'heatmap-opacity': ['interpolate',['linear'],['zoom'],6, 0.9,10, 0.8,14, 0.7]
-        }
-    }, 'puebla-border'); // <-- THE FIX: Draw heatmap UNDER the red borders
+    // Only add layers if we have real data
+    if (data.features && data.features.length > 0) {
+        map.addSource(type, { type: 'geojson', data: data });
+        
+        // Add heatmap layer
+        map.addLayer({
+            id: type,
+            type: 'heatmap',
+            source: type,
+            paint: {
+                'heatmap-weight': ['interpolate',['linear'],['get', 'weight'],0, 0.1,1, 1],
+                'heatmap-intensity': ['interpolate',['exponential', 1.5],['zoom'],6, 0.8,10, 1.2,14, 1.8],
+                'heatmap-color': ['interpolate',['linear'],['heatmap-density'],...layerConfig.heatmapColors],
+                'heatmap-radius': ['interpolate',['exponential', 1.75],['zoom'],6, 25,10, 45,14, 80],
+                'heatmap-opacity': ['interpolate',['linear'],['zoom'],6, 0.9,10, 0.8,14, 0.7]
+            }
+        }, 'puebla-border');
 
-    // This layer draws the small circles when you zoom in
-    map.addLayer({
-        id: type + '-points',
-        type: 'circle',
-        source: type,
-        minzoom: 10,
-        paint: {
-            'circle-radius': ['interpolate',['linear'],['zoom'],10, 2,14, 4],
-            'circle-color': ['interpolate',['linear'],['get', 'intensity'],0, layerConfig.heatmapColors[1],1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]],
-            'circle-opacity': ['interpolate',['linear'],['zoom'],10, 0.3,14, 0.6],
-            'circle-stroke-width': 1,
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-opacity': 0.2
-        }
-    }, 'puebla-border'); // <-- ALSO FIX: Draw points UNDER the red borders
+        // Add points layer
+        map.addLayer({
+            id: type + '-points',
+            type: 'circle',
+            source: type,
+            minzoom: 10,
+            paint: {
+                'circle-radius': ['interpolate',['linear'],['zoom'],10, 2,14, 4],
+                'circle-color': ['interpolate',['linear'],['get', 'intensity'],0, layerConfig.heatmapColors[1],1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]],
+                'circle-opacity': ['interpolate',['linear'],['zoom'],10, 0.3,14, 0.6],
+                'circle-stroke-width': 1,
+                'circle-stroke-color': '#ffffff',
+                'circle-stroke-opacity': 0.2
+            }
+        }, 'puebla-border');
+    } else {
+        // Show notification that data will be loaded from real sources
+        showNotification(`Datos de ${layerConfig.name} se cargarán desde fuentes oficiales`, 'info');
+    }
     
     activeLayer = type;
     updateLegend(layerConfig);
@@ -1352,57 +1055,20 @@ function updateLegend(config) {
 
 function updateDataPanel(type = 'temperature') {
     const config = weatherLayers[type] || weatherLayers.temperature;
-    const centerLat = 19.0414;
-    const centerLng = -98.2063;
-    const timeVariation = Math.sin(currentTimeStep * 0.3) * 0.3;
     
-    const tempValue = generateRealisticValue('temperature', centerLat, centerLng, currentTimeStep, timeVariation);
-    const humidityValue = generateRealisticValue('humidity', centerLat, centerLng, currentTimeStep, timeVariation);
-    const windValue = generateRealisticValue('wind', centerLat, centerLng, currentTimeStep, timeVariation);
-    const pressureValue = generateRealisticValue('pressure', centerLat, centerLng, currentTimeStep, timeVariation);
-    
-    document.getElementById('tempValue').textContent = `${tempValue.toFixed(1)}°C`;
-    document.getElementById('humidityValue').textContent = `${Math.max(0, Math.min(100, humidityValue)).toFixed(0)}%`;
-    document.getElementById('windValue').textContent = `${Math.max(0, windValue).toFixed(1)} km/h`;
-    document.getElementById('pressureValue').textContent = `${pressureValue.toFixed(0)} hPa`;
+    // Instead of showing fake data, show placeholder values that indicate real data will be loaded
+    // Real implementation will fetch actual current weather data
+    document.getElementById('tempValue').textContent = '--°C';
+    document.getElementById('humidityValue').textContent = '--%';
+    document.getElementById('windValue').textContent = '-- km/h';
+    document.getElementById('pressureValue').textContent = '-- hPa';
 }
 
+// Function to generate realistic values - DISABLED
+// This generated fake realistic weather data - will use real data
 function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
-    const range = weatherLayers[type].range;
-    const baseValue = range[0] + (range[1] - range[0]) * 0.5;
-    
-    const altitudeEffect = (lat - 18.5) * 0.1;
-    const coastDistance = Math.abs(lng + 97.5);
-    
-    const noise1 = Math.sin(lat * 10 + lng * 8 + timeStep * 0.5) * 0.3;
-    const noise2 = Math.cos(lat * 7 + lng * 12 + timeStep * 0.3) * 0.2;
-    
-    let value = baseValue;
-    
-    switch (type) {
-        case 'temperature':
-            value = 22 + altitudeEffect * -3 + coastDistance * 2 + timeVariation * 8 + noise1 * 5;
-            break;
-        case 'humidity':
-            value = 60 + coastDistance * -10 + altitudeEffect * 5 + timeVariation * 20 + noise1 * 15;
-            break;
-        case 'precipitation':
-            value = Math.max(0, 5 + altitudeEffect * 10 + timeVariation * 30 + noise1 * 20);
-            break;
-        case 'wind':
-            value = 15 + coastDistance * 5 + Math.abs(timeVariation) * 20 + noise1 * 10;
-            break;
-        case 'pressure':
-            value = 1013 + altitudeEffect * -5 + timeVariation * 15 + noise1 * 8;
-            break;
-        case 'radiation':
-            value = 500 + timeVariation * 300 + noise1 * 100;
-            break;
-        default:
-            value = baseValue + timeVariation * (range[1] - range[0]) * 0.3 + noise1 * (range[1] - range[0]) * 0.2;
-    }
-    
-    return value;
+    // Return null - real data will come from actual weather sources
+    return null;
 }
 
 function startAnimation() {
@@ -2386,7 +2052,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 { value: 'co', text: 'Monóxido de Carbono (CO)' },
                 { value: 'no2', text: 'Dióxido de Nitrógeno (NO₂)' },
                 { value: 'o3', text: 'Ozono (O₃)' },
-                { value: 'pm25', text: 'Partículas PM2.5' }
+                { value: 'so2', text: 'Dióxido de Azufre' },
+                { value: 'pm25', text: 'Partículas PM2.5' },
+                { value: 'pm10', text: 'Partículas PM10)' }
             ];
             
             airQualityParams.forEach(param => {
@@ -2633,41 +2301,35 @@ let currentHistData = null; // Holds the fetched data for the selected town
 let selectedVariables = new Set(); // Tracks which variables are toggled on/off
 let currentHistCharts = []; // Holds the Chart.js instances to manage them
 
-// --- 2. Mock Data Function ---
-// Since we don't have a backend, this function simulates fetching historical data.
+// --- 2. Mock Data Function - DISABLED ---
+// This function simulated fetching historical data - will use real API
 function fetchHistoricalData(municipalityId, type) {
-    console.log(`Fetching mock data for ${municipalityId}, type: ${type}`);
-    // In a real app, this would be an API call: await fetch(...)
+    console.log(`Real data fetching will be implemented for ${municipalityId}, type: ${type}`);
+    // Return empty data structure - real implementation will fetch from actual API
     return new Promise(resolve => {
         setTimeout(() => {
-            const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
-            //const labels = Array.from({length: 49}, (_, i) => ` ${String(i*3 % 24).padStart(2, '0')}:00`);
-
-            let data;
+            const emptyData = {
+                labels: [],
+                // Empty data structure that matches expected format
+            };
+            
             if (type === 'meteo') {
-                data = {
-                    labels: labels,
-                    t2m: generateData(12, 22),
-                    rh: generateData(70, 100),
-                    psl: generateData(840, 860),
-                    wnd: generateData(2, 15),
-                    pre: generateData(0, 1).map(v => v > 0.8 ? v * 5 : 0), // Simulates sparse rain
-                    sw: generateData(0, 900).map(v => Math.sin((Math.random() * Math.PI)) * v) // Simulates daytime radiation
-                };
+                emptyData.t2m = [];
+                emptyData.rh = [];
+                emptyData.psl = [];
+                emptyData.wnd = [];
+                emptyData.pre = [];
+                emptyData.sw = [];
             } else { // chem
-                data = {
-                    labels: labels,
-                    CO: generateData(0, 8),
-                    NO2: generateData(0, 6),
-                    O3: generateData(0, 60),
-                    SO2: generateData(0, 0.2),
-                    PM10: generateData(0, 1),
-                    PM25: generateData(0, 0.6)
-                };
+                emptyData.CO = [];
+                emptyData.NO2 = [];
+                emptyData.O3 = [];
+                emptyData.SO2 = [];
+                emptyData.PM10 = [];
+                emptyData.PM25 = [];
             }
-            resolve(data);
-        }, 250); // Simulate network delay
+            resolve(emptyData);
+        }, 250);
     });
 }
 
@@ -2825,63 +2487,30 @@ function createVariableToggles(type) {
 }
 
 function createMeteoHistoricalChart(data) {
+    const host = document.getElementById('chartsHost');
+    if (!host) return;
+    
+    // Check if data has actual values
+    const hasData = Object.entries(meteorologicalVariables).some(([key, cfg]) => 
+        selectedVariables.has(key) && data[key] && data[key].length > 0
+    );
+    
+    if (!hasData) {
+        host.innerHTML = `
+            <div style="text-align:center;padding:40px;color:#666;">
+                <i class="fas fa-chart-line" style="font-size:3em;margin-bottom:20px;color:#ddd;"></i>
+                <h3>Datos Meteorológicos</h3>
+                <p>Los datos históricos se cargarán desde fuentes oficiales.</p>
+                <p><small>Esta funcionalidad estará disponible próximamente con datos reales del sistema WRF.</small></p>
+            </div>
+        `;
+        return;
+    }
+    
+    // If we had real data, the charting logic would go here
     const datasets = [];
     Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key]) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label} `,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.4,
-                unit:cfg.unit
-            });
-        }
-    });
-
-    // Agrupar datasets por tipo de variable
-    const pressureDatasets = datasets.filter(d => d.label.includes('Presión'));
-    const tempDatasets = datasets.filter(d => d.label.includes('Temperatura'));
-    const windDatasets = datasets.filter(d => d.label.includes('Viento'));
-    const otherDatasets = datasets.filter(d => 
-        !d.label.includes('Presión') && 
-        !d.label.includes('Temperatura') && 
-        !d.label.includes('Viento')
-    );
-
-    // Crear grupos
-    const groups = [];
-    
-    // Grupo 1: Presión (si existe)
-    if (pressureDatasets.length > 0) {
-        groups.push(pressureDatasets);
-    }
-    
-    // Grupo 2: Temperatura (si existe)
-    if (tempDatasets.length > 0) {
-        groups.push(tempDatasets);
-    }
-    
-    // Grupo 3: Viento (si existe)
-    if (windDatasets.length > 0) {
-        groups.push(windDatasets);
-    }
-    
-    // Grupo 4: Otras variables (agrupadas por rango)
-    if (otherDatasets.length > 0) {
-        const otherGroups = groupDatasetsByRange(otherDatasets, 30);
-        groups.push(...otherGroups);
-    }
-
-    // Renderizar todos los grupos
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas (simuladas)');
-}
-
-function createChemHistoricalChart(data) {
-    const datasets = [];
-    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key]) {
+        if (selectedVariables.has(key) && data[key] && data[key].length > 0) {
             datasets.push({
                 label: `${cfg.icon} ${cfg.label}`,
                 data: data[key],
@@ -2889,45 +2518,59 @@ function createChemHistoricalChart(data) {
                 backgroundColor: `${cfg.color}20`,
                 borderWidth: 2,
                 tension: 0.4,
-                fill:false,
                 unit: cfg.unit
             });
         }
     });
 
-    // Si no hay datasets, mostrar mensaje
-    if (datasets.length === 0) {
-        document.getElementById('chartsHost').innerHTML = 
-            '<p style="text-align:center; color:#777; padding:20px;">No hay datos disponibles para las variables seleccionadas</p>';
+    if (datasets.length > 0) {
+        const groups = groupDatasetsByRange(datasets, 30);
+        renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
+    }
+}
+
+function createChemHistoricalChart(data) {
+    const host = document.getElementById('chartsHost');
+    if (!host) return;
+    
+    // Check if data has actual values
+    const hasData = Object.entries(airQualityVariables).some(([key, cfg]) => 
+        selectedVariables.has(key) && data[key] && data[key].length > 0
+    );
+    
+    if (!hasData) {
+        host.innerHTML = `
+            <div style="text-align:center;padding:40px;color:#666;">
+                <i class="fas fa-smog" style="font-size:3em;margin-bottom:20px;color:#ddd;"></i>
+                <h3>Datos de Calidad del Aire</h3>
+                <p>Los datos históricos se cargarán desde fuentes oficiales.</p>
+                <p><small>Esta funcionalidad estará disponible próximamente con datos reales del sistema de monitoreo.</small></p>
+            </div>
+        `;
         return;
     }
 
-    // Agrupar por tipo de unidad primero
-    const groupsByUnit = {};
-    
-    datasets.forEach(dataset => {
-        const unit = dataset.unit;
-        if (!groupsByUnit[unit]) {
-            groupsByUnit[unit] = [];
-        }
-        groupsByUnit[unit].push(dataset);
-    });
-
-    // Para cada grupo de unidad, aplicar agrupamiento por rango
-    const finalGroups = [];
-    
-    Object.values(groupsByUnit).forEach(unitGroup => {
-        if (unitGroup.length <= 2) {
-            // Grupos pequeños van directo
-            finalGroups.push(unitGroup);
-        } else {
-            // Grupos grandes se dividen por rango
-            const rangedGroups = groupDatasetsByRange(unitGroup, 20);
-            finalGroups.push(...rangedGroups);
+    // If we had real data, the charting logic would go here
+    const datasets = [];
+    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
+        if (selectedVariables.has(key) && data[key] && data[key].length > 0) {
+            datasets.push({
+                label: `${cfg.icon} ${cfg.label}`,
+                data: data[key],
+                borderColor: cfg.color,
+                backgroundColor: `${cfg.color}20`,
+                borderWidth: 2,
+                tension: 0.4,
+                fill: false,
+                unit: cfg.unit
+            });
         }
     });
 
-    renderGroupedCharts(finalGroups, data.labels, 'Tendencias de Calidad del Aire (simuladas)');
+    if (datasets.length > 0) {
+        const groups = groupDatasetsByRange(datasets, 20);
+        renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+    }
 }
 
 // Función mejorada de agrupamiento con manejo de errores
