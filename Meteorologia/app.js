@@ -1,3512 +1,1963 @@
-// Global variables for storing JSON data
-let municipalitiesData = null;
-let stationsData = null;
-let mapInitialized = false;
-let mapIsReady = false; // <-- Add this line
-const initialCenter = [-98.2063, 19.0414];
-const initialZoom = 7.5;
-let colorFilter = null;
-let activeLayer = null;
-let animationInterval = null;
-let isPlaying = false;
-let currentTimeStep = 0;
-// MODIFICATION: Added a new global variable for your custom boundary data
-let pueblaBoundaryData = null; 
-let pueblaSimpleBoundaryData = null; // <-- Add this line
+"use strict";
 
-// ADDED: Historial functions
-function createVariableToggles(type) {
-    const container = document.getElementById('variable-toggles');
-    container.innerHTML = '';
-    selectedVariables.clear();
-    
-    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
-    
-    Object.entries(variables).forEach(([key, config]) => {
-        const toggle = document.createElement('div');
-        toggle.className = 'variable-toggle active';
-        toggle.dataset.variable = key;
-        toggle.innerHTML = `
-            <div class="icon">${config.icon}</div>
-            <div class="label">${config.label}</div>
-        `;
-        
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('active');
-            if (toggle.classList.contains('active')) {
-                selectedVariables.add(key);
-            } else {
-                selectedVariables.delete(key);
-            }
-            updateHistoricalChart();
-        });
-        
-        container.appendChild(toggle);
-        selectedVariables.add(key);
-    });
-}
-
-function destroyHistCharts(){
-    if (currentHistCharts && currentHistCharts.length){
-        currentHistCharts.forEach(ch => { try { ch.destroy(); } catch(e){} });
-    }
-    currentHistCharts = [];
-}
-
-function renderGroupedCharts(groups, labels, titlePrefix){
-    const host = document.getElementById('chartsHost');
-    if (!host) return;
-    host.innerHTML = '';
-    destroyHistCharts();
-
-    groups.forEach((grp, idx) => {
-        const card = document.createElement('div');
-        card.className = 'chart-card';
-        const cv = document.createElement('canvas');
-        card.appendChild(cv);
-        host.appendChild(card);
-
-        const chart = new Chart(cv.getContext('2d'), {
-            type: 'line',
-            data: { labels, datasets: grp },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    title: { display: true, text: titlePrefix }
-                },
-                scales: {
-                    y: { beginAtZero: false },
-                    x: { ticks: { autoSkip: true, maxRotation: 0 } }
-                }
-            }
-        });
-        currentHistCharts.push(chart);
-    });
-}
-
-async function loadHistoricalCabeceras() {
-    try {
-        if (!municipalitiesData) return;
-
-        const select = document.getElementById('hist-cabecera-select');
-        select.innerHTML = '<option value="">Seleccione un municipio</option>';
-        
-        const cabeceras = municipalitiesData.features
-            .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre));
-
-        cabeceras.forEach(feature => {
-            const option = document.createElement('option');
-            option.value = feature.properties.clave;
-            option.textContent = feature.properties.nombre;
-            select.appendChild(option);
-        });
-    } catch (error) {
-        console.error('Error cargando cabeceras:', error);
-    }
-}
-        // Load JSON data
-// REPLACE this function
-function loadMapCabeceras() {
-  if (!municipalitiesData) return;
-  const select = document.getElementById('hist-cabecera-map');
-  if (!select) return;
-
-  select.innerHTML = ''; // limpiar
-
-  const cabeceras = municipalitiesData.features
-    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
-
-  cabeceras.forEach(feature => {
-    const option = document.createElement('option');
-    option.value = feature.properties.clave;
-    option.textContent = feature.properties.nombre;
-    select.appendChild(option);
+//------------------------------------------------------------------------------------------
+function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
+  var layer = new ol.layer.Vector({
+    opacity: opacidad,
+    title: titulo,
+    type: tipo,
+    visible: bvisible,
+    source: new ol.source.Vector({
+      url: str_file_kml,
+      format: new ol.format.KML(),
+    }),
   });
+  return layer;
 }
 
-
-async function loadJSONData() {
-  try {
-    const [municipalitiesResponse, stationsResponse, pueblaResponse, pueblaStateResponse] = await Promise.all([
-      fetch('./cabeceras.json'),
-      fetch('./estaciones.json'),
-      fetch('./puebla_coordinates.json'),
-      fetch('./puebla_state_boundary.json')
-    ]);
-    
-    municipalitiesData = await municipalitiesResponse.json();
-    stationsData = await stationsResponse.json();
-    pueblaBoundaryData = await pueblaResponse.json(); 
-    pueblaSimpleBoundaryData = await pueblaStateResponse.json(); 
-
-    console.log('JSON data loaded successfully');
-
-    // 👇 llena el select del mapa en cuanto tengas datos
-    loadMapCabeceras();
-
-    return true;
-  } catch (error) {
-    console.error('Error loading JSON data:', error);
-    showNotification('Error cargando datos de municipios', 'error');
-    return false;
-  }
-}
-
-
-// Enhanced function to add realistic air quality data to municipalities - REMOVED
-// These functions generated fake population and air quality data - now disabled
-// The actual municipality visualization will use real data when available
-
-
-
-// REPLACE this function to use your new file
-function getSimplifiedPueblaStateBoundary() {
-    return {
-        "type": "Feature",
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": pueblaSimpleBoundaryData // Use the data loaded from your new file
-        }
-    };
-}
-
-// More accurate Puebla state boundary coordinates
-// NEW, CORRECTED FUNCTION
-function getAccuratePueblaStateBoundary() {
-    // This adds the extra layer of nesting required for a valid GeoJSON MultiPolygon
-    const validMultiPolygonCoords = pueblaBoundaryData.map(linearRing => [linearRing]);
-
-    return {
-        "type": "FeatureCollection",
-        "features": [{
-            "type": "Feature",
-            "properties": { "name": "Puebla" },
-            "geometry": {
-                "type": "MultiPolygon",
-                "coordinates": validMultiPolygonCoords // Use the new, correctly formatted data
-            }
-        }]
-    };
-}
-// Add this new helper function
-// UPDATED FUNCTION
-function getPueblaBoundingBox() {
-    // Using the simple boundary is much faster for this.
-    const coords = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
-    
-    let minLng = coords[0][0], maxLng = coords[0][0];
-    let minLat = coords[0][1], maxLat = coords[0][1];
-
-    for (const coord of coords) {
-        if (coord[0] < minLng) minLng = coord[0];
-        if (coord[0] > maxLng) maxLng = coord[0];
-        if (coord[1] < minLat) minLat = coord[1];
-        if (coord[1] > maxLat) maxLat = coord[1];
-    }
-    
-    return [[minLng - 0.1, minLat - 0.1], [maxLng + 0.1, maxLat + 0.1]];
-}
-
-
-// UPDATED FUNCTION
-function addMapMask() {
-    // This now uses the simple boundary, which will work correctly.
-    const pueblaBoundary = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
-    const worldWithPueblaHole = [
-        [[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]],
-        pueblaBoundary
-    ];
-
-    map.addSource('puebla-mask', {
-        'type': 'geojson',
-        'data': {
-            'type': 'Feature',
-            'geometry': {
-                'type': 'Polygon',
-                'coordinates': worldWithPueblaHole
-            }
-        }
-    });
-
-    map.addLayer({
-        'id': 'puebla-mask-layer',
-        'type': 'fill',
-        'source': 'puebla-mask',
-        'layout': {},
-        'paint': {
-            'fill-color': '#000',
-            'fill-opacity': 0.7 
-        }
-    });
-}
-
-// UPDATED FUNCTION
-function addAccuratePueblaStateBoundary() {
-    // SOURCE 1: The detailed MultiPolygon for the borders (your original file)
-    map.addSource('puebla-municipalities-boundary', {
-        type: 'geojson',
-        data: {
-            type: 'Feature',
-            geometry: {
-                type: 'MultiPolygon',
-                coordinates: pueblaBoundaryData.map(ring => [ring])
-            }
-        }
-    });
-
-    // SOURCE 2: The simple Polygon for the fast-rendering fill
-    map.addSource('puebla-simple-boundary', {
-        type: 'geojson',
-        data: getSimplifiedPueblaStateBoundary()
-    });
-    
-    // LAYER 1: The transparent fill based on the SIMPLE source
-    map.addLayer({
-        id: 'puebla-fill',
-        type: 'fill',
-        source: 'puebla-simple-boundary', // Use simple source
-        paint: {
-            'fill-color': 'rgba(90, 27, 48, 0.08)',
-            'fill-opacity': 1 // Opacity can be 1 since color has alpha
-        }
-    });
-
-    // LAYER 2: The border lines based on the DETAILED source
-    map.addLayer({
-        id: 'puebla-border',
-        type: 'line',
-        source: 'puebla-municipalities-boundary', // Use detailed source
-        paint: {
-            'line-color': '#FFFFFF',
-            'line-width': 1.5, // Made it slightly thinner
-            'line-opacity': 0.6
-        }
-    });
-}
-
-// Updated function to add municipalities from JSON
-function addPueblaMunicipalities() {
-    if (!municipalitiesData) {
-        console.error('Municipality data not loaded');
-        return;
-    }
-
-    // Use original data without fake enrichment
-    map.addSource('puebla-municipalities', {
-        type: 'geojson',
-        data: municipalitiesData
-    });
-
-    map.addLayer({
-        id: 'municipality-points',
-        type: 'circle',
-        minzoom: 8.5,
-        source: 'puebla-municipalities',
-        paint: {
-            'circle-radius': 8, // Fixed size since we don't have population data
-            'circle-color': '#c19862',
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 2,
-            'circle-opacity': 0.8
-        }
-    });
-
-    map.addLayer({
-        id: 'municipality-labels',
-        type: 'symbol',
-        source: 'puebla-municipalities',
-        layout: {
-            'text-field': ['get', 'nombre'],
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 12, // Fixed size since we don't have population data
-            'text-offset': [0, 2.5],
-            'text-anchor': 'top'
-        },
-        paint: {
-            'text-color': '#ffffff',
-            'text-halo-color': '#000000',
-            'text-halo-width': 2
-        }
-    });
-
-    map.on('click', 'municipality-points', (e) => {
-        try {
-            console.log('Municipality clicked:', e.features[0]); // Debug log
-            console.log('Current map type:', tipoMapa); // Debug log
-            
-            const feature = e.features[0];
-            if (!feature) {
-                console.error('No feature found in click event');
-                return;
-            }
-            
-            // Ensure we have all required properties
-            const properties = {
-                ...feature.properties,
-                geometry: feature.geometry
-            };
-            
-            console.log('Properties prepared for modal:', properties); // Debug log
-            showMunicipalityModal(properties);
-        } catch (error) {
-            console.error('Error handling municipality click:', error);
-            showNotification('Error al mostrar información del municipio', 'error');
-        }
-    });
-
-    map.on('mouseenter', 'municipality-points', () => {
-        map.getCanvas().style.cursor = 'pointer';
-    });
-
-    map.on('mouseleave', 'municipality-points', () => {
-        map.getCanvas().style.cursor = '';
-    });
-
-    const MUNIC_MIN_ZOOM = 8.5;
-
-    function setLayerVisibilityByZoom(layerIds, minZoom) {
-    const z = map.getZoom();
-    const vis = z >= minZoom ? 'visible' : 'none';
-    layerIds.forEach(id => {
-        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
-    });
-    }
-
-    // Llama en load y en cambios de zoom
-    map.on('load', () => setLayerVisibilityByZoom(['municipality-points','municipality-labels'], MUNIC_MIN_ZOOM));
-    map.on('zoom', () => setLayerVisibilityByZoom(['municipality-points','municipality-labels'], MUNIC_MIN_ZOOM));
-
-}
-
-// Add monitoring stations from JSON
-function addMonitoringStations() {
-    if (!stationsData) {
-        console.error('Stations data not loaded');
-        return;
-    }
-
-    map.addSource('monitoring-stations', {
-        type: 'geojson',
-        data: stationsData
-    });
-
-    map.addLayer({
-        id: 'station-points',
-        type: 'circle',
-        source: 'monitoring-stations',
-        paint: {
-            'circle-radius': 8,
-            'circle-color': '#5a1b30',
-            'circle-stroke-color': '#c19862',
-            'circle-stroke-width': 3,
-            'circle-opacity': 0.9
-        }
-    });
-
-    map.addLayer({
-        id: 'station-labels',
-        type: 'symbol',
-        source: 'monitoring-stations',
-        layout: {
-            'text-field': ['get', 'nombre'],
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': 12,
-            'text-offset': [0, -2.5],
-            'text-anchor': 'bottom'
-        },
-        paint: {
-            'text-color': '#5a1b30',
-            'text-halo-color': '#ffffff',
-            'text-halo-width': 2
-        }
-    });
-
-    map.on('click', 'station-points', (e) => {
-        const properties = e.features[0].properties;
-        showStationModal(properties);
-    });
-
-    map.on('mouseenter', 'station-points', () => {
-        map.getCanvas().style.cursor = 'pointer';
-    });
-
-    map.on('mouseleave', 'station-points', () => {
-        map.getCanvas().style.cursor = '';
-    });
-}
-//--------------------------------------------------------------------------
-// Mapeo de claves para meteorología y calidad del aire
-const meteoKeyMap = {
-    t2m: 'temperature',
-    rh: 'humidity',
-    psl: 'pressure',
-    wnd: 'wind',
-    pre: 'precipitation',
-    sw: 'radiation'
-};
-const chemKeyMap = {
-    CO: 'co',
-    NO2: 'no2',
-    O3: 'o3',
-    SO2: 'so2',
-    PM10: 'pm10',
-    PM25: 'pm25'
-};
-
-// ---- MODAL MUNICIPIO PROFESIONAL ----
-function showMunicipalityModal(properties) {
-    console.log('Opening modal with properties:', properties); // Debug log
-    
-    const modal = document.getElementById('municipalityModal');
-    const title = document.getElementById('modalTitle');
-    const cardsContainer = document.getElementById('pollutantSummary');
-    const chartsContainer = document.getElementById('modalChartsHost');
-    
-    // Limpiar contenido previo
-    if (chartsContainer) chartsContainer.innerHTML = '';
-    if (cardsContainer) cardsContainer.innerHTML = '';
-    
-    // Establecer título
-    if (title) title.textContent = properties.nombre;
-
-    // Detectar tipo de mapa y variables
-    const tipo = window.tipoMapa || 'meteorologia'; 
-    const variables = tipo === 'meteorologia' ? meteorologicalVariables : airQualityVariables;
-    const keyMap = tipo === 'meteorologia' ? meteoKeyMap : chemKeyMap;
-
-    // Obtener coordenadas
-    let coords = [];
-    if (properties.geometry && properties.geometry.coordinates) {
-        coords = properties.geometry.coordinates;
-    } else if (properties.lat && properties.lng) {
-        coords = [properties.lng, properties.lat];
-    } else {
-        coords = [-98.2063, 19.0414];
-    }
-    const lat = coords[1];
-    const lng = coords[0];
-
-    try {
-        // Show message that data will be loaded from real sources
-        const messageDiv = document.createElement('div');
-        messageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
-        messageDiv.innerHTML = `
-            <p><i class="fas fa-info-circle"></i> Los datos en tiempo real se cargarán desde fuentes oficiales.</p>
-            <p>Esta funcionalidad estará disponible próximamente con datos reales.</p>
-        `;
-        cardsContainer.appendChild(messageDiv);
-        
-        const chartMessageDiv = document.createElement('div');
-        chartMessageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
-        chartMessageDiv.innerHTML = `
-            <p><i class="fas fa-chart-line"></i> Las gráficas históricas se mostrarán con datos reales.</p>
-        `;
-        chartsContainer.appendChild(chartMessageDiv);
-
-        modal.style.display = 'flex';
-        window.currentMunicipality = properties;
-
-    } catch (error) {
-        console.error('Error showing municipality modal:', error);
-        showNotification('Error al mostrar información del municipio', 'error');
-    }
-    
-    modal.addEventListener('click', function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-}
-
-function showStationModal(properties, geometry) {
-  console.log('Opening STATION modal with properties:', properties);
-
-  const modal = document.getElementById('municipalityModal');
-  const titleEl = document.getElementById('modalTitle');
-  const cardsContainer = document.getElementById('pollutantSummary');
-  const chartsContainer = document.getElementById('modalChartsHost');
-
-  // Limpiar contenido previo
-  if (chartsContainer) chartsContainer.innerHTML = '';
-  if (cardsContainer)  cardsContainer.innerHTML  = '';
-
-  // Nombre a mostrar (intenta varias claves comunes)
-  const displayName =
-    properties?.nombre ||
-    properties?.estacion ||
-    properties?.station_name ||
-    properties?.name ||
-    'Estación';
-
-  if (titleEl) titleEl.textContent = `Estación ${displayName}`;
-
-  // Tipo de mapa y mapas de variables (mismo patrón que municipio)
-  const tipo = (window.tipoMapa || 'meteorologia'); // 'meteorologia' | 'calidad'
-  const variables = tipo === 'meteorologia' ? meteorologicalVariables : airQualityVariables;
-  const keyMap = tipo === 'meteorologia' ? meteoKeyMap : chemKeyMap;
-
-  // Coordenadas (de geometry, o de props, o fallback)
-  let coords = [];
-  if (geometry && geometry.type === 'Point' && Array.isArray(geometry.coordinates)) {
-    coords = geometry.coordinates; // [lng, lat]
-  } else if (properties?.lng != null && properties?.lat != null) {
-    coords = [Number(properties.lng), Number(properties.lat)];
-  } else if (properties?.longitud != null && properties?.latitud != null) {
-    coords = [Number(properties.longitud), Number(properties.latitud)];
-  } else {
-    coords = [-98.2063, 19.0414]; // fallback Puebla
-  }
-  const [lng, lat] = coords;
-
-  try {
-    // Show message that data will be loaded from real sources
-    const messageDiv = document.createElement('div');
-    messageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
-    messageDiv.innerHTML = `
-        <p><i class="fas fa-info-circle"></i> Los datos de la estación se cargarán desde fuentes oficiales.</p>
-        <p>Esta funcionalidad estará disponible próximamente con datos reales.</p>
-    `;
-    cardsContainer.appendChild(messageDiv);
-    
-    const chartMessageDiv = document.createElement('div');
-    chartMessageDiv.style.cssText = 'text-align:center;padding:20px;color:#666;font-style:italic;';
-    chartMessageDiv.innerHTML = `
-        <p><i class="fas fa-chart-line"></i> Las gráficas de la estación se mostrarán con datos reales.</p>
-    `;
-    chartsContainer.appendChild(chartMessageDiv);
-
-    // Mostrar modal (mismo que municipio)
-    modal.style.display = 'flex';
-    window.currentStation = properties;
-
-  } catch (err) {
-    console.error('Error showing station modal:', err);
-    showNotification('Error al mostrar información de la estación', 'error');
+//------------------------------------------------------------------------------------------
+function set_layer(map, str_file_image, tipo, data_layer) {
+  if (data_layer.layer != null && tipo == "add") {
+    map.removeLayer(data_layer.layer);
   }
 
-  // Cerrar al click fuera (igual que municipio)
-  modal.addEventListener('click', function onBackdrop(e) {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-      modal.removeEventListener('click', onBackdrop);
-    }
+  data_layer.layer = new ol.layer.Image({
+    opacity: 0.5,
+    source: new ol.source.ImageStatic({
+      url: str_file_image,
+      crossOrigin: "anonymous",
+      imageExtent: data_layer.imageExtent,
+    }),
   });
-}
 
-
-
-// Gráfica profesional por variable (solo una por chart, limpia)
-function createSingleVariableChart(container, config, labels, data, municipioName) {
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.style.flex = '1 1 350px';
-    card.style.minWidth = '320px';
-    card.style.maxWidth = '500px';
-    card.style.background = '#fff';
-    card.style.borderRadius = '12px';
-    card.style.padding = '16px';
-    card.style.boxShadow = '0 3px 12px rgba(0,0,0,0.08)';
-    card.style.display = 'flex';
-    card.style.flexDirection = 'column';
-    card.style.marginBottom = '12px';
-
-    const header = document.createElement('div');
-    header.style.marginBottom = '8px';
-    header.innerHTML = `<span style="font-size:1.3em">${config.icon}</span> <strong>${config.label}</strong> <span style="color:#666">(${config.unit})</span>`;
-    card.appendChild(header);
-
-    const canvas = document.createElement('canvas');
-    canvas.height = 220;
-    card.appendChild(canvas);
-    container.appendChild(card);
-
-    new Chart(canvas.getContext('2d'), {
-        type: 'line',
-        data: {
-            labels,
-            datasets: [{
-                label: `${config.label} (${config.unit})`,
-                data: data,
-                borderColor: config.color,
-                backgroundColor: hexToRgba(config.color, 0.08),
-                borderWidth: 3,
-                pointRadius: 3,
-                pointBackgroundColor: config.color,
-                pointBorderColor: '#fff',
-                fill: true,
-                tension: 0.32,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                title: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: { color: '#efefef' },
-                    ticks: { color: '#444', font: { size: 13 } },
-                    title: { display: true, text: config.unit, color: '#444', font: { weight: 'bold' } }
-                },
-                x: {
-                    grid: { color: '#f6f6f6' },
-                    ticks: { color: '#888', font: { size: 11 } },
-                    title: { display: true, text: 'Hora del día', color: '#888', font: { weight: 'bold' } }
-                }
-            },
-            elements: {
-                line: { tension: 0.32 }
-            }
-        }
-    });
-}
-
-// Utilidad para color rgba
-function hexToRgba(hex, alpha) {
-    // hex: #RRGGBB
-    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-    if (!m) return hex;
-    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},${alpha})`;
-}
-
-// Función para determinar el nivel de calidad basado en el valor y tipo
-function getQualityLevel(value, type) {
-    const thresholds = {
-        temperature: { good: 20, moderate: 30, bad: 35 },
-        humidity: { good: 40, moderate: 60, bad: 80 },
-        pressure: { good: 1000, moderate: 1015, bad: 1025 },
-        wind: { good: 10, moderate: 20, bad: 30 },
-        precipitation: { good: 5, moderate: 15, bad: 30 },
-        radiation: { good: 300, moderate: 600, bad: 800 },
-        co: { good: 1, moderate: 2, bad: 3 },
-        no2: { good: 0.3, moderate: 0.6, bad: 1.0 },
-        o3: { good: 8, moderate: 15, bad: 25 },
-        so2: { good: 0.1, moderate: 0.2, bad: 0.5 },
-        pm10: { good: 0.15, moderate: 0.3, bad: 0.5 },
-        pm25: { good: 0.1, moderate: 0.2, bad: 0.3 }
-    };
-
-    const th = thresholds[type] || { good: 0.4, moderate: 0.7, bad: 1.1 };
-    if (value > th.bad) return 'bad';
-    if (value > th.moderate) return 'moderate';
-    return 'good';
-}
-
-// Function to generate time series data - DISABLED
-// This generated fake time series data - will use real historical data
-function generateTimeSeriesData(type, lat, lng) {
-    // Return empty array - real data will come from actual sources
-    return [];
-}
-//---------------------------------------------------------------------------
-
-
-// Enhanced chart creation - DISABLED
-// These functions generated fake pollution charts - will use real data
-function createEnhancedPollutantChart(pollutants, cityName) {
-    console.log('Chart creation disabled - will use real data sources');
-    return;
-}
-
-// Generate realistic 24-hour pollution data patterns - DISABLED
-function generateRealistic24HourData(pollutant) {
-    // Return empty array - real data will come from actual sources
-    return [];
-}
-
-// Enhanced CSV download with proper data structure
-function downloadMunicipalityCSV(properties) {
-    const airQuality = typeof properties.airQuality === 'string' 
-        ? JSON.parse(properties.airQuality) 
-        : properties.airQuality;
-    
-    const csvContent = [
-        ['Municipio', 'Población', 'Contaminante', 'Concentración', 'Unidad'],
-        [properties.nombre, properties.population, 'Monóxido de Carbono', airQuality.co, 'ppm'],
-        [properties.nombre, properties.population, 'Dióxido de Nitrógeno', airQuality.no2, 'ppb'],
-        [properties.nombre, properties.population, 'Ozono', airQuality.o3, 'ppb'],
-        [properties.nombre, properties.population, 'Dióxido de Azufre', airQuality.so2, 'ppb'],
-        [properties.nombre, properties.population, 'PM 10', airQuality.pm10, 'μg/m³'],
-        [properties.nombre, properties.population, 'PM 2.5', airQuality.pm25, 'μg/m³']
-    ].map(row => row.join(',')).join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `calidad_aire_${properties.nombre.replace(/\s+/g, '_')}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// Weather layers configuration
-const weatherLayers = {
-    temperature: { 
-        name: 'Temperatura', 
-        unit: '°C', 
-        gradient: 'linear-gradient(to right, #1e3c72, #2a5298, #74b9ff, #00b894, #fdcb6e, #e17055, #d63031)', 
-        range: [-10, 40],
-        heatmapColors: [
-            0, 'rgba(30, 60, 114, 0)',
-            0.1, '#1e3c72',
-            0.3, '#2a5298', 
-            0.5, '#74b9ff',
-            0.7, '#fdcb6e',
-            0.9, '#e17055',
-            1, '#d63031'
-        ]
-    },
-    humidity: { 
-        name: 'Humedad', 
-        unit: '%', 
-        gradient: 'linear-gradient(to right, #dfe6e9, #74b9ff, #0984e3, #2d3436)', 
-        range: [0, 100],
-        heatmapColors: [
-            0, 'rgba(223, 230, 233, 0)',
-            0.3, '#dfe6e9',
-            0.6, '#74b9ff',
-            0.8, '#0984e3',
-            1, '#2d3436'
-        ]
-    },
-    precipitation: { 
-        name: 'Precipitación', 
-        unit: 'mm', 
-        gradient: 'linear-gradient(to right, #f8f9fa, #74b9ff, #0984e3, #2d3436)', 
-        range: [0, 100],
-        heatmapColors: [
-            0, 'rgba(248, 249, 250, 0)',
-            0.2, '#f8f9fa',
-            0.4, '#74b9ff',
-            0.7, '#0984e3',
-            1, '#2d3436'
-        ]
-    },
-    wind: { 
-        name: 'Viento', 
-        unit: 'km/h', 
-        gradient: 'linear-gradient(to right, #f8f9fa, #fdcb6e, #e17055, #d63031, #74b9ff)', 
-        range: [0, 150],
-        heatmapColors: [
-            0, 'rgba(248, 249, 250, 0)',
-            0.2, '#f8f9fa',
-            0.4, '#fdcb6e',
-            0.6, '#e17055',
-            0.8, '#d63031',
-            1, '#74b9ff'
-        ]
-    },
-    pressure: { 
-        name: 'Presión', 
-        unit: 'hPa', 
-        gradient: 'linear-gradient(to right, #6c5ce7, #a29bfe, #fd79a8, #fdcb6e, #00b894)', 
-        range: [980, 1040],
-        heatmapColors: [
-            0, 'rgba(108, 92, 231, 0)',
-            0.25, '#6c5ce7',
-            0.5, '#a29bfe',
-            0.75, '#fdcb6e',
-            1, '#00b894'
-        ]
-    },
-    radiation: { 
-        name: 'Radiación', 
-        unit: 'W/m²', 
-        gradient: 'linear-gradient(to right, #2d3436, #636e72, #fdcb6e, #e17055, #fff)', 
-        range: [0, 1000],
-        heatmapColors: [
-            0, 'rgba(45, 52, 54, 0)',
-            0.2, '#2d3436',
-            0.4, '#636e72',
-            0.6, '#fdcb6e',
-            0.8, '#e17055',
-            1, '#ffffff'
-        ]
-    },
-    co: { 
-        name: 'Monóxido de Carbono', 
-        unit: 'ppm', 
-        gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
-        range: [0, 10],
-        heatmapColors: [
-            0, 'rgba(0, 184, 148, 0)',
-            0.25, '#00b894',
-            0.5, '#fdcb6e',
-            0.75, '#e17055',
-            1, '#d63031'
-        ]
-    },
-    no2: { 
-        name: 'Dióxido de Nitrógeno', 
-        unit: 'ppb', 
-        gradient: 'linear-gradient(to right, #74b9ff, #0984e3, #fdcb6e, #e17055, #d63031)', 
-        range: [0, 200],
-        heatmapColors: [
-            0, 'rgba(116, 185, 255, 0)',
-            0.25, '#74b9ff',
-            0.5, '#0984e3',
-            0.75, '#e17055',
-            1, '#d63031'
-        ]
-    },
-    o3: { 
-        name: 'Ozono', 
-        unit: 'ppb', 
-        gradient: 'linear-gradient(to right, #a29bfe, #6c5ce7, #fd79a8, #e84393, #2d3436)', 
-        range: [0, 150],
-        heatmapColors: [
-            0, 'rgba(162, 155, 254, 0)',
-            0.25, '#a29bfe',
-            0.5, '#6c5ce7',
-            0.75, '#e84393',
-            1, '#2d3436'
-        ]
-    },
-    pm25: { 
-        name: 'PM2.5', 
-        unit: 'μg/m³', 
-        gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
-        range: [0, 200],
-        heatmapColors: [
-            0, 'rgba(0, 184, 148, 0)',
-            0.2, '#00b894',
-            0.4, '#fdcb6e',
-            0.6, '#e17055',
-            0.8, '#d63031',
-            1, '#2d3436'
-        ]
-    }
-};
-
-// Generate smooth, interpolated weather data - DISABLED
-// This function generated fake weather data for visualization
-function generateSmoothWeatherData(type, timeStep = 0) {
-    // Return empty data - real data will be loaded from actual sources
-    return { type: 'FeatureCollection', features: [] };
-}
-
-function isValueInColorFilter(value, range) {
-    if (!colorFilter) return true;
-    const normalizedValue = (value - range[0]) / (range[1] - range[0]);
-    return normalizedValue >= colorFilter.min && normalizedValue <= colorFilter.max;
-}
-
-// Function to generate weather values - DISABLED
-// This generated fake weather data - will be replaced with real data sources
-function generateSmootherValue(type, lat, lng, timeStep, timeVariation, weatherCenters) {
-    // Return null - real data will come from actual weather sources
-    return null;
-}
-
-// Replace the old function with this one
-// NEW, CORRECTED FUNCTION
-// UPDATED FUNCTION
-function isPointInPueblaAccurate(lat, lng) {
-    // This is the biggest performance fix: check against one simple shape, not hundreds.
-    const polygonBoundary = getSimplifiedPueblaStateBoundary().geometry.coordinates[0];
-    let inside = false;
-    for (let i = 0, j = polygonBoundary.length - 1; i < polygonBoundary.length; j = i++) {
-        const xi = polygonBoundary[i][0], yi = polygonBoundary[i][1];
-        const xj = polygonBoundary[j][0], yj = polygonBoundary[j][1];
-        
-        const intersect = ((yi > lat) !== (yj > lat))
-            && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
-        if (intersect) {
-            inside = !inside;
-        }
-    }
-    return inside;
-}
-
-function safeRemoveLayer(id) {
-  if (!map || !id) return;
-  // quita dependientes primero
-  if (map.getLayer(id + '-points')) map.removeLayer(id + '-points');
-  if (map.getLayer(id)) map.removeLayer(id);
-  if (map.getSource(id)) map.removeSource(id);
-}
-
-// Re-agrega desde cero (idempotente y con timing correcto)
-function addLayerFresh({ sourceId, data, layerId, type='fill', paint={}, layout={}, beforeId }) {
-  // Espera a que el estilo esté listo (importante si usas setStyle o cambias de tema)
-  if (!map.isStyleLoaded()) {
-    map.once('styledata', () => addLayerFresh({ sourceId, data, layerId, type, paint, layout, beforeId }));
-    return;
+  data_layer.setParam(str_file_image);
+  if (tipo == "add") {
+    map.getLayers().insertAt(1, data_layer.layer);
   }
-
-  // Limpieza defensiva
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
-  if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-  map.addSource(sourceId, { type: 'geojson', data });
-  map.addLayer({ id: layerId, type, source: sourceId, paint, layout }, beforeId);
 }
 
-        
-// Enhanced weather layer function - MODIFIED for real data
-function addEnhancedWeatherLayer(type) {
-    if (!map || !mapIsReady) { return; } 
+//-------------------------------------------------------------------------------
+var m_lyr_tile = new ol.layer.Tile({
+  source: new ol.source.XYZ({
+    url: "https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+    attributions: '&copy; <a href="https://carto.com/">Carto</a>',
+    maxZoom: 19,
+  }),
+  type: "base",
+  title: "Mapa",
+});
+//-------------------------------------------------------------------------------
+var m_layer_municipios = create_layer_kml_base(
+  "Municipios",
+  "",
+  "./kml/puebla.kml",
+  0.7,
+  true
+);
 
-    if (activeLayer) {
-        if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
-        if (map.getLayer(activeLayer + '-points')) map.removeLayer(activeLayer + '-points');
-        if (map.getSource(activeLayer)) map.removeSource(activeLayer);
-    }
-    
-    const layerConfig = weatherLayers[type];
-    
-    // Instead of generating fake data, we get empty data structure
-    // Real implementation will load data from actual weather/air quality sources
-    const data = generateSmoothWeatherData(type, currentTimeStep); // Returns empty now
-    
-    // Only add layers if we have real data
-    if (data.features && data.features.length > 0) {
-        map.addSource(type, { type: 'geojson', data: data });
-        
-        // Add heatmap layer
-        map.addLayer({
-            id: type,
-            type: 'heatmap',
-            source: type,
-            paint: {
-                'heatmap-weight': ['interpolate',['linear'],['get', 'weight'],0, 0.1,1, 1],
-                'heatmap-intensity': ['interpolate',['exponential', 1.5],['zoom'],6, 0.8,10, 1.2,14, 1.8],
-                'heatmap-color': ['interpolate',['linear'],['heatmap-density'],...layerConfig.heatmapColors],
-                'heatmap-radius': ['interpolate',['exponential', 1.75],['zoom'],6, 25,10, 45,14, 80],
-                'heatmap-opacity': ['interpolate',['linear'],['zoom'],6, 0.9,10, 0.8,14, 0.7]
-            }
-        }, 'puebla-border');
+//------------------------------------------------------------------------------------------
+var mousePositionControl = new ol.control.MousePosition({
+  coordinateFormat: ol.coordinate.createStringXY(4),
+  projection: "EPSG:4326",
+  target: document.getElementById("mouse_position"),
+  undefinedHTML: "&nbsp;",
+});
 
-        // Add points layer
-        map.addLayer({
-            id: type + '-points',
-            type: 'circle',
-            source: type,
-            minzoom: 10,
-            paint: {
-                'circle-radius': ['interpolate',['linear'],['zoom'],10, 2,14, 4],
-                'circle-color': ['interpolate',['linear'],['get', 'intensity'],0, layerConfig.heatmapColors[1],1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]],
-                'circle-opacity': ['interpolate',['linear'],['zoom'],10, 0.3,14, 0.6],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#ffffff',
-                'circle-stroke-opacity': 0.2
-            }
-        }, 'puebla-border');
-    } else {
-        // Show notification that data will be loaded from real sources
-        showNotification(`Datos de ${layerConfig.name} se cargarán desde fuentes oficiales`, 'info');
-    }
-    
-    activeLayer = type;
-    updateLegend(layerConfig);
-    updateDataPanel(type);
-}
-        
-function updateLegend(config) {
-    const legend = document.getElementById('legend');
-    legend.style.display = 'block';
-    legend.querySelector('.legend-title').textContent = config.name;
-    legend.querySelector('.legend-gradient').style.background = config.gradient;
-    
-    const labels = legend.querySelector('.legend-labels');
-    labels.innerHTML = '';
-    const steps = 4;
-    for (let i = 0; i <= steps; i++) {
-        const value = config.range[0] + (config.range[1] - config.range[0]) * (i / steps);
-        const span = document.createElement('span');
-        span.textContent = `${value.toFixed(0)}${i === steps ? " "+config.unit : ''}`;
-        labels.appendChild(span);
-    }
-}
+//-------------------------------------------------------------------------------
+var m_notification = new ol.control.Notification({
+  hideOnClick: true,
+  closeBox: true,
+});
 
-function updateDataPanel(type = 'temperature') {
-    const config = weatherLayers[type] || weatherLayers.temperature;
-    
-    // Instead of showing fake data, show placeholder values that indicate real data will be loaded
-    // Real implementation will fetch actual current weather data
-    document.getElementById('tempValue').textContent = '--°C';
-    document.getElementById('humidityValue').textContent = '--%';
-    document.getElementById('windValue').textContent = '-- km/h';
-    document.getElementById('pressureValue').textContent = '-- hPa';
-}
+var notification = document.createElement("div");
+notification.className = "ol-control ol-unselectable notificacion";
+notification.innerHTML =
+  '<button title="Desarrollo"><i class="glyphicon glyphicon glyphicon-cog"></i></button>';
 
-// Function to generate realistic values - DISABLED
-// This generated fake realistic weather data - will use real data
-function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
-    // Return null - real data will come from actual weather sources
-    return null;
-}
-
-function startAnimation() {
-    if (isPlaying || !activeLayer) return;
-    isPlaying = true;
-    document.getElementById('playIcon').classList.replace('fa-play', 'fa-pause');
-    
-    const speed = 2100 - document.getElementById('speedSlider').value;
-    
-    animationInterval = setInterval(() => {
-        currentTimeStep += 1;
-        const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
-        if(map && map.getSource(activeLayer)) {
-            map.getSource(activeLayer).setData(data);
-        }
-        updateDataPanel(activeLayer);
-        
-        if (map.getLayer(activeLayer)) {
-            map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
-            setTimeout(() => {
-                if (map.getLayer(activeLayer)) {
-                    map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
-                }
-            }, 100);
-        }
-    }, speed);
-}
-        
-function stopAnimation() {
-    isPlaying = false;
-    document.getElementById('playIcon').classList.replace('fa-pause', 'fa-play');
-    clearInterval(animationInterval);
-    animationInterval = null;
-}
-
-function setupMapControls() {
-    document.getElementById('zoom-in-btn').addEventListener('click', () => {
-        if (map) map.zoomIn({ duration: 300 });
-    });
-
-    document.getElementById('zoom-out-btn').addEventListener('click', () => {
-        if (map) map.zoomOut({ duration: 300 });
-    });
-
-    document.getElementById('reset-north-btn').addEventListener('click', () => {
-        if (map) {
-            map.easeTo({
-                bearing: 0,
-                pitch: map.getPitch(),
-                duration: 800,
-                essential: true,
-                easing: (t) => t * (2 - t)
-            });
-        }
-    });
-
-    document.getElementById('reset-position-btn').addEventListener('click', () => {
-        if (map) {
-            map.flyTo({
-                center: initialCenter,
-                zoom: initialZoom,
-                bearing: 0,
-                pitch: 0,
-                duration: 1500,
-                essential: true
-            });
-        }
-    });
-}
-
-function setupLegendClickFilter() {
-    const legendGradient = document.getElementById('legend-gradient');
-    const filterIndicator = document.getElementById('filter-indicator');
-    
-    let isSelecting = false;
-    let startX = 0;
-    
-    legendGradient.addEventListener('mousedown', (e) => {
-        isSelecting = true;
-        startX = e.offsetX;
-        filterIndicator.style.left = startX + 'px';
-        filterIndicator.style.width = '2px';
-        filterIndicator.style.display = 'block';
-        e.preventDefault();
-    });
-    
-    legendGradient.addEventListener('mousemove', (e) => {
-        if (!isSelecting) return;
-        
-        const currentX = e.offsetX;
-        const width = Math.abs(currentX - startX);
-        const left = Math.min(startX, currentX);
-        
-        filterIndicator.style.left = left + 'px';
-        filterIndicator.style.width = width + 'px';
-    });
-    
-    legendGradient.addEventListener('mouseup', (e) => {
-        if (!isSelecting) return;
-        isSelecting = false;
-        
-        const endX = e.offsetX;
-        const gradientWidth = legendGradient.offsetWidth;
-        
-        const minPercent = Math.min(startX, endX) / gradientWidth;
-        const maxPercent = Math.max(startX, endX) / gradientWidth;
-        
-        if (Math.abs(endX - startX) > 5) {
-            colorFilter = { min: minPercent, max: maxPercent };
-            applyColorFilter();
-        } else {
-            colorFilter = null;
-            filterIndicator.style.display = 'none';
-            applyColorFilter();
-        }
-    });
-    
-    legendGradient.addEventListener('mouseleave', () => {
-        if (isSelecting) {
-            isSelecting = false;
-            if (!colorFilter) {
-                filterIndicator.style.display = 'none';
-            }
-        }
-    });
-}
-
-function applyColorFilter() {
-    if (activeLayer) {
-        const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
-        if (map && map.getSource(activeLayer)) {
-            map.getSource(activeLayer).setData(data);
-        }
-    }
-}
-
-// Updated map initialization to load JSON data first
-async function initializeMap() {
-    if (mapInitialized) return;
-    
-    showLoadingIndicator();
-    
-    const dataLoaded = await loadJSONData();
-    if (!dataLoaded) {
-        hideLoadingIndicator();
-        return;
-    }
-    
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
-    
-    map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: initialCenter,
-        zoom: initialZoom,
-        pitch: 0,
-        bearing: 0,
-        minZoom: 7.5,
-        maxZoom:15,
-        // Use the new function to set the map's navigation boundaries
-        maxBounds: getPueblaBoundingBox(),
-        scrollZoom: {
-            zoomRate: 0.08
-        }
-    });
-    
-    map.on('load', () => {
-        map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
-        map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
-        map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
-        
-        // Call the new mask function first
-        addMapMask(); 
-        // Then call the rest
-        addAccuratePueblaStateBoundary();
-        addPueblaMunicipalities();
-        addMonitoringStations();
-        
-        hideLoadingIndicator();
-        mapIsReady = true; // <-- Add this line
-    });
-    
-    map.on('error', () => {
-        hideLoadingIndicator();
-        console.error('Error loading map');
-    });
-    
-    mapInitialized = true;
-}
-
-//cerrar el panel cuando se da clic fuera de este
-document.addEventListener('click', (e) => {
-  const wcPanel   = document.getElementById('weather-controls');
-  const wcToggle  = document.getElementById('toggle-controls-btn');
-  const glossary  = document.getElementById('glossaryModal');
-
-  // Si el clic ocurrió en el modal del glosario (overlay o contenido), NO cierres el weather
-  if (e.target.closest('#glossaryModal')) return;
-
-  // Si el glosario está abierto, tampoco cierres el weather
-  const glossaryOpen = glossary && (
-    glossary.classList.contains('is-open') || glossary.style.display === 'flex'
+notification.addEventListener("click", function () {
+  m_notification.show(
+    "SECRETARÍA DE MEDIO AMBIENTE, DESARROLLO SUSTENTABLE Y ORDENAMIENTO TERRITORIAL",
+    5000
   );
-  if (glossaryOpen) return;
+});
 
-  if (wcPanel && wcPanel.classList.contains('is-open')) {
-    if (!wcPanel.contains(e.target) && !wcToggle.contains(e.target)) {
-      wcPanel.classList.remove('is-open');
+var m_control = new ol.control.Control({ element: notification });
+
+//-------------------------------------------------------------------------------
+var m_view = new ol.View({
+  projection: "EPSG:4326",
+  center: [-97.7711, 19.0105],
+  zoom: 8.3,
+  minZoom: 8.3,
+  maxZoom: 18,
+  constrainResolution: true,
+  constrainOnlyCenter: false,
+  extent: [-99.08, 17.81, -96.7, 20.87],
+  zoomControl: false,
+});
+
+//-------------------------------------------------------------------------------
+
+var scaleLineControl = new ol.control.ScaleLine({
+  units: "metric",
+  bar: false,
+  steps: 4,
+  minWidth: 140,
+  className: "ol-scale-line",
+  target: null,
+});
+
+//-------------------------------------------------------------------------------
+
+var m_map = new ol.Map({
+  controls: ol.control.defaults({ zoom: false }).extend([
+    mousePositionControl,
+    m_notification,
+    m_control,
+    scaleLineControl,
+    new ol.control.LayerSwitcher({
+      //Control de capas
+      tipLabel: "Capas",
+    }),
+  ]),
+  target: "map",
+  layers: [m_lyr_tile, m_layer_municipios],
+  view: m_view,
+});
+
+var m_dlayer = new CDataLayer(m_map);
+//-------------------------------------------------------------------------------
+
+const isMobile = window.innerWidth < 768;
+const graticule = new ol.Graticule({
+  showLabels: true,
+  wrapX: false,
+  lonLabelPosition: isMobile ? 0.93 : 0.99,
+  latLabelPosition: isMobile ? 0.79 : 0.93, // posición más dentro del canvas
+  targetSize: 200,
+  strokeStyle: new ol.style.Stroke({
+    color: "rgba(100,100,100,0.7)",
+    width: 2,
+    lineDash: [2, 4],
+  }),
+  lonLabelStyle: new ol.style.Text({
+    font: "bold 16px Arial, sans-serif",
+    fill: new ol.style.Fill({ color: "#222" }),
+    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
+    textBaseline: "top",
+  }),
+  latLabelStyle: new ol.style.Text({
+    font: "bold 16px Arial, sans-serif",
+    textAlign: "left", // alinea texto hacia dentro
+    fill: new ol.style.Fill({ color: "#222" }),
+    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
+  }),
+});
+graticule.setMap(m_map);
+
+//-------------------------------------------------------------------------------
+m_map.on("postcompose", function (event) {
+  var canvas = event.context.canvas;
+  var ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+  ctx.font = "12pt Arial";
+  ctx.fillStyle = "black";
+
+  var x_p = canvas.width / 2 - 360;
+  var y_p = canvas.height - m_dlayer.img_escala.clientHeight - 100;
+
+  //ctx.drawImage(m_img_icon, 50, 10);								//Icono del instituto
+  //ctx.fillText(m_dlayer.fecha_img, 300, y_p + 80); //Fecha de la imagen
+  //ctx.fillText("VALIDEZ:" + m_dlayer.fecha_loc, 300, y_p + 100);
+  const permanentDateElement = document.querySelector(
+    "#filter-info .permanent-date"
+  );
+  if (permanentDateElement) {
+    permanentDateElement.textContent = m_dlayer.fecha_loc;
+  }
+  //ctx.drawImage(m_dlayer.img_escala, x_p, y_p); //cambiar la escala segun la variable
+});
+//-------------------------------------------------------------------------------
+
+$(function () {
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=listado_runs",
+    "fecha=" + "20240131",
+    list_runs,
+    showDialog_Error
+  );
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=cabeceras",
+    "fecha=" + "20240131",
+    list_cabeceras,
+    showDialog_Error
+  );
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=estaciones",
+    "fecha=" + "20240131",
+    list_estaciones,
+    showDialog_Error
+  );
+
+  pollForNewRuns();
+  setInterval(pollForNewRuns, 43200000);
+});
+//-------------------------------------------------------------------------------
+function pollForNewRuns() {
+  // Guardamos estado actual de opciones
+  const oldHtml = $("#select_run").html();
+
+  // Volvemos a pedir el listado
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=listado_runs",
+    "fecha=" + "20240131",
+    function (datos) {
+      list_runs(datos);
+      const newHtml = $("#select_run").html();
+    },
+    showDialog_Error
+  );
+}
+//-------------------------------------------------------------------------------
+var showDialog_Error = function () {
+  var textAndPic = $("<div></div>");
+
+  textAndPic.append('<h1 style="text-align: center;" >Informacion.</h1>');
+  textAndPic.append("<p>&nbsp;</p>");
+  textAndPic.append("<p>Ha ocurrido un error");
+  textAndPic.append("<p>&nbsp;</p>");
+
+  BootstrapDialog.show({
+    title: "Informacion",
+    closable: true,
+    message: textAndPic,
+  });
+};
+
+//-------------------------------------------------------------------------------
+var make_transaction = function (
+  murl,
+  mdata,
+  function_on_success,
+  function_on_error
+) {
+  $.ajax({
+    url: murl,
+    type: "POST",
+    data: mdata,
+    success: function (datos) {
+      if (datos.search("error") >= 0) {
+        function_on_error();
+        return;
+      }
+
+      function_on_success(datos);
+    },
+  });
+};
+
+//-------------------------------------------------------------------------------
+var make_animation = function (datos) {
+  var list_files = datos.split("|");
+
+  m_frames = [];
+  for (var i = 0; i < list_files.length; i++) {
+    var str_file = list_files[i];
+
+    if (str_file != "") {
+      str_file = str_file.substring(1); //Recorrer el string para quitar el ../
+
+      var frame_kms = new CDataLayer(m_map, "create", str_file);
+      m_frames.push(frame_kms);
+    }
+  }
+  check_loaded();
+};
+
+//-------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
+var m_dir_runs = "";
+
+var list_runs = function (datos) {
+  var dir_runs = "";
+  var list_files = datos.split("|");
+
+  for (var i = list_files.length - 1; i >= 0; i--) {
+    var str_file = list_files[i];
+
+    if (str_file != "") {
+      var pos = str_file.lastIndexOf("/");
+      var str_name = str_file.substring(pos + 1);
+
+      var Y = str_name.substring(0, 4);
+      var M = str_name.substring(4, 6);
+      var D = str_name.substring(6, 8);
+      var H = str_name.substring(8, 10);
+      var Etiq = D + "-" + M + "-" + Y + " " + H + "Z";
+
+      dir_runs += "<option  value='" + str_file + "'>" + Etiq + "</option>";
+    }
+  }
+
+  $("#select_run").html(dir_runs);
+};
+
+//-------------------------------------------------------------------------------
+var procesa_dat = function () {
+  var val_dat = "";
+  switch ($("#select_dat").val()) {
+    case "temp":
+      val_dat = '<option value="temmax">Temperatura max</option>';
+      val_dat += '<option value="temmin">Temperatura min</option>';
+      val_dat += '<option value="temp/700">Temperatura a 700mb</option>';
+      val_dat += '<option value="temp/600">Temperatura a 600mb</option>';
+      val_dat += '<option value="temp/500">Temperatura a 500mb</option>';
+      val_dat += '<option value="temp/400">Temperatura a 400mb</option>';
+      val_dat += '<option value="temp/300">Temperatura a 300mb</option>';
+      val_dat += '<option value="temp/200">Temperatura a 200mb</option>';
+      break;
+    case "quim":
+      val_dat = '<option value="CO/sfc">Monóxido de Carbono</option>';
+      val_dat += '<option value="NO2/sfc">Dióxido de Nitrógeno</option>';
+      val_dat += '<option value="O3/sfc">Ozono</option>';
+      val_dat += '<option value="SO2/sfc">Dióxido de Azufre</option>';
+      val_dat += '<option value="PM10/sfc">Partículas PM 10</option>';
+      val_dat += '<option value="PM25/sfc">Partículas PM 2.5</option>';
+      break;
+    case "hum":
+      val_dat = '<option value="hum/sfc">Humedad en superficie</option>';
+      break;
+    case "prec":
+      val_dat = '<option value="precacum">Precipitación acumulada</option>';
+      break;
+    case "rad":
+      val_dat = '<option value="radsw/sfc">Radiación de onda corta</option>';
+      val_dat += '<option value="radlw/sfc">Radiación de onda larga</option>';
+      break;
+    case "wind":
+      val_dat = '<option value="wnd/sfc">Viento en superficie</option>';
+      val_dat += '<option value="wnd/700">Viento a 700mb</option>';
+      val_dat += '<option value="wnd/600">Viento a 600mb</option>';
+      val_dat += '<option value="wnd/500">Viento a 500mb</option>';
+      val_dat += '<option value="wnd/400">Viento a 400mb</option>';
+      val_dat += '<option value="wnd/300">Viento a 300mb</option>';
+      val_dat += '<option value="wnd/200">Viento a 200mb</option>';
+      break;
+    case "psfc":
+      val_dat = '<option value="psfc">Presión barométrica</option>';
+      break;
+  }
+
+  $("#select_var").html(val_dat);
+  procesa_var();
+};
+
+var set_atmos = function () {
+  var val_dat = '<option value="temp">Temperatura</option>';
+
+  val_dat += '<option value="hum">Humedad</option>';
+  val_dat += '<option value="prec">Precipitación</option>';
+  val_dat += '<option value="rad">Radiación</option>';
+  val_dat += '<option value="wind">Viento</option>';
+  val_dat += '<option value="psfc">Presión</option>';
+
+  $("#select_dat").html(val_dat);
+  procesa_dat();
+};
+
+var set_chem = function () {
+  var val_dat = (val_dat = '<option value="quim">Contaminantes</option>');
+
+  $("#select_dat").html(val_dat);
+  procesa_dat();
+};
+
+//-------------------------------------------------------------------------------
+var list_var = async function (datos) {
+  var dir_var = "";
+  var list_files = datos.split("|");
+
+  //	for (var i = list_files.length - 1; i >= 0; i--){					//Reversa
+  for (var i = 0; i < list_files.length; i++) {
+    var str_file = list_files[i];
+
+    str_file = str_file.substring(1); //Recorrer el string para quitar el ../
+
+    if (str_file != "") {
+      var pos = str_file.lastIndexOf("/");
+      var str_name = str_file.substring(pos + 1);
+
+      var pos_pt = str_name.lastIndexOf(".");
+      var resta = 2;
+
+      var indice = str_name.indexOf("wind");
+      if (indice > 0) resta = 3;
+
+      str_name = str_name.substring(pos_pt - resta, pos_pt);
+
+      dir_var += "<option  value='" + str_file + "'>" + str_name + "</option>";
+    }
+  }
+  $("#selectHora").html(dir_var);
+
+  await make_animation(datos);
+  update_var();
+};
+
+//-------------------------------------------------------------------------------
+var m_lienzo = null;
+var m_barra = null;
+
+//-------------------------------------------------------------------------------
+async function update_var() {
+  m_lienzo = null;
+  m_barra = null;
+
+  var str_file = $("#selectHora").val();
+
+  set_layer(m_map, str_file, "add", m_dlayer);
+  var img = new Image();
+  img.onload = function () {
+    m_lienzo = new CLienzo(img);
+    if (filter_color) {
+      const filteredLayer = applyFilterToImage(m_lienzo.img);
+      put_FilteredImage(filteredLayer);
+    }
+  };
+  img.src = str_file;
+  if (m_dlayer.img_escala.complete) {
+    switch (m_dlayer.tipo_barra) {
+      case TEMP:
+        //loadGradientDataFromCSV("./color_scale.csv","TEMP");
+        //m_barra = new CBarra(m_dlayer.img_escala, -12, 50, 2, 22);
+        break;
+      case WIND:
+        //loadGradientDataFromCSV("./color_scale.csv", "WIND");
+        //m_barra = new CBarra(m_dlayer.img_escala, 0, 160, 10, 22);
+        break;
+    }
+  } else {
+    showDialog_Error();
+  }
+}
+
+//-------------------------------------------------------------------------------
+var procesa_var = function () {
+  var str_run = $("#select_run").val();
+  var str_var = $("#select_var").val();
+  m_dir_runs = str_run.substring(1);
+  var str_dat = "variable=" + str_run + "/" + str_var + "/";
+  m_map;
+  console.log(str_dat);
+  if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+  filter_color = null;
+  hideInfo();
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=listado_var",
+    str_dat,
+    list_var,
+    showDialog_Error
+  );
+};
+
+//-------------------------------------------------------------------------------
+$(function () {
+  var isAnimating = false;
+  var $btn = $("#btn_toggle_animation");
+  var $icon = $btn.find("i");
+
+  // Inicialmente deshabilitado hasta que check_loaded termine
+  $btn.prop("disabled", true);
+
+  // Cuando la animación esté lista, habilitamos el botón
+  function enableAnimationButton() {
+    $btn.prop("disabled", false);
+  }
+
+  // Llama a esta función al final de check_loaded
+  function onAnimationLoaded() {
+    console.log("Animacion cargada");
+    enableAnimationButton();
+  }
+  function check_loaded() {
+    var continue_check = false;
+    requestAnimationFrame(function check(time) {
+      continue_check = m_frames.some((f) => f.layer == null);
+      if (continue_check) {
+        requestAnimationFrame(check);
+        document.body.style.cursor = "wait";
+      } else {
+        document.body.style.cursor = "default";
+        onAnimationLoaded();
+      }
+    });
+  }
+
+  // Toggle de reproducción/detención
+  $btn.click(function () {
+    if (!isAnimating) {
+      // Iniciar animación
+      animate_frames();
+      $icon.removeClass("glyphicon-play").addClass("glyphicon-stop");
+      $btn.attr("title", "Detener");
+      isAnimating = true;
+    } else {
+      // Detener animación
+      cancel_animate();
+      $icon.removeClass("glyphicon-stop").addClass("glyphicon-play");
+      $btn.attr("title", "Reproducir");
+      isAnimating = false;
+    }
+  });
+
+  window.check_loaded = check_loaded;
+});
+
+//-------------------------------------------------------------------------------
+var m_rango = 250;
+var m_animate = false;
+var m_id_animation = 0;
+
+async function animate_frames() {
+  var pos_frame = 0;
+  var time_to_draw = performance.now();
+
+  m_id_animation = await requestAnimationFrame(function animate(time) {
+    var dif_time = time - time_to_draw;
+
+    if (dif_time > m_rango) {
+      if (pos_frame < m_frames.length) {
+        var m_dlayer_act = m_frames[pos_frame];
+        if (filter_color && m_dlayer_act.img && m_dlayer_act.img.complete) {
+          const filteredLayer = applyFilterToImage(m_dlayer_act.img);
+          if (filteredLayer) {
+            if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+            m_map.addLayer(filteredLayer);
+            const permanentDateElement = document.querySelector(
+              "#filter-info .permanent-date"
+            );
+            if (permanentDateElement) {
+              permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+            }
+            window.filtered_layer = filteredLayer;
+            m_dlayer = m_dlayer_act;
+          } else {
+            m_map.addLayer(m_dlayer_act.layer);
+          }
+        } else {
+          m_map.removeLayer(m_dlayer.layer);
+          m_map.addLayer(m_dlayer_act.layer);
+          m_dlayer = m_dlayer_act;
+        }
+        pos_frame = pos_frame + 1;
+      } else {
+        //				console.log('inicializado');
+        pos_frame = 0;
+      }
+      time_to_draw = time;
+    }
+
+    m_id_animation = requestAnimationFrame(animate);
+  });
+}
+
+//-------------------------------------------------------------------------------
+function cancel_animate() {
+  cancelAnimationFrame(m_id_animation);
+}
+
+//------------------------------------------------------------------------
+var m_show = false;
+var m_zoom = m_view.getZoom();
+
+var create_style = function (str_file) {
+  return new ol.style.Style({
+    image: new ol.style.Icon({
+      anchor: [0.5, 0.5],
+      anchorXUnits: "fraction",
+      anchorYUnits: "fraction",
+      scale: get_scale(),
+      src: str_file,
+    }),
+    text: new ol.style.Text({
+      offsetX: 8,
+      offsetY: 16,
+      textAlign: "left",
+      font: "14px Calibri,sans-serif",
+      fill: new ol.style.Fill({ color: "#000" }),
+      stroke: new ol.style.Stroke({
+        color: "#fff",
+        width: 1,
+      }),
+      text: "",
+    }),
+  });
+};
+
+//------------------------------------------------------------------------
+var m_vectorSource = new ol.source.Vector({});
+
+//------------------------------------------------------------------------
+var m_vectorLayer = new ol.layer.Vector({
+  title: "Meteogramas",
+  type: "",
+  visible: "true",
+  source: m_vectorSource,
+});
+
+m_map.addLayer(m_vectorLayer);
+
+//------------------------------------------------------------------------
+var m_element = document.createElement("div");
+
+var m_popup = new ol.Overlay({
+  element: m_element,
+  stopEvent: true,
+});
+
+m_map.addOverlay(m_popup);
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+var m_feature = undefined;
+
+m_map.on("click", function (evt) {
+  if (m_animate) {
+    return;
+  }
+
+  if (m_lienzo != null && m_barra != null && m_dlayer.tipo_barra == TEMP) {
+    var px = m_lienzo.get_pixel(evt.coordinate);
+    var val = m_barra.busca(px);
+
+    $("#px_val").html(val + m_dlayer.unidades);
+  }
+
+  if (m_show || m_feature != undefined) {
+    $(m_element).popover("destroy");
+  }
+
+  m_show = false;
+  m_feature = get_Feature(evt);
+
+  if (m_feature != undefined) {
+    if ($("#select_dat").val() == "quim") {
+      show_chem(true);
+    } else {
+      show_meteo(true);
     }
   }
 });
 
+//------------------------------------------------------------------------
+m_map.on("pointermove", function (evt) {
+  if (m_animate || m_feature != undefined) {
+    return;
+  }
 
-// cerrar el glosario cuando se da clic fuera de este
-const panel = document.getElementById("glossaryModal");
+  if (evt.dragging) {
+    $("#px_val").html("---" + m_dlayer.unidades);
+    $(m_element).popover("destroy");
+    return;
+  }
 
-if (panel) {
-  panel.addEventListener("click", function (event) {
-    // si el clic fue exactamente sobre el overlay, cerramos
-    if (event.target === panel) {
-      panel.style.display = 'none';
+  if (m_zoom >= 11) {
+    $(m_element).popover("destroy");
+    return;
+  }
+
+  var feature = get_Feature(evt);
+
+  if (feature) {
+    if (m_show) {
+      return;
     }
-  });
-}
 
-//cerrar el navlinks cuando se da clic fuera de este
-document.addEventListener('click',(event) =>{
-    const panel = document.getElementById('nav-links');
-    const toggleBtn = document.querySelector('.hamburger-menu');
+    m_popup.setOffset([0, -10]);
+    m_popup.setPosition(feature.getGeometry().getCoordinates());
 
-    if (!panel || !toggleBtn) return;
+    $(m_element).popover({
+      placement: "top",
+      animation: false,
+      html: true,
+      content: feature.get("nombre"),
+    });
 
-    //si el panel esta abierto
-    if (panel.classList.contains('active') && !panel.contains(event.target) && !toggleBtn.contains(event.target)){
-        panel.classList.remove('active');
-    }
+    m_show = true;
+    $(m_element).popover("show");
+  } else {
+    m_show = false;
+    $(m_element).popover("destroy");
+  }
 });
 
-function toggleMenu() {
-    const navLinks = document.getElementById('nav-links');
-    navLinks.classList.toggle('active');
-}
-// Variable global para el tipo de mapa
-window.tipoMapa = 'meteorologia'; // Valor por defecto
+//------------------------------------------------------------------------
+var list_estaciones = function (datos) {
+  add_features(datos, "estacion", "/meteogramas/", "./images/estacion.png");
+};
 
-// Función global para activar el mapa
-window.activateMap = function(type) {
-    document.body.classList.add('map-active');
-    initializeMap();
-    
-    // Set map type as soon as map is activated
-    window.tipoMapa = type;
-    
-    // Reset active layer
-    if (activeLayer) safeRemoveLayer(activeLayer);
-    activeLayer = null;
+//------------------------------------------------------------------------
+var list_cabeceras = function (datos) {
+  add_features(datos, "cabecera", "/cabeceras/", "./images/cabecera.png");
+};
 
+//------------------------------------------------------------------------
+var add_features = function (datos, local, dir, urlIcon) {
+  var format = new ol.format.GeoJSON();
+  var features = format.readFeatures(datos);
 
-    if (type == 'meteorologia'){
-        setTimeout(() => {
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn_atmos').classList.add('active');
-            document.getElementById('layer-buttons-meteo').style.display = 'grid';
-            document.getElementById('layer-buttons-aire').style.display = 'none';
-            //const tempBtn = document.querySelector('[data-layer="temperature"]');
-            //if (tempBtn) tempBtn.click();
-        }, 500);
-    }else if (type == 'calidad'){
-        setTimeout(() => {
-            document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn_aire').classList.add('active');
-            document.getElementById('layer-buttons-meteo').style.display = 'none';
-            document.getElementById('layer-buttons-aire').style.display = 'grid';
-            //const pm25Btn = document.querySelector('[data-layer="pm25"]');
-            //if (pm25Btn) pm25Btn.click();
-        }, 500);
+  for (var i = 0; i < features.length; i++) {
+    var feature = features[i];
+    feature.set("local", local);
+    feature.set("dir", dir);
+    feature.setStyle(create_style(urlIcon));
+    set_text(feature);
 
+    var coord = feature.getGeometry().getCoordinates();
+    feature.setGeometry(new ol.geom.Point(coord)),
+      m_vectorSource.addFeature(feature);
+  }
+};
+
+//------------------------------------------------------------------------
+//------------------------------------------------------------------------
+m_view.on("propertychange", function (e) {
+  if (e.key == "resolution") {
+    //Cuando cambia el zoom
+    var zoom = m_view.getZoom();
+
+    if (m_zoom == zoom || zoom % 1 != 0) {
+      return;
     }
-    setTimeout(()=>{
-        map.resize();
-    },500)
+
+    m_zoom = zoom;
+    var scale = get_scale();
+    var features = m_vectorSource.getFeatures(); //Obtener el arreglo de iconos
+
+    for (var i = 0; i < features.length; i++) {
+      var feature = features[i];
+
+      feature.getStyle().getImage().setScale(scale);
+      feature.getStyle().getText().setScale(scale);
+      set_text(feature);
+    }
+  }
+});
+
+//------------------------------------------------------------------------
+function get_scale() {
+  var val = m_zoom - 7;
+  return val / (12 - 7);
 }
 
-function showLoadingIndicator() {
-    const loader = document.createElement('div');
-    loader.id = 'map-loader';
-    loader.innerHTML = `
-        <div style="
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255,255,255,0.9);
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        ">
-            <div style="
-                width: 40px;
-                height: 40px;
-                border: 4px solid #f3f3f3;
-                border-top: 4px solid #5a1b30;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 10px;
-            "></div>
-            <p style="margin: 0; color: #5a1b30; font-weight: 500;">Cargando mapa...</p>
-        </div>
-        <style>
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-        </style>
-    `;
-    loader.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(248,249,250,0.8);
-        z-index: 2000;
+//------------------------------------------------------------------------
+function set_text(feature) {
+  if (m_zoom < ZOOMREF) {
+    feature.getStyle().getText().setText("");
+  } else {
+    feature.getStyle().getText().setText(feature.get("nombre"));
+  }
+}
+
+//------------------------------------------------------------------------
+function get_Feature(evt) {
+  return m_map.forEachFeatureAtPixel(
+    evt.pixel,
+    function (feature) {
+      return feature;
+    },
+    {
+      layerFilter: function (layer) {
+        return layer === m_vectorLayer;
+      },
+    }
+  );
+}
+
+function show_meteo(show_dialog) {
+  show_feature("meteo", "meteo/wrf_meteo_", show_dialog);
+}
+
+function show_chem(show_dialog) {
+  show_feature("chem", "chem/wrf_chem_", show_dialog);
+}
+
+var m_str_cvs = "";
+var m_str_file_csv = "datos.csv";
+
+//-------------------------------------------------------------------------------
+function show_feature(tipo, dir_dat, show_dialog) {
+  var dir = m_feature.get("dir") + dir_dat;
+  var clave = m_feature.get("clave");
+  var name = m_feature.get("nombre");
+
+  var fech = m_dir_runs.substring(7, 15);
+  var hor = m_dir_runs.substring(15, 17);
+
+  var tipo_ext;
+
+  if (tipo == "meteo") {
+    tipo_ext = "meteorologicos";
+  } else {
+    tipo_ext = "contaminantes";
+  }
+
+  var dir_json = m_dir_runs + dir + clave + "_" + fech + "_" + hor + "z.json";
+
+  m_str_file_csv = name + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
+
+  var contenDialog = $("<div></div>");
+
+  if (tipo == "meteo") {
+    set_chart_meteo(dir_json, contenDialog, show_dialog);
+  } else {
+    set_chart_chem(dir_json, contenDialog, show_dialog);
+  }
+
+  m_feature = undefined;
+  $(m_element).popover("destroy");
+
+  if (show_dialog) {
+    BootstrapDialog.show({
+      cssClass: "modal-dialog",
+      title: `<span style="font-size: 1.7em; font-weight: bold;">${name}</span>`,
+      closable: true,
+      message: contenDialog,
+    });
+  }
+}
+
+//-------------------------------------------------------------------------------
+
+function avg(arr) {
+  const n = arr.length;
+  if (n === 0) return "-";
+  const sum = arr.reduce((a, b) => a + b, 0);
+  return (sum / n).toFixed(1);
+}
+
+//-------------------------------------------------------------------------------
+function set_chart_meteo(str_file, contenDialog, show_dialog) {
+  m_str_cvs =
+    "Fecha, Temperatura (°C), Humedad (%), Precipitación (mm), Radiación (w/m2), Viento (km/h), Presión (hPa) \r\n";
+  $.ajax({
+    url: str_file,
+    dataType: "text",
+    success: function (data) {
+      var djson = JSON.parse(data);
+
+      set_csv_atmos(djson, str_file);
+
+      if (show_dialog) {
+        const resumenHTML = `
+  <div style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" style="
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: center;
-    `;
-    document.getElementById('main-content').appendChild(loader);
+        gap: 6px;
+      ">
+        <i class="glyphicon glyphicon-download"></i>
+        Descargar (.CSV)
+      </button>
+    </div>
+    <table style="
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95em;
+      background-color: #fff;
+      border: none;
+    ">
+      <thead style="background-color: #f5f5f5;">
+        <tr>
+          <th style="padding: 10px; text-align: left;">Variable</th>
+          <th style="padding: 10px; text-align: left;">Promedio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background-color: #fcfcfc;">
+          <td style="padding: 10px;">🌡️ Temperatura (°C)</td>
+          <td style="padding: 10px;">${avg(djson["t2m"])}</td>
+        </tr>
+        <tr style="background-color: #f0f8ff;">
+          <td style="padding: 10px;">💧 Humedad (%)</td>
+          <td style="padding: 10px;">${avg(djson["rh"])}</td>
+        </tr>
+        <tr style="background-color: #fcfcfc;">
+          <td style="padding: 10px;">🌧️ Precipitación (mm)</td>
+          <td style="padding: 10px;">${avg(djson["pre"])}</td>
+        </tr>
+        <tr style="background-color: #f0f8ff;">
+          <td style="padding: 10px;">☀️ Radiación (w/m²)</td>
+          <td style="padding: 10px;">${avg(djson["sw"])}</td>
+        </tr>
+        <tr style="background-color: #fcfcfc;">
+          <td style="padding: 10px;">🌬️ Viento (km/h)</td>
+          <td style="padding: 10px;">${avg(djson["wnd"])}</td>
+        </tr>
+        <tr style="background-color: #f0f8ff;">
+          <td style="padding: 10px;">📉 Presión (hPa)</td>
+          <td style="padding: 10px;">${avg(djson["psl"])}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+`;
+        contenDialog.append(resumenHTML);
+        set_canva(
+          contenDialog,
+          djson["t2m"],
+          "line",
+          str_file,
+          "Temperatura",
+          "°C",
+          "rgb(255, 0, 0)"
+        );
+        set_canva(
+          contenDialog,
+          djson["rh"],
+          "line",
+          str_file,
+          "Humedad ",
+          "%",
+          "rgb(0, 0, 255)"
+        );
+        set_canva(
+          contenDialog,
+          djson["pre"],
+          "bar",
+          str_file,
+          "Precipitación",
+          "mm",
+          "rgb(0, 128, 0)"
+        );
+        set_canva(
+          contenDialog,
+          djson["sw"],
+          "line",
+          str_file,
+          "Radiación",
+          "w/m2",
+          "rgb(255, 255, 0)"
+        );
+        /*set_canva(contenDialog, djson['dir'], 'bar', str_file, 'Direccion del Viento', '0-360 grados', 'rgb(243, 156, 18)');*/
+        set_canva(
+          contenDialog,
+          djson["wnd"],
+          "line",
+          str_file,
+          "Viento",
+          "km/h",
+          "rgb(128, 0, 0)"
+        );
+        set_canva(
+          contenDialog,
+          djson["psl"],
+          "line",
+          str_file,
+          "Presión ",
+          "hPa",
+          "rgb(0, 128, 128)"
+        );
+      } else {
+        downloadFileCSV();
+      }
+    },
+  });
 }
 
-// Add this function to your JavaScript code
-function updateHistoricalChart() {
-    if (!currentHistData) return;
-    
-    const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
-    if (tipoSeleccionado === 'meteo') {
-        createMeteoHistoricalChart(currentHistData);
-    } else {
-        createChemHistoricalChart(currentHistData);
-    }
-    updateStatsTable(tipoSeleccionado);
-}
+function set_chart_chem(str_file, contenDialog, show_dialog) {
+  m_str_cvs =
+    "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
+  $.ajax({
+    url: str_file,
+    dataType: "text",
+    success: function (data) {
+      var djson = JSON.parse(data);
 
-// You also need this function
-function updateStatsTable(tipo) {
-    if (!currentHistData) return;
-    
-    const tbody = document.getElementById('histStatsTable');
-    tbody.innerHTML = '';
-    
-    const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
-    
-    selectedVariables.forEach(key => {
-        if (currentHistData[key] && variables[key]) {
-            const values = currentHistData[key];
-            const stats = calculateStats(values);
-            const { label, unit, icon } = variables[key];
-            
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><span style="margin-right: 8px">${icon}</span>${label}</td>
-                <td>${stats.avg.toFixed(2)}</td>
-                <td>${stats.max.toFixed(2)}</td>
-                <td>${stats.min.toFixed(2)}</td>
-                <td>${unit}</td>
-            `;
-            tbody.appendChild(row);
-        }
-    });
-}
+      set_csv_chem(djson, str_file);
 
-// And this helper function
-function calculateStats(values) {
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    
-    return { avg, max, min };
-}
-
-// You also need these chart creation functions
-function createMeteoHistoricalChart(data) {
-    currentHistData = data;
-    
-    const datasets = [];
-    Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && Array.isArray(data[key])) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.35,
-                fill: false
-            });
-        }
-    });
-
-    if (!datasets.length) return;
-
-    const labels = currentHistLabels && currentHistLabels.length === datasets[0].data.length
-        ? currentHistLabels
-        : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
-
-    const groups = groupDatasetsByRange(datasets, 30);
-    renderGroupedCharts(groups, labels, 'Tendencias de Variables Meteorológicas');
-}
-
-function createChemHistoricalChart(data) {
-    currentHistData = data;
-
-    const datasets = [];
-    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && Array.isArray(data[key])) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.35,
-                fill: false
-            });
-        }
-    });
-
-    if (!datasets.length) return;
-
-    const labels = currentHistLabels && currentHistLabels.length === datasets[0].data.length
-        ? currentHistLabels
-        : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
-
-    const groups = groupDatasetsByRange(datasets, 30);
-    renderGroupedCharts(groups, labels, 'Tendencias de Calidad del Aire');
-}
-
-// And this grouping function
-function groupDatasetsByRange(datasets, threshold = 30){
-    const groups = [];
-    const fits = (grp, ds) => {
-        const all = grp.concat([ds]).flatMap(d => d.data).filter(v => Number.isFinite(v));
-        const min = Math.min(...all), max = Math.max(...all);
-        return (max - min) <= threshold;
-    };
-    datasets.forEach(ds => {
-        let placed = false;
-        for (const g of groups){
-            if (fits(g, ds)){ g.push(ds); placed = true; break; }
-        }
-        if (!placed) groups.push([ds]);
-    });
-    return groups;
-}
-
-function hideLoadingIndicator() {
-    const loader = document.getElementById('map-loader');
-    if (loader) {
-        loader.style.opacity = '0';
-        loader.style.transition = 'opacity 0.3s ease';
-        setTimeout(() => {
-            loader.remove();
-        }, 300);
-    }
-}
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: ${type === 'error' ? '#d63031' : type === 'success' ? '#00b894' : '#0984e3'};
+      if (show_dialog) {
+        const resumenHTML = `<div style="margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" style="
+        background-color: #007bff;
         color: white;
-        padding: 15px 20px;
-        border-radius: 8px;
-        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-        z-index: 3000;
-        max-width: 300px;
-        font-family: 'Poppins', sans-serif;
-        font-size: 14px;
-        opacity: 0;
-        transform: translateX(100%);
-        transition: all 0.3s ease;
+        border: none;
+        padding: 8px 16px;
+        font-size: 1em;
+        border-radius: 5px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      ">
+        <i class="glyphicon glyphicon-download"></i>
+        Descargar (.CSV)
+      </button>
+    </div>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em; background-color: #fff; border: none;">
+      <thead style="background-color: #f5f5f5;">
+        <tr>
+          <th style="padding: 10px; text-align: left;">Contaminante</th>
+          <th style="padding: 10px; text-align: left;">Promedio</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟤 Monóxido de Carbono (ppm)</td><td style="padding: 10px;">${avg(
+          djson["CO"]
+        )}</td></tr>
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🟣 Dióxido de Nitrógeno (ppb)</td><td style="padding: 10px;">${avg(
+          djson["NO2"]
+        )}</td></tr>
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟢 Ozono (ppb)</td><td style="padding: 10px;">${avg(
+          djson["O3"]
+        )}</td></tr>
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🔵 Dióxido de Azufre (ppb)</td><td style="padding: 10px;">${avg(
+          djson["SO2"]
+        )}</td></tr>
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">⚫ PM 10 (µg/m³)</td><td style="padding: 10px;">${avg(
+          djson["PM10"]
+        )}</td></tr>
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">⚫ PM 2.5 (µg/m³)</td><td style="padding: 10px;">${avg(
+          djson["PM25"]
+        )}</td></tr>
+      </tbody>
+    </table>
+  </div>`;
+        contenDialog.append(resumenHTML);
+        set_canva(
+          contenDialog,
+          djson["CO"],
+          "line",
+          str_file,
+          "Monóxido de Carbono",
+          "ppm",
+          "rgb(120, 40, 31)"
+        );
+        set_canva(
+          contenDialog,
+          djson["NO2"],
+          "line",
+          str_file,
+          "Dióxido de Nitrógeno",
+          "ppb",
+          "rgb(74, 35, 90)"
+        );
+        set_canva(
+          contenDialog,
+          djson["O3"],
+          "line",
+          str_file,
+          "Ozono",
+          "ppb",
+          "rgb(14, 98, 81)"
+        );
+        set_canva(
+          contenDialog,
+          djson["SO2"],
+          "line",
+          str_file,
+          "Dióxido de Azufre",
+          "ppb",
+          "rgb(21, 67, 96)"
+        );
+        set_canva(
+          contenDialog,
+          djson["PM10"],
+          "line",
+          str_file,
+          "Partículas PM 10",
+          "µg/m³",
+          "rgb(125, 102, 8)"
+        );
+        set_canva(
+          contenDialog,
+          djson["PM25"],
+          "line",
+          str_file,
+          "Partículas PM 2.5",
+          "µg/m³",
+          "rgb(77, 86, 86)"
+        );
+      } else {
+        downloadFileCSV();
+      }
+    },
+  });
+}
+
+//-------------------------------------------------------------------------------
+function set_csv_atmos(djson, str_file) {
+  var hs = 0;
+  var dats = Object.values(djson);
+
+  for (var i = 0; i < dats[0].length; i++) {
+    m_str_cvs += setLabel(str_file, (hs += 3));
+    m_str_cvs += "," + round10(dats[0][i]);
+    m_str_cvs += "," + round10(dats[6][i]);
+    m_str_cvs += "," + round10(dats[4][i]);
+    m_str_cvs += "," + round10(dats[5][i]);
+    m_str_cvs += "," + round10(dats[1][i]);
+    m_str_cvs += "," + round10(dats[3][i]) + "\r\n";
+    //m_str_cvs += ',' + round10(dats[2][i]);
+  }
+}
+
+function set_csv_chem(djson, str_file) {
+  var hs = 0;
+  var dats = Object.values(djson);
+
+  for (var i = 0; i < dats[0].length; i++) {
+    m_str_cvs += setLabel(str_file, (hs += 3));
+    m_str_cvs += "," + round10(dats[0][i]);
+    m_str_cvs += "," + round10(dats[1][i]);
+    m_str_cvs += "," + round10(dats[3][i]);
+    m_str_cvs += "," + round10(dats[2][i]);
+    m_str_cvs += "," + round10(dats[4][i]);
+    m_str_cvs += "," + round10(dats[5][i]) + "\r\n";
+  }
+}
+
+function downloadFileCSV() {
+  var downloadLink = document.createElement("a");
+  // Añadir BOM para UTF-8
+  var bom = "\uFEFF";
+  var csvContent = bom + m_str_cvs;
+
+  var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  var url = URL.createObjectURL(blob);
+
+  downloadLink.href = url;
+  downloadLink.download = m_str_file_csv;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+}
+
+// Function to update the historical chart based on selected variables
+function updateHistoricalChart() {
+  if (!currentHistData) return;
+  
+  const tipoSeleccionado = $("#hist-tipo-select").val();
+  if (tipoSeleccionado === 'meteo') {
+    createMeteoHistoricalChart(currentHistData);
+  } else {
+    createChemHistoricalChart(currentHistData);
+  }
+  
+  // Update stats table
+  updateStatsTable(tipoSeleccionado);
+}
+
+// Function to update the stats table
+function updateStatsTable(tipo) {
+  if (!currentHistData) return;
+  
+  const tbody = document.getElementById('histStatsTable');
+  tbody.innerHTML = '';
+  
+  const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  
+  selectedVariables.forEach(key => {
+    if (currentHistData[key] && variables[key]) {
+      const values = currentHistData[key];
+      const stats = calculateStats(values);
+      const { label, unit, icon } = variables[key];
+      
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><span style="margin-right: 8px">${icon}</span>${label}</td>
+        <td>${stats.avg.toFixed(2)}</td>
+        <td>${stats.max.toFixed(2)}</td>
+        <td>${stats.min.toFixed(2)}</td>
+        <td>${unit}</td>
+      `;
+      tbody.appendChild(row);
+    }
+  });
+}
+
+// Event handler for tipo-select changes
+$("#hist-tipo-select").on('change', function() {
+  const tipo = $(this).val();
+  createVariableToggles(tipo);
+  if (currentHistData) {
+    tipo === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
+  }
+});
+
+//-------------------------------------------------------------------------------
+function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
+  var canva = document.createElement("canvas");
+  var conten = $("<div></div>").append(canva);
+
+  var labs = [];
+  var dats = [];
+  var hs = 0;
+
+  for (var dat in dataset) {
+    labs.push(setLabel(str_file, (hs += 3)));
+    dats.push(round10(dataset[dat]));
+  }
+
+  grafico(canva, tipo, labs, dats, title, unid, color);
+  contenDialog.append(conten);
+}
+
+//-------------------------------------------------------------------------------
+function grafico(canva, tipo, labels, dats, title, unid, color) {
+  const data = {
+    labels: labels,
+    datasets: [
+      {
+        label: title,
+        axis: "x",
+        data: dats,
+        fill: false,
+        borderColor: color,
+        backgroundColor: color,
+      },
+    ],
+  };
+
+  new Chart(canva, {
+    type: tipo,
+    data: data,
+    options: {
+      locale: "en-US",
+      plugins: {
+        title: {
+          display: false,
+          text: "",
+        },
+      },
+      indexAxis: "x",
+      scales: {
+        y: {
+          //					beginAtZero: true,
+          display: true,
+          title: {
+            display: true,
+            text: unid,
+          },
+        },
+      },
+    },
+  });
+}
+
+function round10(x) {
+  var str_num = Number.parseFloat(x).toFixed(1);
+
+  return Number.parseFloat(str_num);
+}
+
+function setLabel(str_file, hs) {
+  var pos = str_file.lastIndexOf("/");
+  var str_name = str_file.substring(pos + 1);
+
+  var pos_pt = str_name.lastIndexOf(".");
+  var fecha_img = str_name.substring(0, pos_pt); //Fecha de la imagen
+  var ls = fecha_img.split("_");
+
+  var p = 3;
+  var str =
+    ls[p].substring(0, 4) +
+    "/" +
+    ls[p].substring(4, 6) +
+    "/" +
+    ls[p].substring(6);
+  var f = new Date(str + " UTC");
+
+  f.setHours(f.getHours() + parseInt(ls[p + 1].substring(0, 2)));
+  f.setHours(f.getHours() + hs);
+  var fecha_loc =
+    pad(f.getDate(), 2) +
+    "/" +
+    pad(f.getMonth() + 1, 2) +
+    "/" +
+    f.getFullYear() +
+    " " +
+    pad(f.getHours(), 2) +
+    "hs";
+
+  return fecha_loc;
+}
+
+function pad(num, size) {
+  var s = "000000000" + num;
+  return s.substr(s.length - size);
+}
+
+var m_glosario = "gatmos.html";
+//-------------------------------------------------------------------------------
+$("#meteo").click(function () {
+  $("#cali").hide();
+  $("#app").show();
+  $("#botones1").hide();
+  $("#banner").hide();
+  document.body.classList.add('map-active');
+  m_glosario = "gatmos.html";
+  m_map.updateSize();
+  set_atmos();
+
+  // const h1 = document.getElementById("panel-header-text");
+  // Cambia el contenido del h1
+  // h1.textContent = "Pronóstico meteorológico para el Estado de Puebla";
+});
+
+$("#cali").click(function () {
+  $("#meteo").hide();
+  $("#app").show();
+  $("#botones1").hide();
+  $("#banner").hide();
+  document.body.classList.add('map-active');
+  m_glosario = "gchem.html";
+  m_map.updateSize();
+  set_chem();
+
+  // const h1 = document.getElementById("panel-header-text");
+  // Cambia el contenido del h1
+  // h1.textContent = "Calidad del aire para el Estado de Puebla";
+  const h3 = document.getElementById("select_dat");
+
+  h3.style.display = "none";
+
+  const h4 = document.getElementById("variable2");
+  h4.textContent = "Contaminantes:";
+});
+
+var m_cabecaras;
+function show_datos(datos) {
+  var format = new ol.format.GeoJSON();
+  var features = format.readFeatures(datos);
+
+  features.sort(function (a, b) {
+    return a.get("clave") > b.get("clave")
+      ? 1
+      : b.get("clave") > a.get("clave")
+      ? -1
+      : 0;
+  });
+
+  var texthtml = $("<div>");
+  //texthtml.append('<table width="100%">');
+
+  //texthtml.append('<tbody>');
+  texthtml.append("<div>");
+  texthtml.append(
+    '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Clave</div>'
+  );
+  texthtml.append(
+    '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Municipio</div>'
+  );
+  texthtml.append(
+    '<div style="display: inline-block; width: 20%;  vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Opciones</div>'
+  );
+  texthtml.append("</div>");
+
+  for (var i = 0; i < features.length; i++) {
+    var feature = features[i];
+
+    //texthtml.append('<tr>');
+    texthtml.append(
+      '<div <div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
+        feature.get("clave") +
+        "</div>"
+    );
+    texthtml.append(
+      '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
+        feature.get("nombre") +
+        "</div>"
+    );
+
+    var str_link =
+      '<a href="#" onclick="downladCSV(\'' +
+      feature.get("clave") +
+      "');\">" +
+      '<i class="glyphicon glyphicon-file"></i>' +
+      "</a>";
+    texthtml.append(
+      '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff; text-align: center;" >' +
+        str_link +
+        "</div>"
+    );
+    //texthtml.append('</tr>');
+  }
+
+  //texthtml.append('</tbody>');
+  //texthtml.append('</table>');
+  texthtml.append("</div>");
+
+  BootstrapDialog.show({
+    title: "Datos",
+    closable: true,
+    message: texthtml,
+  });
+}
+
+function downladCSV(clave) {
+  var features = m_vectorSource.getFeatures();
+
+  for (var i = 0; i < features.length; i++) {
+    var feature = features[i];
+
+    if (feature.get("clave") == clave && feature.get("local") == "cabecera") {
+      m_feature = feature;
+      if ($("#select_dat").val() == "quim") {
+        show_chem(false);
+      } else {
+        show_meteo(false);
+      }
+    }
+  }
+}
+let filter_color = null;
+const canvas = document.getElementById("dynamic-gradient-canvas");
+canvas.addEventListener("click", function (event) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  // Coordenadas del clic relativas al canvas, ajustadas por el escalado
+  const x = (event.clientX - rect.left) * scaleX;
+  const y = (event.clientY - rect.top) * scaleY;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const pixel = ctx.getImageData(x, y, 1, 1).data;
+
+  if (!pixel || pixel.length < 3) {
+    console.error("❌ No se pudo obtener el color");
+    return;
+  }
+
+  filter_color = [pixel[0], pixel[1], pixel[2]];
+  const value = getClosestValueFromRGB(pixel[0], pixel[1], pixel[2]);
+  const range = `${value - 2} - ${value + 2}`;
+  showInfo(range);
+  const filteredLayer = applyFilterToImage(m_lienzo.img);
+  put_FilteredImage(filteredLayer);
+});
+
+function colorDist(c1, c2) {
+  if (!c1 || !c2 || c1.length < 3 || c2.length < 3) return NaN;
+  const dist = Math.sqrt(
+    Math.pow(c1[0] - c2[0], 2) +
+      Math.pow(c1[1] - c2[1], 2) +
+      Math.pow(c1[2] - c2[2], 2)
+  );
+  return dist / (Math.sqrt(3) * 255);
+}
+
+function applyFilterToImage(img) {
+  if (!img || !img.complete || !filter_color) return;
+
+  const canvas = document.getElementById("filter-canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  const maxDist = 180 * Math.sqrt(3);
+  const tolerancePercent = 0.08;
+  const tolerance = maxDist * tolerancePercent;
+
+  let min = 9999,
+    max = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i],
+      g = data[i + 1],
+      b = data[i + 2];
+    const d = deltaE([r, g, b], filter_color);
+    min = Math.min(min, d);
+    max = Math.max(max, d);
+
+    if (d <= tolerance) {
+    } else {
+      data[i + 3] = 0;
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  const extent = m_dlayer.imageExtent;
+  const filteredLayer = new ol.layer.Image({
+    opacity: 0.7,
+    source: new ol.source.ImageStatic({
+      url: canvas.toDataURL(),
+      imageExtent: extent,
+    }),
+  });
+  return filteredLayer;
+}
+
+function put_FilteredImage(filteredLayer) {
+  if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+  if (m_dlayer.layer) m_dlayer.layer.setVisible(false);
+
+  m_map.addLayer(filteredLayer);
+  window.filtered_layer = filteredLayer;
+}
+
+function rgbToLab(r, g, b) {
+  function f(t) {
+    return t > 0.008856 ? Math.pow(t, 1 / 3) : 7.787 * t + 16 / 116;
+  }
+
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  // sRGB to XYZ
+  r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+  g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+  b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+  let x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  let y = (r * 0.2126 + g * 0.7152 + b * 0.0722) / 1.0;
+  let z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+}
+function deltaE(c1, c2) {
+  const lab1 = rgbToLab(...c1);
+  const lab2 = rgbToLab(...c2);
+  return Math.sqrt(
+    Math.pow(lab1[0] - lab2[0], 2) +
+      Math.pow(lab1[1] - lab2[1], 2) +
+      Math.pow(lab1[2] - lab2[2], 2)
+  );
+}
+
+function getClosestValueFromRGB(r, g, b) {
+  if (!window.gradientLookup) return null;
+  console.log(window.gradientLookup);
+  // Convertimos hex a RGB para comparar
+  function hexToRgb(hex) {
+    const bigint = parseInt(hex.slice(1), 16);
+    return {
+      r: (bigint >> 16) & 255,
+      g: (bigint >> 8) & 255,
+      b: bigint & 255,
+    };
+  }
+
+  let minDist = Infinity;
+  let closest = null;
+
+  for (const { hex, value } of window.gradientLookup) {
+    const { r: hr, g: hg, b: hb } = hexToRgb(hex);
+    const dist = Math.sqrt((r - hr) ** 2 + (g - hg) ** 2 + (b - hb) ** 2);
+
+    if (dist < minDist) {
+      minDist = dist;
+      closest = value;
+    }
+  }
+
+  return closest;
+}
+
+function showInfo(value) {
+  hideInfo();
+  const info = document.getElementById("filter-info");
+  const units = document.getElementById("gradient-units").textContent;
+  const existingRange = info.querySelector(".dynamic-range");
+  const rangeElement = document.createElement("div");
+  rangeElement.className = "dynamic-range";
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${
+    units || ""
+  }</strong>`;
+  info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
+}
+
+// Función para crear vista histórica
+async function createHistoricalView(jsonPath, container, tipo) {
+  try {
+    const response = await fetch(jsonPath);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const firstKey = Object.keys(data).find(k => Array.isArray(data[k]));
+    const len = firstKey ? data[firstKey].length : 0;
+    currentHistLabels = len ? buildTimeLabelsFromPath(jsonPath, len) : null;
+    // Crear contenedor para gráficas y tabla
+    const wrapper = document.createElement('div');
+    wrapper.className = 'historical-wrapper';
+    wrapper.innerHTML = `
+      <div class="row">
+        <div class="col-md-12 mb-4">
+          <div class="card">
+            <div class="card-header">
+              <h4 class="card-title">${tipo === 'meteo' ? 'Variables Meteorológicas' : 'Calidad del Aire'}</h4>
+            </div>
+            <div class="card-body">
+              <div id="chartsHost" class="charts-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h4 class="card-title mb-0">Resumen Estadístico</h4>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Variable</th>
+                      <th>Promedio</th>
+                      <th>Máximo</th>
+                      <th>Mínimo</th>
+                      <th>Unidad</th>
+                    </tr>
+                  </thead>
+                  <tbody id="histStatsTable"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.opacity = '1';
-        notification.style.transform = 'translateX(0)';
-    }, 100);
-    
-    setTimeout(() => {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 3000);
+
+    container.append(wrapper);
+
+    if (tipo === 'meteo') {
+      createMeteoHistoricalChart(data);
+      createMeteoHistoricalTable(data);
+    } else {
+      createChemHistoricalChart(data);
+      createChemHistoricalTable(data);
+    }
+
+  } catch (error) {
+    console.error('Error:', error);
+    container.html(`
+      <div class="alert alert-danger">
+        <h4>Error cargando datos</h4>
+        <p>${error.message}</p>
+      </div>
+    `);
+  }
 }
 
-// Event Listeners Setup
-document.addEventListener('DOMContentLoaded', () => {
-    setupMapControls();
-    setupLegendClickFilter();
-
-    const controlsPanel = document.getElementById('weather-controls');
-
-    document.querySelectorAll('.layer-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            const layerType = this.getAttribute('data-layer');
-            currentTimeStep = 0;
-            colorFilter = null;
-            document.getElementById('filter-indicator').style.display = 'none';
-            addEnhancedWeatherLayer(layerType);
-        });
-    });
-
-    function addClickAndTouch(id, handler) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener("click", handler);
-        el.addEventListener("touchstart", handler); // soporte móvil
-        }
-
-    // ejemplo para historial
-    addClickAndTouch("btn_historial", function() {
-    document.getElementById("map").style.display = "none";
-    document.getElementById("panel-historial").style.display = "block";
-    // forzar resize de gráficas al mostrarlas
-    window.dispatchEvent(new Event("resize"));
-    });    
-
-    document.getElementById('playBtn').addEventListener('click', () => {
-        isPlaying ? stopAnimation() : startAnimation();
-    });
-    
-    document.getElementById('speedSlider').addEventListener('input', () => {
-        if (isPlaying) {
-            stopAnimation();
-            startAnimation();
-        }
-    });
-    
-    document.getElementById('toggle-controls-btn').addEventListener('click', () => {
-        controlsPanel.classList.add('is-open');
-    });
-    
-    document.getElementById('close-controls-btn').addEventListener('click', () => {
-        controlsPanel.classList.remove('is-open');
-    });
-
-    // Modal event listeners
-    document.getElementById('modalClose').addEventListener('click', () => {
-        document.getElementById('municipalityModal').style.display = 'none';
-    });
-
-    document.getElementById('glossaryClose').addEventListener('click', () => {
-        document.getElementById('glossaryModal').style.display = 'none';
-    });
-
-    document.getElementById('downloadCsvBtn').addEventListener('click', () => {
-        if (window.currentMunicipality) {
-            downloadMunicipalityCSV(window.currentMunicipality);
-        } else {
-            showNotification('No hay datos disponibles para descargar', 'error');
-        }
-    });
-
-    // Footer button event listeners
-    document.getElementById('btn_glosario').addEventListener('click', () => {
-        document.getElementById('glossaryModal').style.display = 'flex';
-    });
-
-    document.getElementById('btn_datos').addEventListener('click', () => {
-        if (activeLayer) {
-            downloadLayerData(activeLayer);
-        } else {
-            showNotification('Selecciona una capa primero para descargar los datos.', 'info');
-        }
-    });
-
-    document.getElementById('btn_recarga').addEventListener('click', () => {
-        if (activeLayer) {
-            currentTimeStep = 0;
-            colorFilter = null;
-            document.getElementById('filter-indicator').style.display = 'none';
-            addEnhancedWeatherLayer(activeLayer);
-        }
-    });
-
-    //funcion para separar los botones
-    function showMeteorologiaButtons() {
-    document.getElementById('layer-buttons-meteo').style.display = 'grid'; // se muestra
-    document.getElementById('layer-buttons-aire').style.display = 'none';  // se oculta
-    }
-
-    function showAireButtons() {
-    document.getElementById('layer-buttons-meteo').style.display = 'none';
-    document.getElementById('layer-buttons-aire').style.display = 'grid';
-    }
-
-    //funcion para mostrar,dimensionar el mapa y ocultar el historial 
-    function showMapa() {
-        document.getElementById('main-content').style.display = 'block';
-        const dashboard = document.getElementById('historial-dashboard');
-        dashboard.style.display = 'none';
-        dashboard.classList.remove('active')
-    
-       //cerrar el menu hamburguesa
-        closeHamburgerMenu()    
-
-        // Limpiar estado del mapa
-        if (map) {
-            if (activeLayer && map.getLayer(activeLayer)) {
-                map.removeLayer(activeLayer);
-                if (map.getLayer(activeLayer + '-points')) {
-                    map.removeLayer(activeLayer + '-points');
-                }
-            }
-            activeLayer = null;
-            map.resize();
-        }
-    }
-
-    //funcion para mostrar el historial y ocultar el mapa
-    function showHistorial() {
-        document.getElementById("app").style.display = "none";
-        document.getElementById("historial-dashboard").style.display = "block";
-        // Cargar municipios
-        loadHistoricalCabeceras();
-        // Inicializar toggles y primera gráfica (por defecto meteorología)
-        createVariableToggles("meteo");
-        updateHistoricalChart();
-        document.getElementById("nav-links").classList.remove("active");
-    }
-
-    //funcion para cerrar el menu hamburguesa (especial para movil)
-    function closeHamburgerMenu() {
-    const navLinks = document.getElementById('nav-links');
-    navLinks.classList.remove('active');
-    }
-
-
-    // Back button functionality
-    document.getElementById('btn_back').addEventListener('click', () => {
-        document.body.classList.remove('map-active');
-        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-
-        //limpiar mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-
-        //limpiar combobox
-        clearHistCombobox();
-        clearMapCombobox();
-    
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-
-        //parar animacion
-        stopAnimation();
-
-        stopAnimation();
-        currentTimeStep = 0;
-        colorFilter = null;
-        document.getElementById('legend').style.display = 'none';
-        document.getElementById('filter-indicator').style.display = 'none';
-        controlsPanel.classList.remove('is-open');
-        // Hide historial dashboard properly
-        document.getElementById('historial-dashboard').classList.remove('active');
-        document.getElementById('main-content').style.display = 'block';
-    });
-
-    // Sidebar button functionality
-    document.getElementById('btn_atmos').addEventListener('click', function() {
-        if (!mapInitialized) activateMap('meteorologia');
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('legend').style.display = 'none';
-        controlsPanel.classList.remove('is-open');
-        this.classList.add('active');
-
-        //limpiar el mapa 
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-
-        //limpiar combobox historial
-        clearHistCombobox();
-        //muestra mapa
-        showMapa();
-        //muestra botones divididos      
-        showMeteorologiaButtons();
-
-        // Set map type immediately
-        tipoMapa = 'meteorologia';
-
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-
-        //parar animacion
-        stopAnimation();
-        
-        /*// Wait for map to be ready
-        setTimeout(() => {
-            const tempBtn = document.querySelector('[data-layer="temperature"]');
-            if (tempBtn) tempBtn.click();
-        }, 300);*/
-    });
-
-    document.getElementById('btn_aire').addEventListener('click', function() {
-        if (!mapInitialized) activateMap('calidad');
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('legend').style.display = 'none';
-        controlsPanel.classList.remove('is-open');
-        this.classList.add('active');
-
-        //limpiar el mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-
-        //limpiar combobox historial
-        clearHistCombobox();
-
-        //muestra mapa
-        showMapa();
-        //muestra botones divididos      
-        showAireButtons();
-
-        // Set map type immediately
-        tipoMapa = 'calidad';
-
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-
-        //parar animacion
-        stopAnimation();
-        
-        /*// Wait for map to be ready
-        setTimeout(() => {
-            const pm25Btn = document.querySelector('[data-layer="pm25"]');
-            if (pm25Btn) pm25Btn.click();
-        }, 300);*/
-    });
-
-    document.getElementById('btn_hist').addEventListener('click', function() {
-        document.body.classList.add('map-active');
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById('legend').style.display = 'none';
-        this.classList.add('active');
-
-        //limpiar el mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-        document.getElementById('main-content').style.display = 'none';
-
-        //limpiar combobox del mapa
-        clearMapCombobox();
-
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-
-        //parar animacion
-        stopAnimation();
-
-        const dashboard = document.getElementById('historial-dashboard');
-        dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
-        dashboard.classList.add('active');
-        
-        // Populate municipality dropdown if it's empty
-        const cabeceraSelect = document.getElementById('hist-cabecera-select');
-        if (cabeceraSelect.options.length <= 1 && municipalitiesData) { // Check if already populated
-            cabeceraSelect.innerHTML = '<option value="">Seleccione un municipio...</option>';
-            municipalitiesData.features
-                .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre))
-                .forEach(feature => {
-                    const option = document.createElement('option');
-                    option.value = feature.properties.clave;
-                    option.textContent = feature.properties.nombre;
-                    cabeceraSelect.appendChild(option);
-                });
-        }
-
-         // ADD these new listeners for the dashboard controls
-    document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
-        const muncipalityId = this.value;
-        const type = document.getElementById('hist-tipo-select').value;
-        if (!muncipalityId) return;
-
-        // Show a loading indicator
-        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
-
-        currentHistData = await fetchHistoricalData(muncipalityId, type);
-        updateHistoricalChart();
-    });
-
-    document.getElementById('hist-tipo-select').addEventListener('change', function() {
-        const type = this.value;
-        createVariableToggles(type);
-        // If a municipality is already selected, refetch and update data for the new type
-        const cabeceraSelect = document.getElementById('hist-cabecera-select');
-        if (cabeceraSelect.value) {
-            cabeceraSelect.dispatchEvent(new Event('change'));
-        }
-    });
-    // END: New event listener block
-        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
-        if (tipoSeleccionado === 'meteo') {
-            createVariableToggles('meteo');
-        } else {
-            createVariableToggles('aire');
-        }
-        updateStatsTable(tipoSeleccionado);
-        // Initial setup
-        //createVariableToggles('meteo');
-        // Clear previous charts and table
-        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
-        document.getElementById('histStatsTable').innerHTML = '';
-    });
-
-    // ADDED: Event handlers for historial controls
-    document.getElementById('hist-tipo-select').addEventListener('change', function() {
-        const tipo = this.value;
-        createVariableToggles(tipo);
-    });
-
-    // Mobile menu buttons
-    document.getElementById('btn_atmos_mobile')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        activateMap('meteorologia');
-        showMapa("meteorologia");
-        toggleMenu();
-        //limpia el mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-        //cambio de botones del weatehr panel
-        showMeteorologiaButtons();
-        //quitar filtro 
-        document.getElementById('legend').style.display = 'none';
-        //limpiar combobox del historial 
-        clearHistCombobox ();
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-        //parar animacion
-        stopAnimation();
-    });
-
-    document.getElementById('btn_aire_mobile')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        activateMap('calidad');
-        showMapa("calidad");
-        toggleMenu();
-        //limpia el mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-        //cambio de botones del weather panel 
-        showAireButtons();
-        document.getElementById('legend').style.display = 'none';
-        //limpiar combobox del historial 
-        clearHistCombobox ();
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-        //parar animacion
-        stopAnimation();
-    });
-
-    document.getElementById('btn_hist_mobile')?.addEventListener('click', async (e) => {
-        e.preventDefault();
-        //carga de datos al historial sin necesidad de cargar el mapa
-        if (!window.municipalitiesData) {
-            await loadJSONData();            
-        }
-        //activar el mapa para que se oculte y muestre el historial
-        activateMap('calidad');
-        toggleMenu()
-        //limpiar el mapa
-        if (activeLayer) safeRemoveLayer(activeLayer);
-        activeLayer = null;
-        document.getElementById('legend').style.display = 'none';
-        //limpiar combobox del historial 
-        clearMapCombobox();
-        //cerrar el menu hamburguesa
-        closeHamburgerMenu()
-        //activar combobox del historial 
-        loadHistoricalCabeceras();
-        loadMapCabeceras();
-        //mostrar historial
-        showHistorial();
-        //parar animacion
-        stopAnimation();
-
-        // Hide map content and show the dashboard
-        document.getElementById('main-content').style.display = 'none';
-        const dashboard = document.getElementById('historial-dashboard');
-        dashboard.style.display = 'block'; // Use 'block' or 'flex' based on your layout needs
-        dashboard.classList.add('active');
-        // Populate municipality dropdown if it's empty
-        const cabeceraSelect = document.getElementById('hist-cabecera-select');
-        if (cabeceraSelect.options.length <= 1 && municipalitiesData) { // Check if already populated
-            cabeceraSelect.innerHTML = '<option value="">Seleccione un municipio...</option>';
-            municipalitiesData.features
-                .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre))
-                .forEach(feature => {
-                    const option = document.createElement('option');
-                    option.value = feature.properties.clave;
-                    option.textContent = feature.properties.nombre;
-                    cabeceraSelect.appendChild(option);
-                });
-        }
-         // ADD these new listeners for the dashboard controls
-        document.getElementById('hist-cabecera-select').addEventListener('change', async function() {
-            const muncipalityId = this.value;
-            const type = document.getElementById('hist-tipo-select').value;
-            if (!muncipalityId) return;
-
-            // Show a loading indicator
-            document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Cargando datos...</p>';
-
-            currentHistData = await fetchHistoricalData(muncipalityId, type);
-            updateHistoricalChart();
-        });
-
-    document.getElementById('hist-tipo-select').addEventListener('change', function() {
-        const type = this.value;
-        createVariableToggles(type);
-        // If a municipality is already selected, refetch and update data for the new type
-        const cabeceraSelect = document.getElementById('hist-cabecera-select');
-        if (cabeceraSelect.value) {
-            cabeceraSelect.dispatchEvent(new Event('change'));
-        }
-    });
-    // END: New event listener block
-        const tipoSeleccionado = document.getElementById('hist-tipo-select').value;
-        if (tipoSeleccionado === 'meteo') {
-            createVariableToggles('meteo');
-        } else {
-            createVariableToggles('aire');
-        }
-        // Initial setup
-        //createVariableToggles('meteo');
-        // Clear previous charts and table
-        document.getElementById('chartsHost').innerHTML = '<p style="text-align:center; color:#777;">Seleccione un municipio para ver los datos.</p>';
-        document.getElementById('histStatsTable').innerHTML = '';
-    });
-
-    
-
-    // Update parameter selection functionality
-    document.getElementById('select_dat').addEventListener('change', function() {
-        const parameter = this.value;
-        const subParamSelect = document.getElementById('select_var');
-        
-        subParamSelect.innerHTML = '';
-        
-        if (parameter === 'meteorologia') {
-            const meteorologicalParams = [
-                { value: 'temperature', text: 'Temperatura' },
-                { value: 'humidity', text: 'Humedad' },
-                { value: 'precipitation', text: 'Precipitación' },
-                { value: 'wind', text: 'Viento' },
-                { value: 'pressure', text: 'Presión' },
-                { value: 'radiation', text: 'Radiación' }
-            ];
-            
-            meteorologicalParams.forEach(param => {
-                const option = document.createElement('option');
-                option.value = param.value;
-                option.textContent = param.text;
-                subParamSelect.appendChild(option);
-            });
-        } else if (parameter === 'calidad') {
-            const airQualityParams = [
-                { value: 'co', text: 'Monóxido de Carbono (CO)' },
-                { value: 'no2', text: 'Dióxido de Nitrógeno (NO₂)' },
-                { value: 'o3', text: 'Ozono (O₃)' },
-                { value: 'pm25', text: 'Partículas PM2.5' }
-            ];
-            
-            airQualityParams.forEach(param => {
-                const option = document.createElement('option');
-                option.value = param.value;
-                option.textContent = param.text;
-                subParamSelect.appendChild(option);
-            });
-        }
-    });
-
-    // Update sub-parameter selection
-    document.getElementById('select_var').addEventListener('change', function() {
-        const selectedParam = this.value;
-        if (selectedParam && weatherLayers[selectedParam]) {
-            const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
-            if (layerBtn) {
-                layerBtn.click();
-            }
-        }
-    });
-
-    // Initialize parameter dropdowns
-    document.getElementById('select_dat').dispatchEvent(new Event('change'));
-
-    // Close modals when clicking outside
-    document.getElementById('municipalityModal').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) {
-            e.currentTarget.style.display = 'none';
-        }
-    });
-
-    document.getElementById('glossaryModal').addEventListener('click', (e) => {
-        if (e.target === e.currentTarget) {
-            e.currentTarget.style.display = 'none';
-        }
-    });
-});
-
-// ——— Ignorar hotkeys cuando el usuario está escribiendo ———
-function shouldIgnoreHotkeys(e) {
-  if (e.defaultPrevented) return true;
-
-  const el = e.target;
-  if (!el) return false;
-
-  // 1) Campos escribibles nativos
-  const tag = el.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
-
-  // 2) Nuestro combobox del historial
-  if (el.closest('#hist-combobox')) return true; // wrapper del combo
-  if (el.id === 'hist-cabecera-search') return true; // si usaste input de búsqueda
-
-  // 3) Si el dropdown del combobox está abierto, también ignorar
-  const openList = document.getElementById('hist-combobox-list');
-  if (openList && openList.style.display !== 'none') return true;
-
-  return false;
-}
-
-// Enhanced keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-    if (shouldIgnoreHotkeys(e)) return;
-    //if (!document.body.classList.contains('map-active')) return;
-    
-    switch(e.key) {
-        case 'Escape':
-            const controlsPanel = document.getElementById('weather-controls');
-            if (controlsPanel.classList.contains('is-open')) {
-                controlsPanel.classList.remove('is-open');
-            } else if (document.getElementById('municipalityModal').style.display === 'flex') {
-                document.getElementById('municipalityModal').style.display = 'none';
-            } else if (document.getElementById('glossaryModal').style.display === 'flex') {
-                document.getElementById('glossaryModal').style.display = 'none';
-            } else{
-                const navLinks = document.getElementById('nav-links'); 
-                if (navLinks && navLinks.classList.contains('active')) {
-                    navLinks.classList.remove('active');
-                } else {
-                    document.getElementById('btn_back').click();
-                }
-            }
-            break;
-        case ' ':
-            e.preventDefault();
-            document.getElementById('playBtn').click();
-            break;
-        case 'r':
-            document.getElementById('reset-position-btn').click();
-            break;
-        case 'n':
-            document.getElementById('reset-north-btn').click();
-            break;
-        case '+':
-        case '=':
-            document.getElementById('zoom-in-btn').click();
-            break;
-        case '-':
-            document.getElementById('zoom-out-btn').click();
-            break;
-        case 'f':
-            colorFilter = null;
-            document.getElementById('filter-indicator').style.display = 'none';
-            applyColorFilter();
-            break;
-        case 'g':
-            document.getElementById('btn_glosario').click();
-            break;
-        case 'd':
-            document.getElementById('btn_datos').click();
-            break;
-        case 'a':
-            //ir a la atmosfera
-            document.getElementById('btn_atmos').click();
-            break;
-        case 'c':
-            //ir a calidad dle aire
-            document.getElementById('btn_aire').click();
-            break;
-        case 'h':
-            //regresar al inicio
-            document.getElementById('btn_hist').click();
-            break;
-    }
-});
-
-//no lo quito, es lo que abre el panel cuando deslizas de izquierda a derecha pero es imposible navegar en el mapa porque abre el panel de control siempre
-/*
-// Enhanced touch gestures for mobile
-let touchStartX = 0;
-let touchStartY = 0;
-
-document.addEventListener('touchstart', (e) => {
-    if (!document.body.classList.contains('map-active')) return;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-});
-
-document.addEventListener('touchmove', (e) => {
-    if (!document.body.classList.contains('map-active')) return;
-    e.preventDefault();
-}, { passive: false });
-
-document.addEventListener('touchend', (e) => {
-    if (!document.body.classList.contains('map-active')) return;
-    
-    const touchEndX = e.changedTouches[0].clientX;
-    const touchEndY = e.changedTouches[0].clientY;
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-    
-    const controlsPanel = document.getElementById('weather-controls');
-    
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
-        if (deltaX > 0 && controlsPanel.classList.contains('is-open')) {
-            controlsPanel.classList.remove('is-open');
-        } else if (deltaX < 0 && !controlsPanel.classList.contains('is-open')) {
-            controlsPanel.classList.add('is-open');
-        }
-    }
-});*/
-
-// Performance optimization: Debounce resize events
-let resizeTimeout;
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (map && mapInitialized) {
-            map.resize();
-        }
-    }, 250);
-});
-
-// Download layer data functionality
-function downloadLayerData(layerType) {
-    const config = weatherLayers[layerType];
-    const data = generateSmoothWeatherData(layerType, currentTimeStep);
-    
-    const csvRows = [
-        ['Latitud', 'Longitud', config.name + ' (' + config.unit + ')']
-    ];
-    
-    data.features.forEach(feature => {
-        const coords = feature.geometry.coordinates;
-        const value = feature.properties.value;
-        csvRows.push([coords[1].toFixed(4), coords[0].toFixed(4), value.toFixed(2)]);
-    });
-    
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${layerType}_puebla.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// Error handling for missing resources
-window.addEventListener('error', (e) => {
-    console.error('Error loading resource:', e.filename, e.message);
-    if (e.filename && (e.filename.includes('images/') || e.filename.includes('.svg'))) {
-        showNotification('Algunas imágenes no se pudieron cargar', 'error');
-    }
-});
-
-// Add notification for filter usage
-let filterNotificationShown = false;
-document.getElementById('legend-gradient').addEventListener('mouseenter', () => {
-    if (!filterNotificationShown) {
-        showNotification('Haz clic y arrastra para filtrar por rangos de color. Presiona F para limpiar filtros.', 'info');
-        filterNotificationShown = true;
-    }
-});
-
-// ===================================================================
-// START: New History Dashboard Functions
-// ===================================================================
-
-// --- 1. Data Definitions & State ---
-// These objects define the properties for each variable, making the code cleaner.
+// Variable definitions
 const meteorologicalVariables = {
-    t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: '🌡️' },
-    rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
-    psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
-    wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
-    pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
-    sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
+  t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: '🌡️' },
+  rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
+  psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
+  wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
+  pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
+  sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
 };
 
 const airQualityVariables = {
-    CO: { label: 'Monóxido de Carbono', color: '#8B4513', unit: 'ppm', icon: '🟤' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#6A5ACD', unit: 'ppb', icon: '🟣' },
-    O3: { label: 'Ozono', color: '#32CD32', unit: 'ppb', icon: '🟢' },
-    SO2: { label: 'Dióxido de Azufre', color: '#4169E1', unit: 'ppb', icon: '🔵' },
-    PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
-    PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
+  CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
+  NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
+  SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
+  PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
+  PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
 };
 
-let currentHistData = null; // Holds the fetched data for the selected town
-let selectedVariables = new Set(); // Tracks which variables are toggled on/off
-let currentHistCharts = []; // Holds the Chart.js instances to manage them
+let currentHistChart = null;
+let currentHistData = null;
+let selectedVariables = new Set();
 
-// --- 2. Mock Data Function - DISABLED ---
-// This function simulated fetching historical data - will use real API
-function fetchHistoricalData(municipalityId, type) {
-    console.log(`Real data fetching will be implemented for ${municipalityId}, type: ${type}`);
-    // Return empty data structure - real implementation will fetch from actual API
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const emptyData = {
-                labels: [],
-                // Empty data structure that matches expected format
-            };
-            
-            if (type === 'meteo') {
-                emptyData.t2m = [];
-                emptyData.rh = [];
-                emptyData.psl = [];
-                emptyData.wnd = [];
-                emptyData.pre = [];
-                emptyData.sw = [];
-            } else { // chem
-                emptyData.CO = [];
-                emptyData.NO2 = [];
-                emptyData.O3 = [];
-                emptyData.SO2 = [];
-                emptyData.PM10 = [];
-                emptyData.PM25 = [];
-            }
-            resolve(emptyData);
-        }, 250);
-    });
+let currentHistCharts = []; // múltiples instancias Chart.js
+
+function destroyHistCharts(){
+  if (currentHistCharts && currentHistCharts.length){
+    currentHistCharts.forEach(ch => { try { ch.destroy(); } catch(e){} });
+  }
+  currentHistCharts = [];
+}
+
+// Agrupa datasets para que el rango por gráfico sea ≤ threshold
+function groupDatasetsByRange(datasets, threshold = 30){
+  const groups = [];
+  const fits = (grp, ds) => {
+    const all = grp.concat([ds]).flatMap(d => d.data).filter(v => Number.isFinite(v));
+    const min = Math.min(...all), max = Math.max(...all); // <-- FIX: ...all
+    return (max - min) <= threshold;
+  };
+  datasets.forEach(ds => {
+    let placed = false;
+    for (const g of groups){
+      if (fits(g, ds)){ g.push(ds); placed = true; break; }
+    }
+    if (!placed) groups.push([ds]);
+  });
+  return groups;
+}
+
+function renderGroupedCharts(groups, labels, titlePrefix){
+  const host = document.getElementById('chartsHost');
+  if (!host) return;
+  host.innerHTML = ''; // limpiar
+  destroyHistCharts();
+
+  groups.forEach((grp, idx) => {
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    const cv = document.createElement('canvas');
+    card.appendChild(cv);
+    host.appendChild(card);
+
+    const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
+const gmin = Math.min(...allY), gmax = Math.max(...allY);
+const range = Math.max(1e-9, gmax - gmin);
+const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
+
+// paso “bonito” (1–2–5 * 10^n) para ~5–6 ticks
+const niceStep = (() => {
+  const target = range / 5;
+  const pow10 = Math.pow(10, Math.floor(Math.log10(target)));
+  const cand = [1, 2, 5].map(m => m * pow10);
+  return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
+})();
+
+const chart = new Chart(cv.getContext('2d'), {
+  type: 'line',
+  data: { labels, datasets: grp },
+  options: {
+    responsive: true,
+    animation: { duration: 650, easing: 'easeInOutQuart' },
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { padding: 10, usePointStyle: true, font: { size: 12, family: "'Poppins', sans-serif" } }
+      },
+      title: {
+        display: true,
+        text: titlePrefix,
+        font: { size: 15, weight: 'bold', family: "'Poppins', sans-serif" }
+      },
+      tooltip: {
+        mode: 'index', intersect: false,
+        backgroundColor: 'rgba(255,255,255,0.96)',
+        titleColor: '#222', bodyColor: '#333',
+        borderColor: '#e8e8e8', borderWidth: 1, padding: 10, boxPadding: 6,
+        callbacks: { label: c => ` ${c.dataset.label}: ${(+c.parsed.y).toFixed(2)}` }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: false,
+        suggestedMin: gmin - pad,
+        suggestedMax: gmax + pad,
+        ticks: {
+          stepSize: niceStep,
+          maxTicksLimit: 6,
+          padding: 6,
+          callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : v)
+        },
+        grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+      },
+      x: {
+        ticks: { autoSkip: true, maxRotation: 0, minRotation: 0, autoSkipPadding: 12 },
+        grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+      }
+    },
+    elements: { point: { radius: 2, hoverRadius: 5 } },
+    interaction: { intersect:false, mode:'index' }
+  }
+});
+
+    currentHistCharts.push(chart);
+  });
 }
 
 
-// --- 3. Charting Logic ---
-// **The key function**: Groups variables onto different charts based on their value range.
-function groupDatasetsByRange(datasets, threshold = 30) {
-    const groups = [];
-    datasets.forEach(ds => {
-        let placed = false;
-        for (const group of groups) {
-            const allValues = group.concat([ds]).flatMap(d => d.data);
-            const min = Math.min(...allValues);
-            const max = Math.max(...allValues);
-            if ((max - min) <= threshold) {
-                group.push(ds);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            groups.push([ds]);
-        }
-    });
-    return groups;
-}
-function slug(s) {
-    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_').toLowerCase();
-}
-
-// Renders the charts based on the groups generated above.
-function renderGroupedCharts(groups, labels, titlePrefix) {
-    const host = document.getElementById('chartsHost');
-    host.innerHTML = '';
-    currentHistCharts.forEach(chart => chart.destroy());
-    currentHistCharts = [];
-
-    groups.forEach((grp, idx) => {
-        const card = document.createElement('div');
-        card.className = 'chart-card';
-        const cv = document.createElement('canvas');
-        card.appendChild(cv);
-        host.appendChild(card);
-
-        const units=new Set();
-        grp.forEach(ds => {
-            if (ds.unit){
-                units.add(ds.unit);
-            }
-        });
-
-        let yTitle ="Valor";
-        if (units.size===1){
-            yTitle=[...units][0];
-        }else if (units.size >1){
-            yTitle="unidades diversas";
-        }
-
-        const chart = new Chart(cv.getContext('2d'), {
-            type: 'line',
-            data: { labels, datasets: grp },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    title: { display: true, text: titlePrefix }
-                },
-                scales: {
-                    y: { beginAtZero: false,
-                        title: {
-                            display:true,
-                            text:yTitle,
-                            color:'#666'
-                        } 
-                    },
-                    x:{ticks: {autoSkip:true},
-                    title:{ 
-                        display: true,
-                        text:'Hora del día',
-                        color:'#666'
-                    }}
-                }
-            }
-        });
-        currentHistCharts.push(chart);
-
-        const btn = document.createElement('button');
-        btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Grafica';
-        btn.className = "download-btn";
-        btn.onclick = () => {
-            const a = document.createElement('a');
-            a.href = chart.toBase64Image();
-
-            // Nombre de archivo robusto (usa título + idx + labels de datasets)
-            const dsNames = chart.config.data.datasets.map(d => d.label).join('_');
-            a.download = `${slug(dsNames)}.png`;
-
-            a.click();
-        };
-        card.appendChild(btn);
-    });
-}
-
-
-// --- 4. Statistical Logic ---
-function calculateStats(values) {
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    return { avg, max, min };
-}
-
-function updateStatsTable(type) {
-    const tbody = document.getElementById('histStatsTable');
-    tbody.innerHTML = '';
-    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
-
-    selectedVariables.forEach(key => {
-        if (currentHistData[key] && variables[key]) {
-            const stats = calculateStats(currentHistData[key]);
-            const config = variables[key];
-            const row = tbody.insertRow();
-            row.innerHTML = `
-                <td>${config.icon} ${config.label}</td>
-                <td>${stats.avg.toFixed(2)}</td>
-                <td>${stats.max.toFixed(2)}</td>
-                <td>${stats.min.toFixed(2)}</td>
-                <td>${config.unit}</td>
-            `;
-        }
-    });
-}
-
-// --- 5. UI Functions ---
+// Function to create variable toggles
 function createVariableToggles(type) {
-    const container = document.getElementById('variable-toggles');
-    container.innerHTML = '';
-    selectedVariables.clear();
-    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
-
-    Object.entries(variables).forEach(([key, config]) => {
-        const toggle = document.createElement('div');
-        toggle.className = 'variable-toggle active'; // Active by default
-        toggle.dataset.variable = key;
-        toggle.innerHTML = `<div class="icon">${config.icon}</div><div class="label">${config.label}</div>`;
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('active');
-            toggle.classList.contains('active') ? selectedVariables.add(key) : selectedVariables.delete(key);
-            updateHistoricalChart();
-        });
-        container.appendChild(toggle);
-        selectedVariables.add(key); // Start with all variables selected
+  const container = document.getElementById('variable-toggles');
+  container.innerHTML = ''; // Clear existing toggles
+  selectedVariables.clear(); // Reset selected variables
+  
+  const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  
+  Object.entries(variables).forEach(([key, config]) => {
+    const toggle = document.createElement('div');
+    toggle.className = 'variable-toggle active';
+    toggle.dataset.variable = key;
+    toggle.innerHTML = `
+      <div class="icon">${config.icon}</div>
+      <div class="label">${config.label}</div>
+    `;
+    
+    toggle.addEventListener('click', () => {
+      toggle.classList.toggle('active');
+      if (toggle.classList.contains('active')) {
+        selectedVariables.add(key);
+      } else {
+        selectedVariables.delete(key);
+      }
+      updateHistoricalChart();
     });
+    
+    container.appendChild(toggle);
+    selectedVariables.add(key); // Initially select all variables
+  });
 }
 
 function createMeteoHistoricalChart(data) {
-    const host = document.getElementById('chartsHost');
-    if (!host) return;
-    
-    // Check if data has actual values
-    const hasData = Object.entries(meteorologicalVariables).some(([key, cfg]) => 
-        selectedVariables.has(key) && data[key] && data[key].length > 0
-    );
-    
-    if (!hasData) {
-        host.innerHTML = `
-            <div style="text-align:center;padding:40px;color:#666;">
-                <i class="fas fa-chart-line" style="font-size:3em;margin-bottom:20px;color:#ddd;"></i>
-                <h3>Datos Meteorológicos</h3>
-                <p>Los datos históricos se cargarán desde fuentes oficiales.</p>
-                <p><small>Esta funcionalidad estará disponible próximamente con datos reales del sistema WRF.</small></p>
-            </div>
-        `;
-        return;
-    }
-    
-    // If we had real data, the charting logic would go here
-    const datasets = [];
-    Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key] && data[key].length > 0) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label}`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.4,
-                unit: cfg.unit
-            });
-        }
-    });
+  currentHistData = data;
 
-    if (datasets.length > 0) {
-        const groups = groupDatasetsByRange(datasets, 30);
-        renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
+  // Construir datasets SOLO de variables seleccionadas
+  const datasets = [];
+  Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
+    if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      datasets.push({
+        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+        data: data[key],
+        borderColor: cfg.color,
+        backgroundColor: `${cfg.color}20`,
+        borderWidth: 2,
+        tension: 0.35,
+        fill: false
+      });
     }
+  });
+
+  if (!datasets.length) return;
+
+const labels = (currentHistLabels && currentHistLabels.length === datasets[0].data.length)
+  ? currentHistLabels
+  : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
+
+
+  const groups = groupDatasetsByRange(datasets, 30);
+
+
+  renderGroupedCharts(groups, labels, 'Tendencias de Variables Meteorológicas');
+}
+let currentHistLabels = null;
+
+// Construye etiquetas de tiempo a partir del path del JSON usando setLabel()
+function buildTimeLabelsFromPath(jsonPath, length){
+  const labels = [];
+  let hs = 0;
+  for (let i = 0; i < length; i++){
+    hs += 3; // tus datos están cada 3 h
+    labels.push(setLabel(jsonPath, hs)); // usa tu setLabel existente
+  }
+  return labels;
 }
 
 function createChemHistoricalChart(data) {
-    const host = document.getElementById('chartsHost');
-    if (!host) return;
-    
-    // Check if data has actual values
-    const hasData = Object.entries(airQualityVariables).some(([key, cfg]) => 
-        selectedVariables.has(key) && data[key] && data[key].length > 0
-    );
-    
-    if (!hasData) {
-        host.innerHTML = `
-            <div style="text-align:center;padding:40px;color:#666;">
-                <i class="fas fa-smog" style="font-size:3em;margin-bottom:20px;color:#ddd;"></i>
-                <h3>Datos de Calidad del Aire</h3>
-                <p>Los datos históricos se cargarán desde fuentes oficiales.</p>
-                <p><small>Esta funcionalidad estará disponible próximamente con datos reales del sistema de monitoreo.</small></p>
-            </div>
-        `;
-        return;
-    }
+  currentHistData = data;
 
-    // If we had real data, the charting logic would go here
-    const datasets = [];
-    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key] && data[key].length > 0) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label}`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.4,
-                fill: false,
-                unit: cfg.unit
-            });
-        }
-    });
-
-    if (datasets.length > 0) {
-        const groups = groupDatasetsByRange(datasets, 20);
-        renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
-    }
-}
-
-// Función mejorada de agrupamiento con manejo de errores
-function groupDatasetsByRange(datasets, threshold = 30) {
-    const groups = [];
-    
-    // Filtrar datasets vacíos o inválidos
-    const validDatasets = datasets.filter(dataset => {
-        const validData = dataset.data.filter(v => v !== null && v !== undefined);
-        return validData.length > 0;
-    });
-    
-    validDatasets.forEach(dataset => {
-        let placed = false;
-        
-        // Calcular rango del dataset actual
-        const validData = dataset.data.filter(v => v !== null && v !== undefined);
-        const minVal = Math.min(...validData);
-        const maxVal = Math.max(...validData);
-        const range = maxVal - minVal;
-        
-        // Buscar grupo compatible
-        for (const group of groups) {
-            // Obtener todos los valores válidos del grupo
-            const groupValues = group.flatMap(d => 
-                d.data.filter(v => v !== null && v !== undefined)
-            );
-            
-            if (groupValues.length === 0) continue;
-            
-            // Calcular rango combinado
-            const combinedMin = Math.min(...groupValues, minVal);
-            const combinedMax = Math.max(...groupValues, maxVal);
-            const combinedRange = combinedMax - combinedMin;
-            
-            // Verificar si son compatibles
-            if (combinedRange <= threshold) {
-                group.push(dataset);
-                placed = true;
-                break;
-            }
-        }
-        
-        if (!placed) {
-            groups.push([dataset]);
-        }
-    });
-    
-    return groups;
-}
-
-// Función alternativa para agrupamiento más inteligente
-function groupDatasetsSmart(datasets, maxGroups = 4) {
-    if (datasets.length <= maxGroups) {
-        return datasets.map(dataset => [dataset]);
-    }
-    
-    // Calcular el rango de cada dataset
-    const datasetsWithRange = datasets.map(dataset => {
-        const validData = dataset.data.filter(v => v !== null && v !== undefined);
-        if (validData.length === 0) return { dataset, range: 0, avg: 0 };
-        
-        const minVal = Math.min(...validData);
-        const maxVal = Math.max(...validData);
-        const avgVal = validData.reduce((a, b) => a + b, 0) / validData.length;
-        
-        return {
-            dataset,
-            range: maxVal - minVal,
-            avg: avgVal
-        };
-    }).filter(item => item.range > 0);
-    
-    // Ordenar por valor promedio
-    datasetsWithRange.sort((a, b) => a.avg - b.avg);
-    
-    // Dividir en grupos
-    const groups = [];
-    const groupSize = Math.ceil(datasetsWithRange.length / maxGroups);
-    
-    for (let i = 0; i < datasetsWithRange.length; i += groupSize) {
-        const group = datasetsWithRange.slice(i, i + groupSize).map(item => item.dataset);
-        groups.push(group);
-    }
-    
-    return groups;
-}
-
-function updateHistoricalChart() {
-    if (!currentHistData) return;
-    const type = document.getElementById('hist-tipo-select').value;
-    type === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
-    updateStatsTable(type);
-}
-
-// === COMBOBOX ROBUSTO para #hist-cabecera-select (Historial) ===
-// - Espera a que el <select> tenga opciones (MutationObserver)
-// - "Portal": la lista se monta en <body> para evitar clipping por overflow/z-index
-// - Aísla eventos para que no cambien de vista ni afecten el mapa
-
-//opciones de escritura en el historial 
-(function makeHistComboboxRobusto(){
-  const sel = document.getElementById('hist-cabecera-select');
-  if (!sel) return;
-
-  // ----- UI básica -----
-  const wrap = document.createElement('div');
-  wrap.id = 'hist-combobox';
-  wrap.style.position = 'relative';
-  wrap.style.display = 'flex';
-  wrap.style.alignItems = 'stretch';
-  wrap.style.gap = '.5rem';
-  wrap.style.marginTop = '.25rem';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'form-control';
-  input.placeholder = 'Escribe para buscar municipio…';
-  input.autocomplete = 'off';
-
-  // Lista como "portal" en <body>
-  const list = document.createElement('ul');
-  list.id = 'hist-combobox-list';
-  list.setAttribute('role','listbox');
-  Object.assign(list.style, {
-    position:'fixed', // relativo al viewport
-    maxHeight:'260px',
-    overflowY:'auto',
-    margin:'0', padding:'0',
-    listStyle:'none',
-    display:'none',
-    background:'#fff',
-    border:'1px solid rgba(0,0,0,.15)',
-    borderRadius:'8px',
-    boxShadow:'0 8px 24px rgba(0,0,0,.15)',
-    zIndex:'50000'
-  });
-  document.body.appendChild(list);
-
-  // Inserta UI y oculta el select original
-  sel.style.display = 'none';
-  sel.parentNode.insertBefore(wrap, sel);
-  wrap.appendChild(input);
-  wrap.appendChild(sel);
-
-  // ----- Lógica -----
-  const norm = s => (s||'').toString()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .toLowerCase().replace(/\s+/g,' ').trim();
-
-  let items = [];          // [{value,label}]
-  let filtered = [];
-  let open = false;
-  let active = -1;
-
-  function snapshotItems(){
-    items = Array.from(sel.options)
-      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
-      .map(o => ({ value:o.value, label:o.text }))
-      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
-    filtered = items.slice();
-  }
-
-  function positionList(){
-    const r = input.getBoundingClientRect();
-    list.style.left = r.left + 'px';
-    list.style.top  = (r.bottom + 4) + 'px';
-    list.style.minWidth = r.width + 'px';
-    list.style.maxWidth = Math.max(r.width, 260) + 'px';
-  }
-
-  function render(){
-    list.innerHTML = '';
-    filtered.forEach((it, idx) => {
-      const li = document.createElement('li');
-      li.textContent = it.label;
-      li.style.padding = '8px 10px';
-      li.style.cursor = 'pointer';
-      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
-      li.addEventListener('mouseenter', () => { active=idx; render(); });
-      li.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        choose(idx);
+  const datasets = [];
+  Object.entries(airQualityVariables).forEach(([key, cfg]) => {
+    if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      datasets.push({
+        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+        data: data[key],
+        borderColor: cfg.color,
+        backgroundColor: `${cfg.color}20`,
+        borderWidth: 2,
+        tension: 0.35,
+        fill: false
       });
-      li.addEventListener('pointerdown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        choose(idx);
-    });
-      list.appendChild(li);
-    });
-  }
-
-  function openList(){
-    if (!filtered.length) return;
-    positionList();
-    list.style.display = 'block';
-    open = true;
-  }
-
-  function closeList(){
-    list.style.display = 'none';
-    open = false;
-    active = -1;
-  }
-
-  function filterNow(q){
-    const nq = norm(q);
-    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
-    const exact = filtered.findIndex(m => norm(m.label) === nq);
-    active = exact >= 0 ? exact : -1;
-    render();
-    if (open && !filtered.length) closeList();
-  }
-
-  function choose(idx){
-    if (idx < 0 || idx >= filtered.length) return;
-    const it = filtered[idx];
-    input.value = it.label;
-    sel.value = it.value;
-    sel.dispatchEvent(new Event('change', { bubbles:true }));
-    closeList();
-  }
-
-  // ----- Eventos (sin botón) -----
-  // Evita que clicks internos cierren el dropdown
-  [wrap, input, list].forEach(el => {
-    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
-    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
-    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
-  });
-
-  // Abrir con focus/click y escribir
-  input.addEventListener('focus', () => {
-    filtered = items.slice();
-    render();
-    openList();
-  });
-  input.addEventListener('click', () => {
-    if (!open) {
-      filtered = items.slice();
-      render();
-      openList();
-    }
-  });
-  input.addEventListener('input', () => {
-    filterNow(input.value);
-    filtered.length ? openList() : closeList();
-  });
-
-  // Navegación teclado
-  input.addEventListener('keydown', (e) => {
-    switch(e.key){
-      case 'ArrowDown':
-        e.preventDefault();
-        if (!open){ openList(); break; }
-        active = Math.min(filtered.length-1, active+1); render();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        if (!open){ openList(); break; }
-        active = Math.max(0, active-1); render();
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (!open){
-          const nq = norm(input.value);
-          const exacts = items.filter(m=>norm(m.label)===nq);
-          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
-          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
-        } else {
-          if (active<0 && filtered.length===1) active=0;
-          choose(active);
-        }
-        break;
-      case 'Escape':
-        if (open) { closeList(); } else { input.select(); }
-        break;
-      case 'Tab':
-        closeList();
-        break;
     }
   });
 
-  // Clic fuera: cerrar (usar 'click', no 'mousedown')
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
-  });
+  if (!datasets.length) return;
 
-  // Reposicionar en scroll/resize
-  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
-  window.addEventListener('resize', () => { if (open) positionList(); });
-
-  // Poblado inicial y asíncrono
-  if (sel.options.length) snapshotItems();
-  const mo = new MutationObserver(() => {
-    snapshotItems();
-    // NO rellenes el input con "Seleccione..." — arrancamos vacío
-    if (open) { render(); positionList(); }
-  });
-  mo.observe(sel, { childList: true });
-})();
-
-// Combobox robusto para el MAPA (independiente del de historial)
-(function makeMapComboboxRobusto(){
-  const sel = document.getElementById('hist-cabecera-map');
-  if (!sel) return;
-
-  // UI
-  const wrap = document.createElement('div');
-  wrap.id = 'map-combobox';
-  wrap.style.position = 'relative';
-  wrap.style.display = 'flex';
-  wrap.style.alignItems = 'stretch';
-  wrap.style.gap = '.5rem';
-  wrap.style.marginTop = '.25rem';
-
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'form-control';
-  input.placeholder = 'Escribe para buscar municipio…';
-  input.autocomplete = 'off';
-
-  const list = document.createElement('ul');
-  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
-  list.setAttribute('role','listbox');
-  Object.assign(list.style, {
-    position:'fixed', maxHeight:'260px', overflowY:'auto',
-    margin:'0', padding:'0', listStyle:'none', display:'none',
-    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
-    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
-  });
-  document.body.appendChild(list);
-
-  // Oculta select y monta wrapper
-  sel.style.display = 'none';
-  sel.parentNode.insertBefore(wrap, sel);
-  wrap.appendChild(input);
-  wrap.appendChild(sel);
-
-  // Lógica
-  const norm = s => (s||'').toString()
-    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
-    .toLowerCase().replace(/\s+/g,' ').trim();
-
-  let items = [], filtered = [], open = false, active = -1;
-
-  function snapshotItems(){
-    items = Array.from(sel.options)
-      .filter(o => (o.value ?? '').toString().trim() !== '')
-      .map(o => ({ value:o.value, label:o.text }))
-      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
-    filtered = items.slice();
-  }
-
-  function positionList(){
-    const r = input.getBoundingClientRect();
-    list.style.left = r.left + 'px';
-    list.style.top  = (r.bottom + 4) + 'px';
-    list.style.minWidth = r.width + 'px';
-    list.style.maxWidth = Math.max(r.width, 260) + 'px';
-  }
-
-  function render(){
-    list.innerHTML = '';
-    filtered.forEach((it, idx) => {
-      const li = document.createElement('li');
-      li.textContent = it.label;
-      li.style.padding = '8px 10px';
-      li.style.cursor = 'pointer';
-      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
-      li.addEventListener('mouseenter', () => { active=idx; render(); });
-      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
-      list.appendChild(li);
-    });
-  }
-
-  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
-  function closeList(){ list.style.display='none'; open = false; active = -1; }
-
-  function filterNow(q){
-    const nq = norm(q);
-    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
-    const exact = filtered.findIndex(m => norm(m.label) === nq);
-    active = exact >= 0 ? exact : -1;
-    render();
-    if (open && !filtered.length) closeList();
-  }
-
-function choose(idx) {
-  if (idx < 0 || idx >= filtered.length) return;
-  const it = filtered[idx];
-  input.value = it.label;
-  sel.value = it.value;
-
-  sel.dispatchEvent(new Event('change',{ bubbles:true}));
-
-  // Centrar el mapa en el municipio seleccionado (sin usar turf)
-  const municipio = municipalitiesData.features.find(
-    f => f.properties.clave === it.value
-  );
-  
-  if (municipio && window.map) {
-    // Obtener las coordenadas directamente del municipio
-    const coords = municipio.geometry.coordinates;
-    //limpiar combobox historial
-    //clearMapCombobox();
-    
-    // Centrar el mapa en esas coordenadas
-    window.map.flyTo({
-      center: coords,
-      zoom: 11,
-      bearing:0,
-      pitch:0,
-      duration: 3000,
-      essential: true
-    });
-  }
-
-  closeList();
-}
-
-  // Aislar clicks internos
-  [wrap, input, list].forEach(el => {
-    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
-    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
-    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
-  });
-
-  // Abrir/filtrar/teclado
-  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
-  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
-  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
-
-  input.addEventListener('keydown', (e) => {
-    switch(e.key){
-      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
-      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
-      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
-      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
-      case 'Tab':       closeList(); break;
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
-  });
-
-  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
-  window.addEventListener('resize', () => { if (open) positionList(); });
-
-  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
-  if (sel.options.length) snapshotItems();
-  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
-  mo.observe(sel, { childList: true });
-})();
+  const labels = (currentHistLabels && currentHistLabels.length === datasets[0].data.length)
+  ? currentHistLabels
+  : Array(datasets[0].data.length).fill('').map((_, i) => `Hora ${i*3}`);
 
 
-// Limpia el combobox del HISTORIAL
-window.clearHistCombobox = function () {
-  const sel   = document.getElementById('hist-cabecera-select');
-  if (!sel) return;
-  const wrap  = sel.parentElement;
-  const input = wrap ? wrap.querySelector('input.form-control') : null;
+  const groups = groupDatasetsByRange(datasets, 30);
 
-  if (input) input.value = '';         // borra el texto
-  sel.value = '';                      // deselecciona (si tu placeholder tiene value="")
-  sel.dispatchEvent(new Event('change', { bubbles: true })); // notifica cambios
-  const list = document.getElementById('hist-combobox-list');
-  if (list) list.style.display = 'none'; // cierra la lista si estaba abierta
-};
-
-// Limpia el combobox del MAPA
-window.clearMapCombobox = function () {
-  const sel   = document.getElementById('hist-cabecera-map');
-  if (!sel) return;
-  const wrap  = sel.parentElement;
-  const input = wrap ? wrap.querySelector('input.form-control') : null;
-
-  if (input) input.value = '';
-  sel.value = '';
-  sel.dispatchEvent(new Event('change', { bubbles: true }));
-  const list = document.getElementById('map-combobox-list');
-  if (list) list.style.display = 'none';
-};
-
-
-
-// Desactivar controles de mapa e historial si el menú hamburguesa está abierto
-const navLinks = document.getElementById('nav-links');
-const mapComboInput  = document.querySelector('#map-combobox input');
-const histComboInput = document.querySelector('#hist-combobox input');
-const histSelect     = document.getElementById('hist-tipo-select');
-
-const observer = new MutationObserver(() => {
-  const menuOpen = navLinks.classList.contains('active');
-
-  // Toma todos los botones de variables del historial
-  const histButtons = document.querySelectorAll('#variable-toggles .variable-toggle');
-
-  // Agrupa todo
-  const allInputs = [mapComboInput, histComboInput, histSelect, ...histButtons];
-
-  allInputs.forEach(el => {
-    if (!el) return;
-    if (menuOpen) {
-      el.setAttribute('disabled', 'true');
-      el.style.opacity = '0.5';
-      el.style.pointerEvents = 'none';
-    } else {
-      el.removeAttribute('disabled');
-      el.style.opacity = '';
-      el.style.pointerEvents = '';
-    }
-  });
-});
-
-observer.observe(navLinks, { attributes: true, attributeFilter: ['class'] });
-
-
-
-
-// ===================================================================
-// END: New History Dashboard Functions
-// ===================================================================
-// ====== CONFIG & STATE (runs/variables) ======
-const API_URL = `./api/api.php`; // apunta a /Meteorologia/api.php
-// estado actual
-let currentRunDir = null;      // carpeta del run seleccionado
-let currentYYYYMMDD = null;    // fecha del run (YYYYMMDD)
-let currentCycle = null;       // '12z' | '00z'
-let currentLevel = null;       // subparámetro activo (p.ej. '500', 'sfc', 'temmax', etc.)
-// ====== MODELO DE VARIABLES ======
-// kind:
-//  - 'flat'       -> PNGs directos en la carpeta base (sin /sfc/)
-//  - 'flat_sfc'   -> PNGs dentro de /sfc/
-//  - 'levels'     -> necesita sub-parámetro: niveles detectados por subcarpetas + 'sfc' opcional
-//  - 'temp'       -> especial: niveles + extras temmax/temmin (ambas sin sfc)
-//  - 'radiation'  -> especial: dos opciones (radsw/radlw), ambas con /sfc/
-const VAR_MODEL = {
-  temperature: { kind: 'temp',      base: 'temp' },
-  precipitation:{ kind: 'flat',     base: 'preacum' }, // (4) PNGs directos
-  wind:        { kind: 'levels',    base: 'wnd' },     // (5) niveles + sfc (si existe)
-  pressure:    { kind: 'flat',      base: 'psfc' },    // (6) PNGs directos
-  radiation:   { kind: 'radiation', base: null },      // (7) radsw/radlw con /sfc/
-  // calidad del aire (si las usas aquí):
-  co:          { kind: 'flat_sfc',  base: 'CO' },
-  no2:         { kind: 'flat_sfc',  base: 'NO2' },
-  o3:          { kind: 'flat_sfc',  base: 'O3'  },
-  pm25:        { kind: 'flat_sfc',  base: 'PM25'}
-};
-
-
-// Mapear botones -> carpetas de variable en /runs/<RUN>/<variable>/
-const LAYER_TO_FOLDER = {
-  // Meteo
-  temperature: 'temp', humidity: 'hum', precipitation: 'preacum',
-  wind: 'wnd', pressure: 'psfc', radiation: 'radsw',
-  tmax: 'temmax', tmin: 'temmin', // (por si algún día agregas botones directos)
-  // Aire
-  co: 'CO', no2: 'NO2', o3: 'O3', pm25: 'PM25'
-};
-
-// Variables que TIENEN subcarpetas (niveles) y sus niveles válidos:
-const VARIABLE_LEVELS = {
-  temp:  { levels: ['200','300','400','500','600','700'], extras: [{label:'T. máxima', value:'temmax'}, {label:'T. mínima', value:'temmin'}] },
-  wnd:   { levels: ['200','300','400','500','600','700','sfc'], extras: [] }
-};
-
-
-// ====== API helper ======
-async function apiPost(tipo, body = {}) {
-  const fd = new FormData();
-  Object.entries(body).forEach(([k,v]) => fd.append(k, v));
-  const res = await fetch(`${API_URL}?tipo_solicitud=${encodeURIComponent(tipo)}`, { method: 'POST', body: fd });
-  const txt = await res.text();
-  if (!res.ok || txt.startsWith('error')) throw new Error(`API ${tipo}: ${txt || res.status}`);
-  return txt;
-}
-
-// ====== utils de fecha / nombres ======
-function extractYYYYMMDD(str) {
-  // busca 8 dígitos seguidos (YYYYMMDD) en el nombre de la carpeta
-  const m = (str||'').replace(/\D+/g,'').match(/(\d{8})/);
-  return m ? m[1] : null;
-}
-function yyyymmddToHuman(yyyymmdd) {
-  if (!yyyymmdd || yyyymmdd.length !== 8) return yyyymmdd || '';
-  const y = yyyymmdd.slice(0,4), m = yyyymmdd.slice(4,6), d = yyyymmdd.slice(6,8);
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  return `${Number(d)} ${meses[Number(m)-1]} ${y}`;
+  renderGroupedCharts(groups, labels, 'Tendencias de Calidad del Aire');
 }
 
 
-// ====== Helpers UI (placeholders/visibilidad) ======
-function setHoraPlaceholder(text) {
-  const sel = document.getElementById('selectHora');
-  sel.innerHTML = '';
-  const opt = document.createElement('option');
-  opt.value = '';
-  opt.disabled = true;
-  opt.selected = true;
-  opt.textContent = text;
-  sel.appendChild(opt);
-}
 
-function showSubparamUI(show) {
-  const lbl = document.getElementById('label-subparam');
-  const host = document.getElementById('subparam-poker');
-  if (!lbl || !host) return;
-  lbl.style.display  = show ? 'block' : 'none';
-  host.style.display = show ? 'flex'  : 'none';
-  if (!show) host.innerHTML = '';
-}
-
-// lista PNGs (Apache autoindex)
-async function listPngIn(url) {
-  const html = await (await fetch(url, { cache:'no-store' })).text();
-  return [...html.matchAll(/href="([^"]+\.png)"/gi)].map(m => decodeURIComponent(m[1]));
-}
-
-// lista subcarpetas directas del índice
-async function listDirsIn(url) {
-  const html = await (await fetch(url, { cache:'no-store' })).text();
-  // enlaces que terminan con "/"
-  return [...html.matchAll(/href="([^"]+\/)"/gi)]
-    .map(m => decodeURIComponent(m[1]))
-    .map(x => x.replace(/\/$/,''))
-    .filter(n => !['.','..'].includes(n));
-}
-
-// Devuelve horas disponibles (["000","003","006",...]) y ciclo detectado ('12z'/'00z') a partir de nombres wrf_..._YYYYMMDD_12z_HHH.png
-function parseHoursAndCycle(pngNames, yyyymmdd) {
-  const hours = new Set();
-  let cycle = null;
-  const re = new RegExp(`_${yyyymmdd}_(\\d{2})z_(\\d{3})\\.png$`, 'i');
-  for (const name of pngNames) {
-    const m = name.match(re);
-    if (m) {
-      if (!cycle) cycle = `${m[1]}z`;
-      hours.add(m[2]);
-    }
-  }
-  return { cycle, hours: Array.from(hours).sort((a,b)=>Number(a)-Number(b)) };
-}
-// Pide a la API el listado de carpetas de /runs y llena #select_run
-async function loadRunsIntoSelect() {
-  const raw = await apiPost('listado_runs', { fecha: 'x' }); // tu API ya la tienes
-  // formato esperado: "runs/20250628|runs/20250701|..."
-  const runs = raw.split('|').filter(Boolean).map(p => p.replace(/^.*\//,'')).sort(); // asc
-  if (!runs.length) throw new Error('No hay runs disponibles');
-
-  const sel = document.getElementById('select_run');
-  sel.innerHTML = '';
-
-  // de más nuevo a más viejo
-  runs.reverse().forEach(runDir => {
-    const ymd = extractYYYYMMDD(runDir);
-    const opt = document.createElement('option');
-    opt.value = runDir;                 // guardamos carpeta
-    opt.textContent = yyyymmddToHuman(ymd || runDir);
-    sel.appendChild(opt);
-  });
-
-  // set estado inicial
-  currentRunDir = sel.value;
-  currentYYYYMMDD = extractYYYYMMDD(currentRunDir);
-
-  sel.addEventListener('change', () => {
-    currentRunDir = sel.value;
-    currentYYYYMMDD = extractYYYYMMDD(currentRunDir);
-    // al cambiar run, si hay variable activa, refrescamos sus horas
-    if (activeLayer) populateForecastHoursForLayer(activeLayer);
-  });
-}
-
-function layerToFolder(layerKey){
-  return LAYER_TO_FOLDER[layerKey] || layerKey;
-}
-function variableHasLevels(folder){
-  return Boolean(VARIABLE_LEVELS[folder]);
-}
-
-function renderSubparamPickerFor(folder, onChoose){
-  const host = document.getElementById('subparam');
-  host.innerHTML = '';
-
-  const cfg = VARIABLE_LEVELS[folder];
-  if (!cfg){ host.style.display='none'; currentLevel=null; return; }
-
-  const buttons = [];
-  // 1) niveles estándar (200..700, sfc)
-  cfg.levels.forEach(level => {
-    buttons.push({label: level.toUpperCase(), value: level});
-  });
-  // 2) extras (temmax/temmin)
-  (cfg.extras || []).forEach(e => buttons.push(e)); // {label:'T. máxima', value:'temmax'}
-
-  // pintar
-  host.style.display = 'flex';
-  buttons.forEach(btnCfg => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-sm btn-outline-secondary';
-    btn.textContent = btnCfg.label;
-    btn.dataset.value = btnCfg.value;
-    btn.addEventListener('click', () => {
-      currentLevel = btnCfg.value;
-      [...host.children].forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      onChoose(currentLevel);
-    });
-    host.appendChild(btn);
-  });
-
-  // selección por defecto
-  currentLevel = (folder === 'temp') ? 'temmax' : // por UX empezamos con T. máxima
-                 (cfg.levels.includes('sfc') ? 'sfc' : cfg.levels[0]);
-  const first = [...host.children].find(b => b.dataset.value === currentLevel);
-  if (first) first.classList.add('active');
-}
-
-
-async function populateForecastHoursForLayer(layerKey){
-  if (!currentRunDir) await loadRunsIntoSelect();
-
-  const folder = layerToFolder(layerKey);           // p.ej. 'temp', 'CO'
-  const ymd = currentYYYYMMDD;
-
-  // Mostrar/ocultar póker según variable y cargar horas
-  if (variableHasLevels(folder)){
-    renderSubparamPickerFor(folder, async (chosenLevel) => {
-      await fillHorasFromFolder(currentRunDir, folder, ymd, chosenLevel);
-    });
-    // primer disparo
-    await fillHorasFromFolder(currentRunDir, folder, ymd, currentLevel);
-  } else {
-    const host = document.getElementById('subparam');
-    const label = document.getElementById('subparam-label');
-    host.style.display = 'none';
-    host.style.display = 'none';
-    currentLevel = 'sfc';
-    await fillHorasFromFolder(currentRunDir, folder, ymd, currentLevel);
-  }
-}
-
-
-// Construye la URL del directorio donde viven los PNG de la variable/nivel
-function dirUrlForVariable(runDir, folder, level){
-  // TEMPERATURA:
-  // - niveles 200..700: runs/<run>/temp/<nivel>/
-  // - T. max/min: runs/<run>/temmax/  ó  runs/<run>/temmin/   (SIN sfc)
-  if (folder === 'temp'){
-    if (level === 'temmax') return `./runs/${runDir}/temmax/`;
-    if (level === 'temmin') return `./runs/${runDir}/temmin/`;
-    return `./runs/${runDir}/temp/${level}/`;
-  }
-
-  // VIENTO con niveles 200..700 y sfc
-  if (folder === 'wnd'){
-    return `./runs/${runDir}/wnd/${level}/`;
-  }
-
-  // RESTO de variables (CO, NO2, PM25, hum, preacum, radsw, psfc...):
-  // usan /sfc/
-  return `./runs/${runDir}/${folder}/sfc/`;
-}
-
-async function fillHorasFromFolder(runDir, folder, yyyymmdd, level){
-  const horasSelect = document.getElementById('selectHora');
-  horasSelect.innerHTML = '<option>Cargando...</option>';
-
-  const dirUrl = dirUrlForVariable(runDir, folder, level);
-  const files = await listPngIn(dirUrl);          // lee índice del directorio
-  const { cycle, hours } = parseHoursAndCycle(files, yyyymmdd);
-
-  currentCycle = cycle || currentCycle || '12z';
-
-  horasSelect.innerHTML = '';
-  if (!hours.length){
-    const opt = document.createElement('option');
-    opt.value = '';
-    opt.textContent = 'Sin imágenes';
-    horasSelect.appendChild(opt);
-    return;
-  }
-  hours.forEach(h => {
-    const opt = document.createElement('option');
-    opt.value = String(Number(h));     // "072" -> "72"
-    opt.textContent = `${Number(h)} horas`;
-    horasSelect.appendChild(opt);
-  });
-  // Por defecto, selecciona la mayor (ej. 72)
-  horasSelect.value = String(Number(hours[hours.length-1]));
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-document.getElementById('select_run').addEventListener('change', () => {
-  currentCycle = null;
-  setHoraPlaceholder('Selecciona parámetro'); // (1) resetea placeholder
-  if (activeLayer) renderSubparamsAndHours(activeLayer);
-});
-
-  // METEOROLOGÍA
-document.querySelectorAll('#layer-buttons-meteo .layer-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#layer-buttons-meteo .layer-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeLayer = btn.dataset.layer;               // 'temperature', 'wind', etc.
-    currentCycle = null;                            // resetea ciclo al cambiar de variable
-    populateForecastHoursForLayer(activeLayer).catch(console.error);
-  });
-});
-
-// CALIDAD DEL AIRE
-document.querySelectorAll('#layer-buttons-air .layer-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('#layer-buttons-air .layer-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeLayer = btn.dataset.layer;               // 'co','no2','o3','pm25'
-    currentCycle = null;
-    populateForecastHoursForLayer(activeLayer).catch(console.error);
-  });
-});
-// Al arrancar o cuando abras el panel de capas:
-setHoraPlaceholder('Selecciona parámetro'); // (1)
-showSubparamUI(false);
-
-
-});
-
-
-
-function dirFor(runDir, folder, subparam, kind) {
-  // Construye la URL del directorio que contiene PNGs según el kind
-  if (kind === 'flat')      return `./runs/${runDir}/${folder}/`;
-  if (kind === 'flat_sfc')  return `./runs/${runDir}/${folder}/sfc/`;
-  if (kind === 'levels')    return `./runs/${runDir}/${folder}/${subparam}/`; // incluye 'sfc' o '200'...'700'
-  if (kind === 'temp') {
-    // niveles 200..700 o extras temmax/temmin (ambas sin sfc)
-    if (subparam === 'temmax') return `./runs/${runDir}/temmax/`;
-    if (subparam === 'temmin') return `./runs/${runDir}/temmin/`;
-    return `./runs/${runDir}/temp/${subparam}/`;
-  }
-  if (kind === 'radiation') {
-    // subparam = 'radsw' | 'radlw', ambas con /sfc/
-    return `./runs/${runDir}/${subparam}/sfc/`;
-  }
-  return `./runs/${runDir}/${folder}/`;
-}
-
-async function populateHorasFrom(dirUrl) {
-  const sel = document.getElementById('selectHora');
-  const files = await listPngIn(dirUrl);
-  const { cycle, hours } = parseHoursAndCycle(files, currentYYYYMMDD);
-  currentCycle = cycle || currentCycle || '12z';
-
-  sel.innerHTML = '';
-  if (!hours.length) { setHoraPlaceholder('Sin imágenes'); return; }
-  for (const h of hours) {
-    const opt = document.createElement('option');
-    opt.value = String(Number(h));     // "072" -> "72"
-    opt.textContent = `${Number(h)} horas`;
-    sel.appendChild(opt);
-  }
-  // deja seleccionado el mayor (ej. 72)
-  sel.value = String(Number(hours[hours.length-1]));
-}
-
-// Renderiza el póker de subparámetros según la variable y llena horas
-async function renderSubparamsAndHours(layerKey) {
-  const model = VAR_MODEL[layerKey];
-  if (!model) { showSubparamUI(false); setHoraPlaceholder('Selecciona parámetro'); return; }
-
-  const selRun = document.getElementById('select_run');
-  currentRunDir = selRun && selRun.value ? selRun.value : currentRunDir;
-  currentYYYYMMDD = currentYYYYMMDD || (currentRunDir ? (currentRunDir.replace(/\D+/g,'').slice(0,8)) : null);
-
-  const host = document.getElementById('subparam-poker');
-
-  // --- casos sin subparámetro ---
-  if (model.kind === 'flat') {
-    showSubparamUI(false);
-    setHoraPlaceholder('Cargando horas...');
-    const dirUrl = dirFor(currentRunDir, model.base, null, 'flat'); // directo (3)(4)(6)
-    await populateHorasFrom(dirUrl);
-    return;
-  }
-  if (model.kind === 'flat_sfc') {
-    showSubparamUI(false);
-    setHoraPlaceholder('Cargando horas...');
-    const dirUrl = dirFor(currentRunDir, model.base, null, 'flat_sfc'); // con sfc
-    await populateHorasFrom(dirUrl);
-    return;
-  }
-
-  // --- casos con subparámetro ---
-  showSubparamUI(true);
-  setHoraPlaceholder('Seleccione subparámetro');  // (2)
-
-  host.innerHTML = ''; // vaciar póker
-  const addBtn = (label, value) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'btn btn-sm btn-outline-secondary';
-    b.textContent = label;
-    b.dataset.value = value;
-    b.addEventListener('click', async () => {
-      [...host.children].forEach(x => x.classList.remove('active'));
-      b.classList.add('active');
-      currentLevel = value;
-      setHoraPlaceholder('Cargando horas...');
-      const dirUrl = dirFor(currentRunDir, model.base, currentLevel, model.kind);
-      await populateHorasFrom(dirUrl);
-    });
-    host.appendChild(b);
+function createMeteoHistoricalTable(data) {
+  const tbody = document.getElementById('histStatsTable');
+  const variables = {
+    t2m: { label: 'Temperatura', unit: '°C' },
+    rh: { label: 'Humedad', unit: '%' },
+    psl: { label: 'Presión', unit: 'hPa' },
+    wnd: { label: 'Viento', unit: 'km/h' },
+    pre: { label: 'Precipitación', unit: 'mm' },
+    sw: { label: 'Radiación', unit: 'w/m²' }
   };
 
-  if (model.kind === 'temp') {
-    // niveles dinámicos (200..700) segun subcarpetas de /temp/
-    const baseUrl = `./runs/${currentRunDir}/temp/`;
-    const dirs = (await listDirsIn(baseUrl)).filter(n => /^\d{3}$/.test(n)); // 200..700
-    dirs.sort((a,b)=>Number(a)-Number(b));
-    // extras: temmax / temmin (si existen)
-    const extras = [];
-    // Comprobación de existencia real (opcionales)
-    const hasMax  = (await listDirsIn(`./runs/${currentRunDir}/`)).includes('temmax');
-    const hasMin  = (await listDirsIn(`./runs/${currentRunDir}/`)).includes('temmin');
-    if (hasMax) extras.push({label:'Temperatura máxima', value:'temmax'});
-    if (hasMin) extras.push({label:'Temperatura mínima', value:'temmin'});
-
-    // pinta extras primero
-    extras.forEach(e => addBtn(e.label, e.value));
-    // luego niveles
-    dirs.forEach(n => addBtn(n, n));
-
-    // preselección por UX: temmax si existe; si no, el primer botón
-    const first = host.children[0];
-    if (first) first.click();
-    return;
-  }
-
-  if (model.kind === 'levels') {
-    // niveles + sfc dinámico en /wnd/
-    const baseUrl = `./runs/${currentRunDir}/${model.base}/`;
-    const dirs = await listDirsIn(baseUrl); // ['200','300',...,'sfc'?]
-    const numeric = dirs.filter(d => /^\d{3}$/.test(d)).sort((a,b)=>Number(a)-Number(b));
-    const hasSfc = dirs.includes('sfc');
-
-    numeric.forEach(n => addBtn(n, n));
-    if (hasSfc) addBtn('sfc', 'sfc');
-
-    // preselección: sfc si existe; si no, el primer nivel
-    const prefer = [...host.children].find(b => b.dataset.value==='sfc') || host.children[0];
-    if (prefer) prefer.click();
-    return;
-  }
-
-  if (model.kind === 'radiation') {
-    // dos opciones: radsw (corta) y radlw (larga), ambas con /sfc/
-    addBtn('Onda corta', 'radsw');
-    addBtn('Onda larga', 'radlw');
-    // preselección: corta
-    const first = host.children[0]; if (first) first.click();
-    return;
-  }
+  createStatsTable(tbody, data, variables);
 }
+
+function createChemHistoricalTable(data) {
+  const tbody = document.getElementById('histStatsTable');
+  const variables = {
+    CO: { label: 'Monóxido de Carbono', unit: 'ppm' },
+    NO2: { label: 'Dióxido de Nitrógeno', unit: 'ppb' },
+    O3: { label: 'Ozono', unit: 'ppb' },
+    SO2: { label: 'Dióxido de Azufre', unit: 'ppb' },
+    PM10: { label: 'PM10', unit: 'µg/m³' },
+    PM25: { label: 'PM2.5', unit: 'µg/m³' }
+  };
+
+  createStatsTable(tbody, data, variables);
+}
+
+function createStatsTable(tbody, data, variables) {
+  tbody.innerHTML = '';
+  
+  Object.entries(variables).forEach(([key, config]) => {
+    if (data[key]) {
+      const values = data[key];
+      const stats = calculateStats(values);
+      
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${config.label}</strong></td>
+        <td>${stats.avg.toFixed(2)}</td>
+        <td>${stats.max.toFixed(2)}</td>
+        <td>${stats.min.toFixed(2)}</td>
+        <td>${config.unit}</td>
+      `;
+      tbody.appendChild(row);
+    }
+  });
+}
+
+function calculateStats(values) {
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  
+  return { avg, max, min };
+}
+//-------------------------------------------------------------------------------

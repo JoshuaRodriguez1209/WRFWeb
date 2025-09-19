@@ -1,0 +1,226 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SMADSOT</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<script src="./lib/ol/v5.3.0/ol.js"></script>
+<link rel="stylesheet" href="./lib/ol/v5.3.0/ol.css">
+
+<script src="./lib/jquery.min.js"></script>
+<script src="./lib/chart.min.js"></script>
+
+<!-- Bootstrap Core JavaScript --> 
+<script src="./bootstrap/bootstrap.min.js"></script> 
+<script src="./bootstrap/dropdowns/dropdowns-enhancement.js"></script> 
+<script src="./bootstrap/datepicker/bootstrap-datepicker.js"></script>
+<script src="./bootstrap/dialog/bootstrap-dialog.js"></script> 
+
+<!-- Bootstrap Core CSS -->
+<link rel="stylesheet" href="./bootstrap/bootstrap.min.css">
+<link rel="stylesheet" href="./bootstrap/dropdowns/dropdowns-enhancement.css">
+<link rel="stylesheet" href="./bootstrap/datepicker/bootstrap-datepicker.css">
+<link rel="stylesheet" href="./bootstrap/dialog/bootstrap-dialog.css">
+
+<link rel="stylesheet" href="./css/estilos.css">
+
+<script src="./lib/dom-to-image.js"></script>
+
+<!-- ol-ext -->
+<script type="text/javascript" src="./lib/ol-ext.js"></script>
+<link rel="stylesheet" href="./lib/ol-ext.css" />
+
+<script src="./lib/ol3-layerswitcher/ol3-layerswitcher.js"></script>
+<link rel="stylesheet" href="./lib/ol3-layerswitcher/ol3-layerswitcher.css">
+
+<style>
+.locate {
+  top:   5em;
+  left: .5em;
+}	
+
+.notificacion {
+  top:   5em;
+  left: .5em;
+}
+
+.slider-wrapper {
+  display: inline-block;
+  width: 150px;
+  height: 25px;
+  padding: 0;
+	padding-left: 30px;	
+}
+
+.navbar-brand, .navbar-header{
+	float: left;
+	height: 20px;
+	padding: 0px 0px;
+	font-size: 18px;
+	line-height: 20px;
+}
+
+@media all and (orientation:portrait) {
+	.navbar-right{
+		display: none;
+	}
+}
+
+.modal-dialog {
+		width: 800px;
+}
+</style>
+
+</head>
+<body>
+<nav class="navbar navbar-default" style="margin-top: 2px;margin-bottom: 2px;">
+	<div class="container-fluid">
+  
+    <div class="navbar-header">
+    </div>
+
+		<div class="collapse navbar-collapse">
+			<ul class="nav navbar-nav h4">
+        <li> 
+					<span>run:</span> 
+					<span >
+					<select class="form-select" id="select_run">
+					</select>
+					</span> 
+        </li>        
+      </ul>
+			<ul class="nav navbar-nav h4">
+        <li> 
+					<span >
+					<select class="form-select" id="select_dat">
+            <option value="temp">Temperatura</option>
+            <option value="hum">Humedad</option>
+            <option value="prec">Precipitacion</option>            
+            <option value="rad">Radiacion</option>            
+            <option value="wind">Viento</option>            
+					</select>
+					</span> 
+        </li>        
+      </ul>
+      <ul class="nav navbar-nav h4">
+        <li> 
+					<span>
+					<select class="form-select" id="select_var">
+					</select>
+					</span> 
+        </li>        
+      
+				<!-- ------------------------------------------------ Herramientas para historial -->          
+				<li class="span-my" id="herr_Seleccion" style="display:block;"> 
+					<span> 
+						<a id="btnAnt" class="btn btn-primary btn-sm"  
+							 style="padding-top: 0px;padding-bottom: 0px;padding-left: 5px;padding-right: 5px;">
+							<i class="glyphicon glyphicon-triangle-left"></i>
+						</a> 
+					</span> 									
+
+					<span>
+					<select id="selectHora">
+					</select>
+					</span> 
+
+					<span> 
+						<a id="btnSig" class="btn btn-primary btn-sm"  
+							 style="padding-top: 0px;padding-bottom: 0px;padding-left: 5px;padding-right: 5px;">
+							<i class="glyphicon glyphicon-triangle-right"></i>
+						</a> 
+					</span>           
+				</li>
+        
+				<li class="span-my" id="herr_Animation"  style="display:block;"> 
+					<span> Animar: </span> 									
+
+					<span> 
+						<a disabled id="btn_play_animation" class="btn btn-primary btn-sm"  
+							 style="padding-top: 0px;padding-bottom: 0px;padding-left: 5px;padding-right: 5px;">
+							<i class="glyphicon glyphicon-play"></i>
+						</a> 
+					</span> 
+
+					<span> 
+						<a disabled id="btn_stop_animation" class="btn btn-primary btn-sm"  
+							 style="padding-top: 0px;padding-bottom: 0px;padding-left: 5px;padding-right: 5px;">
+							<i class="glyphicon glyphicon-stop"></i>
+						</a> 
+					</span>
+
+					<span> 
+            <div class="slider-wrapper">
+              <input id="btn_rango" type="range" min="150" max="1500" value="250" step = "50">
+            </div>
+					</span>
+          
+				</li>
+        
+			</ul>
+
+      <ul class="nav navbar-nav navbar-right h4">
+        <li>
+					<span> 
+						<a id="btn_glo" class="btn btn-primary btn-sm"  
+							 style="display:block; padding-top: 0px;padding-bottom: 0px;
+							 				padding-left: 5px;padding-right: 5px; margin-left: 5px; margin-right: 20px;">
+							<i class="glyphicon glyphicon-cog"></i>
+						</a> 
+					</span> 				          
+				</li>        
+			</ul>
+			
+      <ul class="nav navbar-nav navbar-right h4">
+        <li>
+					<span> 
+						<a id="btn_full" class="btn btn-primary btn-sm"  
+							 style="display:block; padding-top: 0px;padding-bottom: 0px;
+							 				padding-left: 5px;padding-right: 5px; margin-left: 5px;">
+							<i class="glyphicon  glyphicon-resize-full"></i>
+						</a> 
+					</span> 				          
+				</li>        
+			</ul>
+			
+      <ul class="nav navbar-nav navbar-right h4">
+        <li>
+					<span> 
+						<a id="btn_download" class="btn btn-primary btn-sm"  
+							 style="display:block; padding-top: 0px;padding-bottom: 0px;
+							 				padding-left: 5px;padding-right: 5px; margin-left: 5px;">
+							<i class="glyphicon glyphicon-download-alt"></i>
+						</a> 
+					</span>
+				</li>        
+			</ul>
+
+			<ul class="nav navbar-nav navbar-right">      
+				<li>
+					<span>|</span>
+				</li>								
+				<li>
+					<div id="px_val" class="span-my"></div>
+				</li>								
+				<li>
+					<span>|Coord:</span>
+				</li>								
+				<li>
+					<div id="mouse_position" class="span-my h5"></div>
+				</li>
+			</ul>
+
+		</div>
+	</div>
+</nav>
+<div id="map" class="map" style="width: 100%; height: 97%;"></div>
+
+</body>
+<script src="./defines.js"></script>
+<script src="./lienzo.js"></script>
+<script src="./utils.js"></script>
+<script src="./app.js"></script>
+<script src="./menu.js"></script>
+</html>
