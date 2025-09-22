@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>SMADSOT</title>
+
     <meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <script src="./lib/ol/v5.3.0/ol.js"></script>
@@ -32,6 +33,7 @@
     <link rel="stylesheet" href="./css/estilos.css" />
     <link rel="stylesheet" href="app.css" />
 
+
     <script src="./lib/dom-to-image.js"></script>
 
     <!-- ol-ext -->
@@ -43,9 +45,7 @@
       rel="stylesheet"
       href="./lib/ol3-layerswitcher/ol3-layerswitcher.css"
     />
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link
       href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&amp;display=swap"
       rel="stylesheet"
@@ -185,110 +185,86 @@
           <i class="fa-solid fa-chart-line"></i> <span class="menu-label">Historial</span>
         </button>
       </div>
-      <div id="main-content">
-        <div id="map"></div>
-
-        <div class="map-controls">
-          <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
-            <i class="fa-solid fa-layer-group"></i>
-          </button>
-          <button class="control-btn" id="zoom-in-btn" title="Acercar">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <button class="control-btn" id="zoom-out-btn" title="Alejar">
-            <i class="fa-solid fa-minus"></i>
-          </button>
-          <button class="control-btn" id="reset-north-btn" title="Orientar al Norte">
-            <i class="fa-solid fa-compass"></i>
-          </button>
-          <button class="control-btn" id="reset-position-btn" title="Posición Inicial">
-            <i class="fa-solid fa-house"></i>
-          </button>
+      <div id="map">
+        <!-- ICONO TIPO FLECHA PARA MOSTRAR CONTROLES -->
+        <div id="controls-toggle">
+          <i class="glyphicon glyphicon-chevron-left"></i>
         </div>
 
-        <div class="weather-controls" id="weather-controls">
-          <div class="controls-header">
-            <h3>Control de Capas</h3>
-            <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
-          </div>
-          <div class="controls-body">
-            <div class="control-group">
-              <label for="select_run">Fecha del Pronóstico</label>
-              <select id="select_run">
-                <option value="2025-08-20">20 Agosto 2025</option>
-                <option value="2025-08-21">21 Agosto 2025</option>
-                <option value="2025-08-22" selected>22 Agosto 2025</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label for="selectHora">Pronósticos a</label>
-              <select id="selectHora">
-                <option value="12">12 horas</option>
-                <option value="24" selected>24 horas</option>
-                <option value="48">48 horas</option>
-                <option value="72">72 horas</option>
-              </select>
-            </div>
-            <label for="select_var" style="font-weight: 500;">Sub-parámetro</label>
-            <div class="layer-buttons" id="layer-buttons-meteo">
-              <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
-              <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
-              <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
-              <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
-              <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
-              <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
-            </div>
-            <div class="layer-buttons" id="layer-buttons-aire" style="display: none;">
-              <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
-              <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
-              <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>
-              <button class="layer-btn" data-layer="so2"><i class="fa-solid fa-smog"></i> SO₂</button>
-              <button class="layer-btn" data-layer="pm25"><i class="fa-solid fa-smog"></i> PM2.5</button>
-              <button class="layer-btn" data-layer="pm10"><i class="fa-solid fa-smog"></i> PM10</button>
-            </div>
-            <div class="animation-controls">
-              <button class="play-btn" id="btn_toggle_animation"><i class="fa-solid fa-play" id="playIcon"></i></button>
-              <div class="speed-slider">
-                <label for="btn_rango" style="font-size: 12px; color: #666;">Velocidad</label>
-                <input type="range" min="150" max="1500" step="50" value="1000" id="btn_rango">
-              </div>
-            </div>
-            <div class="controls-footer">
-              <button class="footer-btn" id="btn_glosario">
-                <i class="fa-solid fa-book"></i> Glosario
-              </button>
-              <button class="footer-btn" id="btn_datos">
-                <i class="fa-solid fa-download"></i> Datos
-              </button>
-              <button class="footer-btn" id="btn_recarga">
-                <i class="fa-solid fa-reload"></i> Recargar
-              </button>
-            </div>
-          </div>
-        </div>
+        <!-- Panel de controles -->
+        <div class="controls-panel">
+          <!-- Encabezado -->
+          <div class="panel-header"><p id="panel-header-text"></p></div>
 
-        <div class="legend" id="legend" style="display: none;">
-          <div class="legend-title">Escala</div>
-          <div class="legend-gradient" id="legend-gradient">
-            <div class="filter-indicator" id="filter-indicator"></div>
-          </div>
-          <div class="legend-labels"></div>
-          <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
-            Haz clic en la escala para filtrar
-          </div>
-        </div>
-        
-        <div id="filter-info">
-          <div class="permanent-date"></div>
-        </div>
+          <!-- Fecha -->
+          <label for="select_run">Fecha</label>
+          <select id="select_run">
+            <!-- opciones dinámicas -->
+          </select>
 
-        <!-- Hidden elements for compatibility with existing JavaScript -->
-        <div style="display: none;">
+          <!-- Parámetro -->
+          <label for="select_dat">Parámetro</label>
           <select id="select_dat">
             <option value="temp">Temperatura</option>
-            <option value="quim">Contaminantes</option>
+            <option value="hum">Humedad</option>
           </select>
+
+          <!-- Sub-parámetro -->
+          <label for="select_var">Sub-parámetro</label>
           <select id="select_var"></select>
+
+          <!-- Pronósticos -->
+          <label for="selectHora">Pronósticos a (horas)</label>
+          <select id="selectHora">
+            <option>12</option>
+            <option>24</option>
+            <option>48</option>
+          </select>
+
+          <!-- Controles de animación -->
+          <div class="anim-controls">
+            <label>Animar</label>
+            <button id="btn_toggle_animation" title="Reproducir">
+              <i class="glyphicon glyphicon-play"></i>
+            </button>
+          </div>
+
+          <!-- Velocidad -->
+          <label for="btn_rango">Velocidad</label>
+          <input id="btn_rango" type="range" min="150" max="1500" step="50" />
+
+          <!-- Pie de panel -->
+          <div class="controls-footer">
+            <button onclick="location.reload()" id="btn_glo_quitar">
+              <i class="glyphicon glyphicon-arrow-left"></i> ATRÁS
+            </button>
+            <button id="btn_glo">
+              <i class="glyphicon glyphicon-book"></i> GLOSARIO
+            </button>
+            <button id="btn_datos">
+              <i class="glyphicon glyphicon-download"></i> DATOS
+            </button>
+            <button id="btn_recarga">
+              <i class="glyphicon glyphicon-reload"></i> RECARGAR
+            </button>
+          </div>
+        </div>
+        <div id="gradient-container" class="vertical">
+          <div class="gradient-title">
+            <span id="gradient-title">Variable</span>
+            <span id="gradient-units">Unidades</span>
+          </div>
+          <div class="gradient-scale-wrapper">
+            <canvas
+              id="dynamic-gradient-canvas"
+              class="gradient-bar"
+              width="22"
+            ></canvas>
+            <div class="gradient-values" id="gradient-values"></div>
+          </div>
+        </div>
+        <div id="filter-info">
+          <div class="permanent-date"></div>
         </div>
       </div>
       <div id="hist">
@@ -296,9 +272,19 @@
         <div id="historial-dashboard" style="display:none;">
           <div class="dashboard-header">
             <div class="location-selector">
-              <select id="hist-cabecera-select" class="form-control"></select>
+              <label for="hist-cabecera-select">Seleccione un municipio</label>
+              <!-- Select original oculto para compatibilidad con menu.js -->
+              <select id="hist-cabecera-select" class="form-control" style="display: none;">
+                <option value="">Seleccione un municipio</option>
+              </select>
+              <!-- Combobox visual -->
+              <div id="hist-combobox">
+                <input type="text" class="form-control" placeholder="Buscar municipio..." autocomplete="off">
+                <ul id="hist-combobox-list" style="display: none;"></ul>
+              </div>
             </div>
             <div class="data-type-selector">
+              <label for="hist-tipo-select">Tipo de datos</label>
               <select id="hist-tipo-select" class="form-control">
                 <option value="meteo">Datos Meteorológicos</option>
                 <option value="chem">Calidad del Aire</option>
@@ -349,132 +335,4 @@
   <script src="./utils.js"></script>
   <script src="./app.js"></script>
   <script src="./menu.js"></script>
-  <script>
-    // Script para manejar el cambio dinámico de variables
-    document.addEventListener('DOMContentLoaded', function() {
-      const btnAtmos = document.getElementById('btn_atmos');
-      const btnAire = document.getElementById('btn_aire');
-      const layerButtonsMeteo = document.getElementById('layer-buttons-meteo');
-      const layerButtonsAire = document.getElementById('layer-buttons-aire');
-      const toggleControlsBtn = document.getElementById('toggle-controls-btn');
-      const weatherControls = document.getElementById('weather-controls');
-      const closeControlsBtn = document.getElementById('close-controls-btn');
-      const selectDat = document.getElementById('select_dat');
-      const selectVar = document.getElementById('select_var');
-
-      // Mapeo de botones a valores de variables
-      const variableMapping = {
-        'temperature': 'temmax',
-        'humidity': 'hum',
-        'precipitation': 'lluvia',
-        'wind': 'wind',
-        'pressure': 'psfc',
-        'radiation': 'rad',
-        'co': 'co',
-        'no2': 'no2',
-        'o3': 'o3',
-        'so2': 'so2',
-        'pm25': 'pm25',
-        'pm10': 'pm10'
-      };
-
-      // Función para cambiar a meteorología
-      function showMeteo() {
-        layerButtonsMeteo.style.display = 'grid';
-        layerButtonsAire.style.display = 'none';
-        btnAtmos.classList.add('active');
-        btnAire.classList.remove('active');
-        selectDat.value = 'temp';
-        
-        // Llamar funciones del app.js existente
-        if (typeof set_atmos === 'function') {
-          set_atmos();
-        }
-      }
-
-      // Función para cambiar a calidad del aire
-      function showAire() {
-        layerButtonsMeteo.style.display = 'none';
-        layerButtonsAire.style.display = 'grid';
-        btnAire.classList.add('active');
-        btnAtmos.classList.remove('active');
-        selectDat.value = 'quim';
-        
-        // Llamar funciones del app.js existente
-        if (typeof set_chem === 'function') {
-          set_chem();
-        }
-      }
-
-      // Event listeners para los botones del menú
-      btnAtmos.addEventListener('click', function() {
-        document.body.classList.add('map-active');
-        showMeteo();
-      });
-      btnAire.addEventListener('click', function() {
-        document.body.classList.add('map-active');
-        showAire();
-      });
-
-      // Control del panel de capas
-      toggleControlsBtn.addEventListener('click', function() {
-        weatherControls.classList.add('is-open');
-      });
-
-      closeControlsBtn.addEventListener('click', function() {
-        weatherControls.classList.remove('is-open');
-      });
-
-      // Manejar clicks en botones de variables
-      document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('layer-btn') || e.target.closest('.layer-btn')) {
-          const btn = e.target.classList.contains('layer-btn') ? e.target : e.target.closest('.layer-btn');
-          const layerType = btn.getAttribute('data-layer');
-          
-          // Remover active de todos los botones de la misma categoría
-          const container = btn.closest('.layer-buttons');
-          container.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-          
-          // Agregar active al botón clickeado
-          btn.classList.add('active');
-          
-          // Actualizar select_var oculto para compatibilidad
-          if (variableMapping[layerType]) {
-            selectVar.value = variableMapping[layerType];
-            
-            // Disparar evento change para que app.js procese la variable
-            if (typeof procesa_var === 'function') {
-              procesa_var();
-            }
-          }
-        }
-      });
-
-      // Inicializar con meteorología
-      showMeteo();
-      
-      // Event listeners para botones del footer
-      document.getElementById('btn_glosario').addEventListener('click', function() {
-        // Funcionalidad del glosario - se puede implementar según necesidad
-        console.log('Glosario clicked');
-      });
-
-      document.getElementById('btn_datos').addEventListener('click', function() {
-        // Funcionalidad de descargar datos - se puede implementar según necesidad
-        console.log('Datos clicked');
-      });
-
-      document.getElementById('btn_recarga').addEventListener('click', function() {
-        location.reload();
-      });
-
-      // Activar primera variable por defecto
-      setTimeout(() => {
-        const firstBtn = layerButtonsMeteo.querySelector('.layer-btn');
-        if (firstBtn) {
-          firstBtn.click();
-        }
-      }, 500);
-    });
-  </script>
 </html>

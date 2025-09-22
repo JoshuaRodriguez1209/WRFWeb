@@ -866,15 +866,38 @@
 }
 
 .dashboard-header {
-  display: flex;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
   margin-bottom: 30px;
-  padding: 0 15px;
+  padding: 25px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border: 1px solid #f0f0f0;
 }
 
 .location-selector,
 .data-type-selector {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Asegurar que el combobox ocupe todo el ancho disponible */
+#hist-combobox {
+  width: 100%;
+  position: relative;
+}
+
+/* Labels profesionales */
+.location-selector label,
+.data-type-selector label {
+  font-weight: 600;
+  color: var(--primary-brand-color);
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
 }
 
 .dashboard-content {
@@ -938,16 +961,22 @@
   background: #ffffff;
   cursor: pointer;
   color: #5a1b30;
+  font-size: 15px;
+  font-family: 'Poppins', sans-serif;
 }
 
 #historial-dashboard select.form-control:hover {
   border-color: #5a1b30;
+  font-size: 15px;
+  font-family: 'Poppins', sans-serif;
 }
 
 #historial-dashboard select.form-control:focus {
   box-shadow: 0 0 0 3px rgba(90, 27, 48, 0.2);
   border-color: #5a1b30;
   outline: none;
+  font-size: 15px;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Content Area */
@@ -1116,7 +1145,11 @@
   transition:transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, border-color .2s ease;
 }
 .variable-toggle .icon{font-size:28px; line-height:1}
-.variable-toggle .label{font-weight:600; font-size:.98rem}
+.variable-toggle .label{
+  font-weight:500; 
+  font-size:15px;
+  font-family: 'Poppins', sans-serif;
+}
 
 .variable-toggle:hover{
   transform:translateY(-1px);
@@ -1126,7 +1159,7 @@
 
 /* Activo con gradiente tipo tarjeta seleccionada */
 .variable-toggle.active{
-  background:linear-gradient(135deg,#6e2436 0%, #c19862 100%);
+  background:#5a1b30
   color:#fff;
   border-color:transparent;
   box-shadow:0 8px 22px rgba(97, 44, 59, .25);
@@ -1137,6 +1170,12 @@
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:16px;
+}
+
+/* Grid de una columna para gráficas individuales */
+.charts-grid.individual {
+  grid-template-columns: 1fr;
+  gap: 20px;
 }
 .chart-card{
   background:#fff;
@@ -1181,6 +1220,11 @@
 .variable-toggle .icon{
   color:inherit;
 }
+.variable-toggle .label{
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+}
 .variable-toggle.active{
   color:#fff;                 /* texto blanco cuando esté activa */
 }
@@ -1206,4 +1250,187 @@
 @keyframes fadeInUp{
   from{opacity:0; transform:translateY(8px)}
   to{opacity:1; transform:translateY(0)}
+}
+
+/* Combobox styles for municipality search */
+#hist-combobox {
+  width: 100%;
+}
+
+#hist-combobox input.form-control {
+  width: 100%;
+  height: 50px;
+  font-size: 16px;
+  position: relative;
+  z-index: 2;
+  color: #000;
+  background-color: #fff;
+  border: 2px solid var(--medium-gray);
+  border-radius: 8px;
+  padding: 6px 12px;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+#hist-combobox input.form-control:focus {
+  border-color: var(--secondary-brand-color);
+  box-shadow: 0 0 0 3px rgba(193, 152, 98, 0.2);
+}
+
+/* Dropdown de opciones */
+#hist-combobox-list {
+  position: fixed;
+  z-index: 2;
+  background-color: #fff;
+  color: #000;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 4px;
+  padding: 0;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 16px;
+}
+
+/* Opciones individuales */
+#hist-combobox-list li {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#hist-combobox-list li:hover {
+  background: #f0f0f0;
+}
+
+/* Opción activa (con flechas) */
+#hist-combobox-list li.active {
+  background: var(--secondary-brand-color);
+  color: #fff;
+}
+
+/* Mejorar estilo del combobox y select de tipo */
+#hist-combobox input.form-control,
+#hist-tipo-select {
+  width: 100%;
+  height: 45px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: 'Poppins', sans-serif;
+  background: #fff;
+  transition: all 0.3s ease;
+  color: #333;
+  box-sizing: border-box;
+}
+
+#hist-combobox input.form-control:focus,
+#hist-tipo-select:focus {
+  outline: none;
+  border-color: var(--secondary-brand-color);
+  box-shadow: 0 0 0 3px rgba(193, 152, 98, 0.1);
+}
+
+#hist-combobox input.form-control::placeholder {
+  color: #999;
+  font-weight: 400;
+}
+
+/* Mejorar select de tipo de datos */
+#hist-tipo-select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 40px;
+  appearance: none;
+}
+
+/* Estilos para gráficas individuales y botones de descarga */
+.chart-card.individual-chart {
+  position: relative;
+  margin-bottom: 20px;
+  padding-top: 55px; /* Espacio para el botón de descarga */
+}
+
+.download-btn {
+  position: absolute;
+  top: 15px;
+  margin: 15px;
+  right: 15px;
+  z-index: 10;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  background: var(--secondary-brand-color);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  font-family: 'Poppins', sans-serif;
+  height: 28px;
+  min-width: 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  opacity: 0.85;
+}
+
+.download-btn:hover {
+  background: var(--primary-brand-color);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(90, 27, 48, 0.25);
+  opacity: 1;
+}
+
+.download-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(90, 27, 48, 0.2);
+}
+
+.download-btn i {
+  font-size: 12px;
+}
+
+/* Responsive para dashboard header */
+@media (max-width: 768px) {
+  .dashboard-header {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px;
+  }
+  
+  #hist-combobox input.form-control,
+  #hist-tipo-select {
+    width: 100%;
+    height: 42px;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
+  }
+  
+  .chart-card.individual-chart {
+    margin-bottom: 16px;
+  }
+  
+  .download-btn {
+    top: 10px;
+    right: 10px;
+    padding: 5px 8px;
+    font-size: 11px;
+    height: 26px;
+    min-width: 26px;
+  }
+  
+  .download-btn i {
+    font-size: 11px;
+  }
 }

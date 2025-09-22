@@ -1176,7 +1176,7 @@ function updateStatsTable(tipo) {
       
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><span style="margin-right: 8px">${icon}</span>${label}</td>
+        <td><i class="${icon}" style="margin-right: 8px"></i>${label}</td>
         <td>${stats.avg.toFixed(2)}</td>
         <td>${stats.max.toFixed(2)}</td>
         <td>${stats.min.toFixed(2)}</td>
@@ -1306,14 +1306,13 @@ $("#meteo").click(function () {
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
-  document.body.classList.add('map-active');
   m_glosario = "gatmos.html";
   m_map.updateSize();
   set_atmos();
 
-  // const h1 = document.getElementById("panel-header-text");
+  const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  // h1.textContent = "Pronóstico meteorológico para el Estado de Puebla";
+  h1.textContent = "Pronóstico meteorológico para el Estado de Puebla";
 });
 
 $("#cali").click(function () {
@@ -1321,14 +1320,13 @@ $("#cali").click(function () {
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
-  document.body.classList.add('map-active');
   m_glosario = "gchem.html";
   m_map.updateSize();
   set_chem();
 
-  // const h1 = document.getElementById("panel-header-text");
+  const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  // h1.textContent = "Calidad del aire para el Estado de Puebla";
+  h1.textContent = "Calidad del aire para el Estado de Puebla";
   const h3 = document.getElementById("select_dat");
 
   h3.style.display = "none";
@@ -1669,21 +1667,21 @@ async function createHistoricalView(jsonPath, container, tipo) {
 
 // Variable definitions
 const meteorologicalVariables = {
-  t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: '🌡️' },
-  rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
-  psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
-  wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
-  pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
-  sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
+  t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: 'fa-solid fa-temperature-half' },
+  rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: 'fa-solid fa-droplet' },
+  psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: 'fa-solid fa-gauge' },
+  wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: 'fa-solid fa-wind' },
+  pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: 'fa-solid fa-cloud-rain' },
+  sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: 'fa-solid fa-sun' }
 };
 
 const airQualityVariables = {
-  CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
-  NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
-  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
-  SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
-  PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
-  PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
+  CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
+  NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-shield-halved' },
+  SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: 'fa-solid fa-smog' },
+  PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: 'fa-solid fa-circle' },
+  PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
 };
 
 let currentHistChart = null;
@@ -1721,6 +1719,7 @@ function renderGroupedCharts(groups, labels, titlePrefix){
   const host = document.getElementById('chartsHost');
   if (!host) return;
   host.innerHTML = ''; // limpiar
+  host.className = 'charts-grid'; // Aplicar clase para gráficas agrupadas
   destroyHistCharts();
 
   groups.forEach((grp, idx) => {
@@ -1795,6 +1794,160 @@ const chart = new Chart(cv.getContext('2d'), {
   });
 }
 
+// Función para crear gráficas individuales por variable (estilo MeteorologiaGit)
+function renderIndividualCharts(datasets, labels, type) {
+  const host = document.getElementById('chartsHost');
+  if (!host) return;
+  host.innerHTML = ''; // limpiar
+  host.className = 'charts-grid individual'; // Aplicar clase para gráficas individuales
+  destroyHistCharts();
+
+  if (!datasets.length) {
+    host.innerHTML = '<p style="text-align:center; color:#777; padding:20px;">No hay variables seleccionadas para mostrar.</p>';
+    return;
+  }
+
+  // Crear una gráfica individual para cada variable
+  datasets.forEach((dataset, idx) => {
+    const card = document.createElement('div');
+    card.className = 'chart-card individual-chart';
+    
+    // Crear canvas para la gráfica
+    const cv = document.createElement('canvas');
+    card.appendChild(cv);
+
+    // Calcular rango y escalas para esta variable específica
+    const values = dataset.data.filter(v => Number.isFinite(v));
+    if (!values.length) return;
+
+    const gmin = Math.min(...values);
+    const gmax = Math.max(...values);
+    const range = Math.max(1e-9, gmax - gmin);
+    const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1));
+
+    // Paso "bonito" para los ticks
+    const niceStep = (() => {
+      const target = range / 5;
+      const pow10 = Math.pow(10, Math.floor(Math.log10(target)));
+      const cand = [1, 2, 5].map(m => m * pow10);
+      return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
+    })();
+
+    // Crear la gráfica individual
+    const chart = new Chart(cv.getContext('2d'), {
+      type: 'line',
+      data: { 
+        labels, 
+        datasets: [dataset] // Solo un dataset por gráfica
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 650, easing: 'easeInOutQuart' },
+        plugins: {
+          legend: { 
+            display: true,
+            position: 'top',
+            labels: { 
+              padding: 10, 
+              usePointStyle: true, 
+              font: { size: 12, family: "'Poppins', sans-serif" } 
+            }
+          },
+          title: { 
+            display: true, 
+            text: dataset.label,
+            font: { size: 15, weight: 'bold', family: "'Poppins', sans-serif" }
+          },
+          tooltip: {
+            mode: 'index', 
+            intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.96)',
+            titleColor: '#222', 
+            bodyColor: '#333',
+            borderColor: '#e8e8e8', 
+            borderWidth: 1, 
+            padding: 10, 
+            boxPadding: 6,
+            callbacks: { 
+              label: c => ` ${c.dataset.label}: ${(+c.parsed.y).toFixed(2)}` 
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            suggestedMin: gmin - pad,
+            suggestedMax: gmax + pad,
+            title: {
+              display: true,
+              text: dataset.label.split('(')[1]?.replace(')', '') || 'Valor',
+              color: '#666',
+              font: { family: "'Poppins', sans-serif" }
+            },
+            ticks: {
+              stepSize: niceStep,
+              maxTicksLimit: 6,
+              padding: 6,
+              callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
+              font: { family: "'Poppins', sans-serif" }
+            },
+            grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Hora del día',
+              color: '#666',
+              font: { family: "'Poppins', sans-serif" }
+            },
+            ticks: { 
+              autoSkip: true, 
+              maxRotation: 0, 
+              minRotation: 0, 
+              autoSkipPadding: 12,
+              font: { family: "'Poppins', sans-serif" }
+            },
+            grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
+          }
+        },
+        elements: { point: { radius: 2, hoverRadius: 5 } },
+        interaction: { intersect:false, mode:'index' }
+      }
+    });
+
+    // Crear botón de descarga estilo MeteorologiaGit
+    const btn = document.createElement('button');
+    btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Gráfica';
+    btn.className = 'download-btn';
+    btn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = chart.toBase64Image();
+      
+      // Crear nombre de archivo basado en la variable
+      const variableName = dataset.label.split(' ')[1] || 'variable'; // Extraer nombre de variable
+      const timestamp = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+      a.download = `${slug(variableName)}_${timestamp}.png`;
+      
+      a.click();
+    };
+    card.appendChild(btn);
+    host.appendChild(card);
+
+    currentHistCharts.push(chart);
+  });
+}
+
+// Función de utilidad para crear slugs (nombres de archivo seguros)
+function slug(text) {
+  return text.toString().toLowerCase()
+    .replace(/\s+/g, '-')           // Espacios a guiones
+    .replace(/[^\w\-]+/g, '')       // Remover caracteres no alfanuméricos
+    .replace(/\-\-+/g, '-')         // Múltiples guiones a uno
+    .replace(/^-+/, '')             // Remover guiones al inicio
+    .replace(/-+$/, '');            // Remover guiones al final
+}
+
 
 // Function to create variable toggles
 function createVariableToggles(type) {
@@ -1809,7 +1962,7 @@ function createVariableToggles(type) {
     toggle.className = 'variable-toggle active';
     toggle.dataset.variable = key;
     toggle.innerHTML = `
-      <div class="icon">${config.icon}</div>
+      <div class="icon"><i class="${config.icon}"></i></div>
       <div class="label">${config.label}</div>
     `;
     
@@ -1836,7 +1989,7 @@ function createMeteoHistoricalChart(data) {
   Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
       datasets.push({
-        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+        label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
         backgroundColor: `${cfg.color}20`,
@@ -1857,7 +2010,8 @@ const labels = (currentHistLabels && currentHistLabels.length === datasets[0].da
   const groups = groupDatasetsByRange(datasets, 30);
 
 
-  renderGroupedCharts(groups, labels, 'Tendencias de Variables Meteorológicas');
+  // Usar gráficas individuales en lugar de agrupadas
+  renderIndividualCharts(datasets, labels, 'meteo');
 }
 let currentHistLabels = null;
 
@@ -1879,7 +2033,7 @@ function createChemHistoricalChart(data) {
   Object.entries(airQualityVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
       datasets.push({
-        label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
+        label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
         backgroundColor: `${cfg.color}20`,
@@ -1899,7 +2053,8 @@ function createChemHistoricalChart(data) {
 
   const groups = groupDatasetsByRange(datasets, 30);
 
-  renderGroupedCharts(groups, labels, 'Tendencias de Calidad del Aire');
+  // Usar gráficas individuales en lugar de agrupadas
+  renderIndividualCharts(datasets, labels, 'chem');
 }
 
 
@@ -1960,4 +2115,202 @@ function calculateStats(values) {
   
   return { avg, max, min };
 }
+
+// === COMBOBOX for municipality selection in historial ===
+(function makeHistComboboxRobusto(){
+  const sel = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.getElementById('hist-combobox');
+  if (!wrap) return;
+
+  const input = wrap.querySelector('input.form-control');
+  if (!input) return;
+
+  // Lista como "portal" en <body>
+  const list = document.getElementById('hist-combobox-list');
+  if (!list) return;
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        choose(idx);
+      });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!filtered.length) return;
+    positionList();
+    list.style.display = 'block';
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+  }
+
+  // ----- Eventos -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', () => {
+    filtered = items.slice();
+    render();
+    openList();
+  });
+  input.addEventListener('click', () => {
+    if (!open) {
+      filtered = items.slice();
+      render();
+      openList();
+    }
+  });
+  input.addEventListener('input', () => {
+    filterNow(input.value);
+    filtered.length ? openList() : closeList();
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+
+  // Agregar event listener para conectar con la API real (menu.js)
+  // Verificamos que la función updateHistoricalView esté disponible
+  if (typeof updateHistoricalView === 'function') {
+    sel.addEventListener('change', updateHistoricalView);
+  } else {
+    // Si no está disponible, intentamos más tarde cuando se cargue menu.js
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof updateHistoricalView === 'function') {
+        sel.addEventListener('change', updateHistoricalView);
+      }
+    });
+  }
+})();
+
+// Clear combobox function
+window.clearHistCombobox = function () {
+  const sel = document.getElementById('hist-cabecera-select');
+  if (!sel) return;
+  const wrap = document.getElementById('hist-combobox');
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('hist-combobox-list');
+  if (list) list.style.display = 'none';
+};
 //-------------------------------------------------------------------------------
