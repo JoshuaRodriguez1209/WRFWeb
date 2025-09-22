@@ -752,7 +752,7 @@ const weatherLayers = {
         name: 'Temperatura', 
         unit: '°C', 
         gradient: 'linear-gradient(to right, #1e3c72, #2a5298, #74b9ff, #00b894, #fdcb6e, #e17055, #d63031)', 
-        range: [-10, 40],
+        range: [10, 35], // Updated based on your data
         heatmapColors: [
             0, 'rgba(30, 60, 114, 0)',
             0.1, '#1e3c72',
@@ -767,7 +767,7 @@ const weatherLayers = {
         name: 'Humedad', 
         unit: '%', 
         gradient: 'linear-gradient(to right, #dfe6e9, #74b9ff, #0984e3, #2d3436)', 
-        range: [0, 100],
+        range: [30, 90], // Updated based on your data
         heatmapColors: [
             0, 'rgba(223, 230, 233, 0)',
             0.3, '#dfe6e9',
@@ -780,7 +780,7 @@ const weatherLayers = {
         name: 'Precipitación', 
         unit: 'mm', 
         gradient: 'linear-gradient(to right, #f8f9fa, #74b9ff, #0984e3, #2d3436)', 
-        range: [0, 100],
+        range: [0, 5], // Updated based on your data
         heatmapColors: [
             0, 'rgba(248, 249, 250, 0)',
             0.2, '#f8f9fa',
@@ -793,7 +793,7 @@ const weatherLayers = {
         name: 'Viento', 
         unit: 'km/h', 
         gradient: 'linear-gradient(to right, #f8f9fa, #fdcb6e, #e17055, #d63031, #74b9ff)', 
-        range: [0, 150],
+        range: [5, 30], // Updated based on your data
         heatmapColors: [
             0, 'rgba(248, 249, 250, 0)',
             0.2, '#f8f9fa',
@@ -807,7 +807,7 @@ const weatherLayers = {
         name: 'Presión', 
         unit: 'hPa', 
         gradient: 'linear-gradient(to right, #6c5ce7, #a29bfe, #fd79a8, #fdcb6e, #00b894)', 
-        range: [980, 1040],
+        range: [755, 765], // Updated based on your data
         heatmapColors: [
             0, 'rgba(108, 92, 231, 0)',
             0.25, '#6c5ce7',
@@ -820,7 +820,7 @@ const weatherLayers = {
         name: 'Radiación', 
         unit: 'W/m²', 
         gradient: 'linear-gradient(to right, #2d3436, #636e72, #fdcb6e, #e17055, #fff)', 
-        range: [0, 1000],
+        range: [0, 1200], // Updated based on your data
         heatmapColors: [
             0, 'rgba(45, 52, 54, 0)',
             0.2, '#2d3436',
@@ -834,7 +834,7 @@ const weatherLayers = {
         name: 'Monóxido de Carbono', 
         unit: 'ppm', 
         gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
-        range: [0, 10],
+        range: [0, 7], // Updated based on your data
         heatmapColors: [
             0, 'rgba(0, 184, 148, 0)',
             0.25, '#00b894',
@@ -847,7 +847,7 @@ const weatherLayers = {
         name: 'Dióxido de Nitrógeno', 
         unit: 'ppb', 
         gradient: 'linear-gradient(to right, #74b9ff, #0984e3, #fdcb6e, #e17055, #d63031)', 
-        range: [0, 200],
+        range: [0, 0.5], // Updated based on your data
         heatmapColors: [
             0, 'rgba(116, 185, 255, 0)',
             0.25, '#74b9ff',
@@ -860,7 +860,7 @@ const weatherLayers = {
         name: 'Ozono', 
         unit: 'ppb', 
         gradient: 'linear-gradient(to right, #a29bfe, #6c5ce7, #fd79a8, #e84393, #2d3436)', 
-        range: [0, 150],
+        range: [0, 55], // Updated based on your data
         heatmapColors: [
             0, 'rgba(162, 155, 254, 0)',
             0.25, '#a29bfe',
@@ -873,7 +873,7 @@ const weatherLayers = {
         name: 'PM2.5', 
         unit: 'μg/m³', 
         gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
-        range: [0, 200],
+        range: [0, 0.015], // Updated based on your data
         heatmapColors: [
             0, 'rgba(0, 184, 148, 0)',
             0.2, '#00b894',
@@ -882,20 +882,407 @@ const weatherLayers = {
             0.8, '#d63031',
             1, '#2d3436'
         ]
+    },
+    pm10: { 
+        name: 'PM10', 
+        unit: 'μg/m³', 
+        gradient: 'linear-gradient(to right, #00b894, #fdcb6e, #e17055, #d63031, #2d3436)', 
+        range: [0, 0.3], // Updated based on your data
+        heatmapColors: [
+            0, 'rgba(0, 184, 148, 0)',
+            0.2, '#00b894',
+            0.4, '#fdcb6e',
+            0.6, '#e17055',
+            0.8, '#d63031',
+            1, '#2d3436'
+        ]
+    },
+    so2: { 
+        name: 'Dióxido de Azufre', 
+        unit: 'ppb', 
+        gradient: 'linear-gradient(to right, #74b9ff, #0984e3, #fdcb6e, #e17055, #d63031)', 
+        range: [0, 0.3], // Updated based on your data
+        heatmapColors: [
+            0, 'rgba(116, 185, 255, 0)',
+            0.25, '#74b9ff',
+            0.5, '#0984e3',
+            0.75, '#e17055',
+            1, '#d63031'
+        ]
     }
 };
 
-// Generate smooth, interpolated weather data - DISABLED
-// This function generated fake weather data for visualization
-function generateSmoothWeatherData(type, timeStep = 0) {
-    // Return empty data - real data will be loaded from actual sources
-    return { type: 'FeatureCollection', features: [] };
+
+// Test function to verify data connectivity
+async function testRealDataConnection() {
+    try {
+        console.log('Testing connection to real WRF data...');
+        
+        // Test available dates
+        const dates = await getCurrentDateStringAsync();
+        console.log('Latest available date:', dates);
+        
+        // Test weather data for a small area
+        const testCoords = [{lat: 19.0414, lng: -98.2063}]; // Puebla center
+        
+        const formData = new FormData();
+        formData.append('fecha', getCurrentDateString());
+        formData.append('type', 'temperature');
+        formData.append('coordinates', JSON.stringify(testCoords));
+        
+        const response = await fetch('api/api.php?tipo_solicitud=extract_weather_data', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        console.log('Weather data test result:', result);
+        
+        if (result.success) {
+            console.log('✅ Real data connection successful!');
+            console.log('Files used:', result.files_used);
+            console.log('Municipalities data sources:', result.municipalities_data_count);
+            return true;
+        } else {
+            console.log('❌ Real data connection failed:', result.error);
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ Error testing real data connection:', error);
+        return false;
+    }
 }
 
-function isValueInColorFilter(value, range) {
-    if (!colorFilter) return true;
-    const normalizedValue = (value - range[0]) / (range[1] - range[0]);
-    return normalizedValue >= colorFilter.min && normalizedValue <= colorFilter.max;
+
+
+// Generate smooth, interpolated weather data - DISABLED
+// This function generated fake weather data for visualization
+async function fetchRealWeatherData(type, timeStep = 0) {
+    console.log('fetchRealWeatherData called with:', { type, timeStep });
+    
+    try {
+        const bounds = getPueblaBoundingBox();
+        const coordinates = generateGridPoints(bounds, 30);
+        
+        console.log(`Generated ${coordinates.length} coordinate points`);
+        
+        const formData = new FormData();
+        formData.append('fecha', getCurrentDateString());
+        formData.append('type', type);
+        formData.append('timeStep', timeStep);
+        formData.append('coordinates', JSON.stringify(coordinates));
+        
+        console.log('Sending API request...');
+        
+        const response = await fetch('api/api.php?tipo_solicitud=extract_weather_data', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Raw API response length:', responseText.length);
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Response preview:', responseText.substring(0, 500));
+            throw new Error('Invalid JSON response from weather API');
+        }
+        
+        console.log('Parsed API result:', result);
+        
+        if (result.success && result.data) {
+            console.log(`API returned ${result.data.length} data points`);
+            
+            const geojson = convertToGeoJSON(result.data, type);
+            console.log('Converted to GeoJSON:', geojson);
+            console.log('Returning data type:', typeof geojson);
+            
+            return geojson;
+        } else {
+            console.error('API Error:', result);
+            throw new Error(result.error || 'Unknown API error');
+        }
+        
+    } catch (error) {
+        console.error('Error in fetchRealWeatherData:', error);
+        throw error;
+    }
+}
+
+// Enhanced grid generation for denser, more natural coverage
+function generateGridPoints(bounds, gridSize) {
+    const points = [];
+    const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+    
+    // Increase density significantly for smoother heatmap
+    const actualGridSize = Math.min(gridSize, 40); // Increase to 40x40
+    
+    // Create a denser, more irregular grid
+    for (let i = 0; i < actualGridSize; i++) {
+        for (let j = 0; j < actualGridSize; j++) {
+            // Base grid position
+            const latStep = (maxLat - minLat) / (actualGridSize - 1);
+            const lngStep = (maxLng - minLng) / (actualGridSize - 1);
+            
+            const baseLat = minLat + latStep * i;
+            const baseLng = minLng + lngStep * j;
+            
+            // Add multiple points around each grid position for density
+            for (let k = 0; k < 3; k++) {
+                // Add slight random offset to break up grid pattern
+                const latOffset = (Math.random() - 0.5) * latStep * 0.6;
+                const lngOffset = (Math.random() - 0.5) * lngStep * 0.6;
+                
+                const lat = baseLat + latOffset;
+                const lng = baseLng + lngOffset;
+                
+                // Only include points within Puebla
+                if (isPointInPueblaAccurate(lat, lng)) {
+                    points.push({ lat, lng });
+                }
+            }
+        }
+    }
+    
+    // Add additional random points for even more coverage
+    const additionalPoints = Math.floor(actualGridSize * 5);
+    for (let i = 0; i < additionalPoints; i++) {
+        const lat = minLat + Math.random() * (maxLat - minLat);
+        const lng = minLng + Math.random() * (maxLng - minLng);
+        
+        if (isPointInPueblaAccurate(lat, lng)) {
+            points.push({ lat, lng });
+        }
+    }
+    
+    console.log(`Generated ${points.length} dense grid points for smooth heatmap`);
+    return points;
+}
+
+// FIX 6: Debug and fix the data conversion
+function convertToGeoJSON(dataPoints, type) {
+    console.log(`Converting ${dataPoints ? dataPoints.length : 'null'} data points to GeoJSON for ${type}`);
+    console.log('Data points sample:', dataPoints ? dataPoints.slice(0, 3) : 'null');
+    
+    if (!dataPoints || !Array.isArray(dataPoints)) {
+        console.error('Invalid dataPoints provided to convertToGeoJSON:', dataPoints);
+        return {
+            type: 'FeatureCollection',
+            features: []
+        };
+    }
+    
+    const features = dataPoints
+        .filter(point => {
+            const isValid = point && 
+                          typeof point.lat === 'number' && 
+                          typeof point.lng === 'number' && 
+                          typeof point.value === 'number' && 
+                          point.valid !== false &&
+                          !isNaN(point.lat) && 
+                          !isNaN(point.lng) && 
+                          !isNaN(point.value) &&
+                          isFinite(point.lat) && 
+                          isFinite(point.lng) && 
+                          isFinite(point.value);
+            
+            if (!isValid) {
+                console.warn('Invalid data point filtered out:', point);
+            }
+            return isValid;
+        })
+        .map(point => {
+            const weight = normalizeValue(point.value, type);
+            const intensity = calculateIntensity(point.value, type);
+            
+            return {
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates: [Number(point.lng), Number(point.lat)]
+                },
+                properties: {
+                    value: Number(point.value),
+                    weight: Math.max(0, Math.min(1, Number(weight) || 0)),
+                    intensity: Math.max(0, Math.min(1, Number(intensity) || 0))
+                }
+            };
+        });
+    
+    console.log(`Created ${features.length} valid GeoJSON features`);
+    console.log('Sample feature:', features[0]);
+    
+    const geojson = {
+        type: 'FeatureCollection',
+        features: features
+    };
+    
+    // Validate final structure
+    const isValid = geojson.type === 'FeatureCollection' && 
+                   Array.isArray(geojson.features) &&
+                   geojson.features.every(f => 
+                       f.type === 'Feature' && 
+                       f.geometry && 
+                       f.properties &&
+                       typeof f.properties.value === 'number'
+                   );
+    
+    if (!isValid) {
+        console.error('Generated invalid GeoJSON:', geojson);
+        return {
+            type: 'FeatureCollection',
+            features: []
+        };
+    }
+    
+    return geojson;
+}
+
+function calculateIntensity(value, type) {
+    // This creates more visible gradients in the heatmap
+    const normalized = normalizeValue(value, type);
+    return Math.pow(normalized, 0.7); // Slight power curve for better visualization
+}
+
+
+
+// Updated function to get current date string with fallback
+function getCurrentDateString() {
+    // For now, return a hardcoded date while we debug the API
+    // You can update this once the API is working properly
+    return '2024081900'; // Update this to match your actual data structure
+}
+
+async function getCurrentDateStringAsync() {
+    try {
+        const response = await fetch('api/api.php?tipo_solicitud=available_dates', {
+            method: 'GET'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Available dates response:', responseText);
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            throw new Error('Invalid JSON response from server');
+        }
+        
+        if (result.success && result.dates && result.dates.length > 0) {
+            console.log('Using latest available date:', result.dates[0]);
+            return result.dates[0];
+        } else {
+            throw new Error('No dates available');
+        }
+    } catch (error) {
+        console.error('Error getting available dates:', error);
+        // Fallback to your known data date
+        return '2024081900';
+    }
+}
+
+
+async function getLatestAvailableDate() {
+    try {
+        // Use GET request for available_dates since it doesn't need POST data
+        const response = await fetch('api/api.php?tipo_solicitud=available_dates', {
+            method: 'GET'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        // Get the raw response text first to debug JSON parsing issues
+        const responseText = await response.text();
+        console.log('Raw API response:', responseText);
+        
+        // Try to parse as JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            console.error('Response text that failed to parse:', responseText);
+            throw new Error('Invalid JSON response from server');
+        }
+        
+        if (result.success && result.dates && result.dates.length > 0) {
+            console.log('Available dates:', result.dates);
+            return result.dates[0]; // Return the most recent date
+        } else if (result.error) {
+            console.error('API returned error:', result.error);
+            throw new Error(result.error);
+        } else {
+            throw new Error('No dates available in response');
+        }
+    } catch (error) {
+        console.error('Error getting available dates:', error);
+        throw error;
+    }
+}
+
+
+
+
+function getMaxValue(type) {
+    const maxValues = {
+        temperature: 45,
+        humidity: 100,
+        precipitation: 50,
+        wind: 30,
+        pressure: 1020,
+        radiation: 1000,
+        co: 0.5,
+        no2: 0.1,
+        o3: 0.1,
+        pm25: 100,
+        pm10: 100,
+        so2: 0.1
+    };
+    return maxValues[type] || 1;
+}
+
+
+
+function normalizeValue(value, type) {
+    const ranges = {
+        temperature: { min: -5, max: 40 }, // Based on your JSON data range
+        humidity: { min: 0, max: 100 },
+        wind: { min: 0, max: 30 }, // Based on your wind speed data
+        pressure: { min: 750, max: 770 }, // Based on your pressure data
+        precipitation: { min: 0, max: 5 }, // Most values are 0, some small amounts
+        radiation: { min: 0, max: 1200 }, // Based on your solar radiation data
+        co: { min: 0, max: 7 }, // Based on your CO data
+        no2: { min: 0, max: 0.5 }, // Based on your NO2 data
+        o3: { min: 0, max: 55 }, // Based on your O3 data
+        so2: { min: 0, max: 0.3 }, // Based on your SO2 data
+        pm10: { min: 0, max: 0.3 }, // Based on your PM10 data
+        pm25: { min: 0, max: 0.015 } // Based on your PM25 data
+    };
+    
+    const range = ranges[type] || { min: 0, max: 100 };
+    return Math.max(0, Math.min(1, (value - range.min) / (range.max - range.min)));
+}
+
+// Replace this function in your code:
+async function generateSmoothWeatherData(type, timeStep = 0) {
+    // This function is now just a wrapper for the real data fetching
+    return await fetchRealWeatherData(type, timeStep);
 }
 
 // Function to generate weather values - DISABLED
@@ -932,83 +1319,303 @@ function safeRemoveLayer(id) {
   if (map.getLayer(id)) map.removeLayer(id);
   if (map.getSource(id)) map.removeSource(id);
 }
+// Enhanced error handling for layer addition
 
-// Re-agrega desde cero (idempotente y con timing correcto)
+// Also fix the addLayerFresh function to remove the clustering options that might cause issues
 function addLayerFresh({ sourceId, data, layerId, type='fill', paint={}, layout={}, beforeId }) {
-  // Espera a que el estilo esté listo (importante si usas setStyle o cambias de tema)
-  if (!map.isStyleLoaded()) {
-    map.once('styledata', () => addLayerFresh({ sourceId, data, layerId, type, paint, layout, beforeId }));
-    return;
-  }
-
-  // Limpieza defensiva
-  if (map.getLayer(layerId)) map.removeLayer(layerId);
-  if (map.getSource(sourceId)) map.removeSource(sourceId);
-
-  map.addSource(sourceId, { type: 'geojson', data });
-  map.addLayer({ id: layerId, type, source: sourceId, paint, layout }, beforeId);
+    if (!map || !map.isStyleLoaded()) {
+        console.warn('Map not ready for layer addition');
+        return;
+    }
+    
+    try {
+        // Enhanced data validation
+        if (!data) {
+            throw new Error('No data provided');
+        }
+        
+        if (typeof data !== 'object') {
+            throw new Error('Data must be an object');
+        }
+        
+        if (data.type !== 'FeatureCollection') {
+            throw new Error('Data must be a FeatureCollection');
+        }
+        
+        if (!Array.isArray(data.features)) {
+            throw new Error('Features must be an array');
+        }
+        
+        // Log the data being processed
+        console.log(`Processing data for layer ${layerId}:`, {
+            dataType: typeof data,
+            featureCount: data.features ? data.features.length : 0,
+            sampleFeature: data.features && data.features[0] ? data.features[0] : null
+        });
+        
+        // Validate each feature
+        const validFeatures = data.features.filter((feature, index) => {
+            try {
+                if (!feature || typeof feature !== 'object') {
+                    console.warn(`Feature ${index} is not an object:`, feature);
+                    return false;
+                }
+                
+                if (feature.type !== 'Feature') {
+                    console.warn(`Feature ${index} type is not "Feature":`, feature.type);
+                    return false;
+                }
+                
+                if (!feature.geometry || typeof feature.geometry !== 'object') {
+                    console.warn(`Feature ${index} has invalid geometry:`, feature.geometry);
+                    return false;
+                }
+                
+                if (!feature.properties || typeof feature.properties !== 'object') {
+                    console.warn(`Feature ${index} has invalid properties:`, feature.properties);
+                    return false;
+                }
+                
+                if (feature.geometry.type === 'Point') {
+                    if (!Array.isArray(feature.geometry.coordinates) || 
+                        feature.geometry.coordinates.length !== 2) {
+                        console.warn(`Feature ${index} has invalid Point coordinates:`, feature.geometry.coordinates);
+                        return false;
+                    }
+                    
+                    const [lng, lat] = feature.geometry.coordinates;
+                    if (typeof lng !== 'number' || typeof lat !== 'number' ||
+                        isNaN(lng) || isNaN(lat) || !isFinite(lng) || !isFinite(lat)) {
+                        console.warn(`Feature ${index} has invalid coordinate values:`, lng, lat);
+                        return false;
+                    }
+                }
+                
+                return true;
+            } catch (featureError) {
+                console.warn(`Error validating feature ${index}:`, featureError);
+                return false;
+            }
+        });
+        
+        if (validFeatures.length === 0) {
+            throw new Error('No valid features found in dataset');
+        }
+        
+        console.log(`Adding layer ${layerId} with ${validFeatures.length} valid features`);
+        
+        // Create clean data object
+        const cleanData = {
+            type: 'FeatureCollection',
+            features: validFeatures
+        };
+        
+        // Cleanup existing layers/sources
+        if (map.getLayer(layerId)) {
+            console.log(`Removing existing layer: ${layerId}`);
+            map.removeLayer(layerId);
+        }
+        if (map.getSource(sourceId)) {
+            console.log(`Removing existing source: ${sourceId}`);
+            map.removeSource(sourceId);
+        }
+        
+        // Add source WITHOUT clustering options to avoid conflicts
+        try {
+            map.addSource(sourceId, { 
+                type: 'geojson', 
+                data: cleanData
+                // Removed clustering options that might cause issues
+            });
+        } catch (sourceError) {
+            throw new Error(`Failed to add source: ${sourceError.message}`);
+        }
+        
+        try {
+            map.addLayer({ 
+                id: layerId, 
+                type, 
+                source: sourceId, 
+                paint, 
+                layout 
+            }, beforeId);
+        } catch (layerError) {
+            // Clean up source if layer addition fails
+            if (map.getSource(sourceId)) {
+                map.removeSource(sourceId);
+            }
+            throw new Error(`Failed to add layer: ${layerError.message}`);
+        }
+        
+        console.log(`Successfully added layer: ${layerId}`);
+        
+    } catch (error) {
+        console.error(`Error adding layer ${layerId}:`, error);
+        console.error('Data that failed:', data);
+        showNotification(`Error añadiendo capa: ${error.message}`, 'error');
+        
+        // Emergency cleanup
+        try {
+            if (map.getLayer(layerId)) map.removeLayer(layerId);
+            if (map.getSource(sourceId)) map.removeSource(sourceId);
+        } catch (cleanupError) {
+            console.error('Error during cleanup:', cleanupError);
+        }
+    }
 }
 
         
 // Enhanced weather layer function - MODIFIED for real data
-function addEnhancedWeatherLayer(type) {
-    if (!map || !mapIsReady) { return; } 
+// Replace the existing addEnhancedWeatherLayer function
+// Enhanced error handling in the layer addition function
+// Enhanced error handling for the main weather layer function
+// Enhanced weather layer function with better error handling
+// Fix the addEnhancedWeatherLayer function to properly await the Promise
+// Updated function to create smooth, continuous heatmaps like weather radar
+async function addEnhancedWeatherLayer(type) {
+    if (!map || !mapIsReady) {
+        console.warn('Map not ready for weather layer');
+        showNotification('El mapa no está listo', 'warning');
+        return;
+    }
 
     if (activeLayer) {
-        if (map.getLayer(activeLayer)) map.removeLayer(activeLayer);
-        if (map.getLayer(activeLayer + '-points')) map.removeLayer(activeLayer + '-points');
-        if (map.getSource(activeLayer)) map.removeSource(activeLayer);
+        safeRemoveLayer(activeLayer);
     }
     
     const layerConfig = weatherLayers[type];
+    if (!layerConfig) {
+        console.error('Unknown layer type:', type);
+        showNotification(`Tipo de capa desconocido: ${type}`, 'error');
+        return;
+    }
     
-    // Instead of generating fake data, we get empty data structure
-    // Real implementation will load data from actual weather/air quality sources
-    const data = generateSmoothWeatherData(type, currentTimeStep); // Returns empty now
+    showNotification(`Cargando datos reales de ${layerConfig.name}...`, 'info');
     
-    // Only add layers if we have real data
-    if (data.features && data.features.length > 0) {
-        map.addSource(type, { type: 'geojson', data: data });
+    try {
+        console.log('About to fetch weather data for type:', type);
         
-        // Add heatmap layer
-        map.addLayer({
-            id: type,
+        // Ensure we properly await the data
+        const data = await fetchRealWeatherData(type, currentTimeStep);
+        
+        console.log('Weather data fetched successfully:', data);
+        console.log('Data type:', typeof data);
+        console.log('Is Promise?', data instanceof Promise);
+        
+        if (!data || !data.features || !Array.isArray(data.features)) {
+            throw new Error('Invalid weather data structure received');
+        }
+        
+        if (data.features.length === 0) {
+            throw new Error('No weather data points received');
+        }
+        
+        // Validate data points
+        const validFeatures = data.features.filter(feature => {
+            return feature.properties && 
+                   typeof feature.properties.value === 'number' && 
+                   !isNaN(feature.properties.value) &&
+                   feature.geometry &&
+                   feature.geometry.coordinates &&
+                   Array.isArray(feature.geometry.coordinates) &&
+                   feature.geometry.coordinates.length === 2;
+        });
+        
+        if (validFeatures.length === 0) {
+            throw new Error('No valid weather data points found');
+        }
+        
+        console.log(`Using ${validFeatures.length} of ${data.features.length} weather data points`);
+        
+        const cleanData = {
+            type: 'FeatureCollection',
+            features: validFeatures
+        };
+        
+        console.log('About to add layer with data:', cleanData);
+        
+        // Add the heatmap layer with better configuration
+        addLayerFresh({
+            sourceId: type,
+            data: cleanData,
+            layerId: type,
             type: 'heatmap',
-            source: type,
             paint: {
-                'heatmap-weight': ['interpolate',['linear'],['get', 'weight'],0, 0.1,1, 1],
-                'heatmap-intensity': ['interpolate',['exponential', 1.5],['zoom'],6, 0.8,10, 1.2,14, 1.8],
-                'heatmap-color': ['interpolate',['linear'],['heatmap-density'],...layerConfig.heatmapColors],
-                'heatmap-radius': ['interpolate',['exponential', 1.75],['zoom'],6, 25,10, 45,14, 80],
-                'heatmap-opacity': ['interpolate',['linear'],['zoom'],6, 0.9,10, 0.8,14, 0.7]
+                'heatmap-weight': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'weight'],
+                    0, 0,
+                    1, 1
+                ],
+                'heatmap-intensity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 1.0,
+                    10, 1.5,
+                    14, 2.0
+                ],
+                'heatmap-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['heatmap-density'],
+                    ...layerConfig.heatmapColors
+                ],
+                'heatmap-radius': [
+                    'interpolate',
+                    ['exponential', 1.5],
+                    ['zoom'],
+                    6, 30,
+                    10, 50,
+                    14, 80
+                ],
+                'heatmap-opacity': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    6, 0.8,
+                    10, 0.7,
+                    14, 0.6
+                ]
             }
-        }, 'puebla-border');
-
-        // Add points layer
-        map.addLayer({
-            id: type + '-points',
-            type: 'circle',
-            source: type,
-            minzoom: 10,
-            paint: {
-                'circle-radius': ['interpolate',['linear'],['zoom'],10, 2,14, 4],
-                'circle-color': ['interpolate',['linear'],['get', 'intensity'],0, layerConfig.heatmapColors[1],1, layerConfig.heatmapColors[layerConfig.heatmapColors.length - 1]],
-                'circle-opacity': ['interpolate',['linear'],['zoom'],10, 0.3,14, 0.6],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#ffffff',
-                'circle-stroke-opacity': 0.2
-            }
-        }, 'puebla-border');
-    } else {
-        // Show notification that data will be loaded from real sources
-        showNotification(`Datos de ${layerConfig.name} se cargarán desde fuentes oficiales`, 'info');
+        });
+        
+        updateLegend(layerConfig);
+        updateDataPanel(type);
+        showNotification(`Datos de ${layerConfig.name} cargados exitosamente`, 'success');
+        
+    } catch (error) {
+        console.error('Error loading weather data:', error);
+        console.error('Error stack:', error.stack);
+        
+        let userMessage = `Error cargando datos de ${layerConfig.name}: ${error.message}`;
+        showNotification(userMessage, 'error');
     }
     
     activeLayer = type;
-    updateLegend(layerConfig);
-    updateDataPanel(type);
 }
+
+
+
+async function checkDataAvailability() {
+    try {
+        const formData = new FormData();
+        const response = await fetch('api/api.php?tipo_solicitud=available_dates', {
+            method: 'POST',
+            body: formData
+        });
         
+        const result = await response.json();
+        console.log('Available data dates:', result);
+        
+        return result;
+    } catch (error) {
+        console.error('Error checking data availability:', error);
+        return null;
+    }
+}
+
 function updateLegend(config) {
     const legend = document.getElementById('legend');
     legend.style.display = 'block';
@@ -1044,28 +1651,40 @@ function generateRealisticValue(type, lat, lng, timeStep, timeVariation) {
     return null;
 }
 
-function startAnimation() {
+async function startAnimation() {
     if (isPlaying || !activeLayer) return;
+    
     isPlaying = true;
     document.getElementById('playIcon').classList.replace('fa-play', 'fa-pause');
     
     const speed = 2100 - document.getElementById('speedSlider').value;
     
-    animationInterval = setInterval(() => {
-        currentTimeStep += 1;
-        const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
-        if(map && map.getSource(activeLayer)) {
-            map.getSource(activeLayer).setData(data);
-        }
-        updateDataPanel(activeLayer);
-        
-        if (map.getLayer(activeLayer)) {
-            map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
-            setTimeout(() => {
-                if (map.getLayer(activeLayer)) {
-                    map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
-                }
-            }, 100);
+    animationInterval = setInterval(async () => {
+        try {
+            currentTimeStep += 1;
+            
+            // Properly await the data generation
+            const data = await fetchRealWeatherData(activeLayer, currentTimeStep);
+            
+            // Ensure we have valid data before updating
+            if (data && data.features && map && map.getSource(activeLayer)) {
+                map.getSource(activeLayer).setData(data);
+            }
+            
+            updateDataPanel(activeLayer);
+            
+            // Visual feedback
+            if (map.getLayer(activeLayer)) {
+                map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.6);
+                setTimeout(() => {
+                    if (map.getLayer(activeLayer)) {
+                        map.setPaintProperty(activeLayer, 'heatmap-opacity', 0.8);
+                    }
+                }, 100);
+            }
+        } catch (error) {
+            console.error('Error in animation frame:', error);
+            stopAnimation(); // Stop animation on error
         }
     }, speed);
 }
@@ -1171,66 +1790,137 @@ function setupLegendClickFilter() {
 
 function applyColorFilter() {
     if (activeLayer) {
-        const data = generateSmoothWeatherData(activeLayer, currentTimeStep);
-        if (map && map.getSource(activeLayer)) {
-            map.getSource(activeLayer).setData(data);
-        }
+        // Use async approach for filter application
+        const applyFilter = async () => {
+            try {
+                const data = await fetchRealWeatherData(activeLayer, currentTimeStep);
+                if (map && map.getSource(activeLayer) && data) {
+                    map.getSource(activeLayer).setData(data);
+                }
+            } catch (error) {
+                console.error('Error applying color filter:', error);
+            }
+        };
+        applyFilter();
     }
 }
 
 // Updated map initialization to load JSON data first
-async function initializeMap() {
+function initializeMap() {
     if (mapInitialized) return;
     
     showLoadingIndicator();
     
-    const dataLoaded = await loadJSONData();
-    if (!dataLoaded) {
+    // Add enhanced error handling
+    const dataLoaded = loadJSONData().catch(error => {
+        console.error('Error loading JSON data:', error);
         hideLoadingIndicator();
-        return;
-    }
+        showNotification('Error cargando datos de configuración', 'error');
+        return false;
+    });
     
-    mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
-    
-    map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/dark-v11',
-        center: initialCenter,
-        zoom: initialZoom,
-        pitch: 0,
-        bearing: 0,
-        minZoom: 7.5,
-        maxZoom:15,
-        // Use the new function to set the map's navigation boundaries
-        maxBounds: getPueblaBoundingBox(),
-        scrollZoom: {
-            zoomRate: 0.08
+    dataLoaded.then(success => {
+        if (!success) {
+            hideLoadingIndicator();
+            return;
+        }
+        
+        mapboxgl.accessToken = 'pk.eyJ1IjoidGlsaW4yIiwiYSI6ImNtOG9wMzU4ZjAybnAyanE0dDdmY2x4cncifQ.YxHF3nxLS7LQX6ZlofvnGQ';
+        
+        try {
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/dark-v11',
+                center: initialCenter,
+                zoom: initialZoom,
+                pitch: 0,
+                bearing: 0,
+                minZoom: 7.5,
+                maxZoom: 15,
+                maxBounds: getPueblaBoundingBox(),
+                scrollZoom: {
+                    zoomRate: 0.08
+                }
+            });
+            
+            // Enhanced error handling for map events
+            map.on('error', (error) => {
+                console.error('Mapbox error:', error);
+                hideLoadingIndicator();
+                showNotification('Error en el mapa: ' + (error.error?.message || 'Error desconocido'), 'error');
+            });
+            
+            map.on('load', () => {
+                try {
+                    console.log('Map loaded successfully');
+                    
+                    // Add terrain and sky with error handling
+                    try {
+                        map.addSource('mapbox-dem', { 
+                            'type': 'raster-dem', 
+                            'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' 
+                        });
+                        map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
+                        map.addLayer({ 
+                            'id': 'sky', 
+                            'type': 'sky', 
+                            'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } 
+                        });
+                    } catch (terrainError) {
+                        console.warn('Could not add terrain/sky:', terrainError);
+                        // Continue without terrain
+                    }
+                    
+                    // Add map layers with individual error handling
+                    try {
+                        addMapMask();
+                        console.log('Map mask added');
+                    } catch (maskError) {
+                        console.error('Error adding map mask:', maskError);
+                    }
+                    
+                    try {
+                        addAccuratePueblaStateBoundary();
+                        console.log('State boundary added');
+                    } catch (boundaryError) {
+                        console.error('Error adding state boundary:', boundaryError);
+                    }
+                    
+                    try {
+                        addPueblaMunicipalities();
+                        console.log('Municipalities added');
+                    } catch (municipalitiesError) {
+                        console.error('Error adding municipalities:', municipalitiesError);
+                    }
+                    
+                    try {
+                        addMonitoringStations();
+                        console.log('Monitoring stations added');
+                    } catch (stationsError) {
+                        console.error('Error adding monitoring stations:', stationsError);
+                    }
+                    
+                    hideLoadingIndicator();
+                    mapIsReady = true;
+                    console.log('Map initialization completed');
+                    
+                } catch (loadError) {
+                    console.error('Error during map load event:', loadError);
+                    hideLoadingIndicator();
+                    showNotification('Error configurando el mapa', 'error');
+                }
+            });
+            
+            mapInitialized = true;
+            
+        } catch (mapCreationError) {
+            console.error('Error creating map:', mapCreationError);
+            hideLoadingIndicator();
+            showNotification('Error inicializando el mapa', 'error');
         }
     });
-    
-    map.on('load', () => {
-        map.addSource('mapbox-dem', { 'type': 'raster-dem', 'url': 'mapbox://mapbox.mapbox-terrain-dem-v1' });
-        map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1.2 });
-        map.addLayer({ 'id': 'sky', 'type': 'sky', 'paint': { 'sky-type': 'atmosphere', 'sky-atmosphere-sun-intensity': 15 } });
-        
-        // Call the new mask function first
-        addMapMask(); 
-        // Then call the rest
-        addAccuratePueblaStateBoundary();
-        addPueblaMunicipalities();
-        addMonitoringStations();
-        
-        hideLoadingIndicator();
-        mapIsReady = true; // <-- Add this line
-    });
-    
-    map.on('error', () => {
-        hideLoadingIndicator();
-        console.error('Error loading map');
-    });
-    
-    mapInitialized = true;
 }
+
 
 //cerrar el panel cuando se da clic fuera de este
 document.addEventListener('click', (e) => {
@@ -1550,20 +2240,29 @@ function showNotification(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', () => {
     setupMapControls();
     setupLegendClickFilter();
+    setTimeout(testAPIConnection, 1000);
 
     const controlsPanel = document.getElementById('weather-controls');
 
     document.querySelectorAll('.layer-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            const layerType = this.getAttribute('data-layer');
-            currentTimeStep = 0;
-            colorFilter = null;
-            document.getElementById('filter-indicator').style.display = 'none';
-            addEnhancedWeatherLayer(layerType);
+        btn.addEventListener('click', async function() {
+            try {
+                document.querySelectorAll('.layer-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const layerType = this.getAttribute('data-layer');
+                currentTimeStep = 0;
+                colorFilter = null;
+                document.getElementById('filter-indicator').style.display = 'none';
+                
+                // Properly await the layer addition
+                await addEnhancedWeatherLayer(layerType);
+            } catch (error) {
+                console.error('Error in layer button click:', error);
+                showNotification('Error al cargar la capa', 'error');
+            }
         });
     });
+
 
     function addClickAndTouch(id, handler) {
         const el = document.getElementById(id);
@@ -1580,14 +2279,26 @@ document.addEventListener('DOMContentLoaded', () => {
     window.dispatchEvent(new Event("resize"));
     });    
 
-    document.getElementById('playBtn').addEventListener('click', () => {
-        isPlaying ? stopAnimation() : startAnimation();
+    document.getElementById('playBtn').addEventListener('click', async () => {
+        try {
+            if (isPlaying) {
+                stopAnimation();
+            } else {
+                await startAnimation();
+            }
+        } catch (error) {
+            console.error('Error in animation control:', error);
+        }
     });
     
-    document.getElementById('speedSlider').addEventListener('input', () => {
-        if (isPlaying) {
-            stopAnimation();
-            startAnimation();
+    document.getElementById('speedSlider').addEventListener('input', async () => {
+        try {
+            if (isPlaying) {
+                stopAnimation();
+                await startAnimation();
+            }
+        } catch (error) {
+            console.error('Error in speed slider:', error);
         }
     });
     
@@ -1998,7 +2709,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
 
     // Update parameter selection functionality
-    document.getElementById('select_dat').addEventListener('change', function() {
+    /*document.getElementById('select_dat').addEventListener('change', function() {
         const parameter = this.value;
         const subParamSelect = document.getElementById('select_var');
         
@@ -2036,20 +2747,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
-
+*/
     // Update sub-parameter selection
-    document.getElementById('select_var').addEventListener('change', function() {
-        const selectedParam = this.value;
-        if (selectedParam && weatherLayers[selectedParam]) {
-            const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
-            if (layerBtn) {
-                layerBtn.click();
+    const selectVar = document.getElementById('select_var');
+    if (selectVar) {
+        selectVar.addEventListener('change', function() {
+            const selectedParam = this.value;
+            if (selectedParam && weatherLayers[selectedParam]) {
+                const layerBtn = document.querySelector(`[data-layer="${selectedParam}"]`);
+                if (layerBtn) {
+                    layerBtn.click();
+                }
             }
-        }
-    });
+        });
+    }
 
     // Initialize parameter dropdowns
-    document.getElementById('select_dat').dispatchEvent(new Event('change'));
+    //document.getElementById('select_dat').dispatchEvent(new Event('change'));
 
     // Close modals when clicking outside
     document.getElementById('municipalityModal').addEventListener('click', (e) => {
@@ -2274,34 +2988,109 @@ let currentHistCharts = []; // Holds the Chart.js instances to manage them
 
 // --- 2. Mock Data Function - DISABLED ---
 // This function simulated fetching historical data - will use real API
-function fetchHistoricalData(municipalityId, type) {
-    console.log(`Real data fetching will be implemented for ${municipalityId}, type: ${type}`);
-    // Return empty data structure - real implementation will fetch from actual API
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const emptyData = {
-                labels: [],
-                // Empty data structure that matches expected format
-            };
-            
-            if (type === 'meteo') {
-                emptyData.t2m = [];
-                emptyData.rh = [];
-                emptyData.psl = [];
-                emptyData.wnd = [];
-                emptyData.pre = [];
-                emptyData.sw = [];
-            } else { // chem
-                emptyData.CO = [];
-                emptyData.NO2 = [];
-                emptyData.O3 = [];
-                emptyData.SO2 = [];
-                emptyData.PM10 = [];
-                emptyData.PM25 = [];
+async function fetchHistoricalData(municipalityId, type) {
+    try {
+        const formData = new FormData();
+        formData.append('municipio_id', municipalityId.toString());
+        formData.append('type', type);
+        formData.append('fecha', getCurrentDateString());
+        
+        console.log(`Fetching historical data for municipality: ${municipalityId}, type: ${type}`);
+        
+        const response = await fetch('api/api.php?tipo_solicitud=historical_data', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Historical API response preview:', responseText.substring(0, 200) + '...');
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error in historical data:', parseError);
+            console.error('Full response:', responseText);
+            throw new Error('Invalid JSON response from historical API');
+        }
+        
+        if (result.success && result.data) {
+            console.log('Successfully received historical data from file:', result.file);
+            console.log('Data points per variable:', result.data_points);
+            return result.data;
+        } else {
+            console.error('Historical data error:', result);
+            if (result.available_files) {
+                console.log('Available files for this type:', result.available_files);
             }
-            resolve(emptyData);
-        }, 250);
-    });
+            throw new Error(result.error || 'No historical data available');
+        }
+        
+    } catch (error) {
+        console.error('Error fetching historical data:', error);
+        // Return empty data structure instead of throwing
+        return generateEmptyHistoricalData(type);
+    }
+}
+
+function processHistoricalData(rawData, type) {
+    const processedData = {
+        labels: [], // Time labels
+    };
+    
+    if (type === 'meteo') {
+        // Process meteorological data
+        processedData.t2m = rawData.temperature || [];
+        processedData.rh = rawData.humidity || [];
+        processedData.psl = rawData.pressure || [];
+        processedData.wnd = rawData.wind_speed || [];
+        processedData.pre = rawData.precipitation || [];
+        processedData.sw = rawData.solar_radiation || [];
+    } else {
+        // Process chemical/air quality data
+        processedData.CO = rawData.co || [];
+        processedData.NO2 = rawData.no2 || [];
+        processedData.O3 = rawData.o3 || [];
+        processedData.SO2 = rawData.so2 || [];
+        processedData.PM10 = rawData.pm10 || [];
+        processedData.PM25 = rawData.pm25 || [];
+    }
+    
+    // Generate time labels if not provided
+    if (processedData.labels.length === 0) {
+        const dataLength = Object.values(processedData).find(arr => Array.isArray(arr))?.length || 24;
+        processedData.labels = Array.from({length: dataLength}, (_, i) => `${i}:00`);
+    }
+    
+    return processedData;
+}
+
+function generateEmptyHistoricalData(type) {
+    const emptyData = {
+        labels: Array.from({length: 24}, (_, i) => `${i}:00`)
+    };
+    
+    if (type === 'meteo') {
+        emptyData.t2m = [];
+        emptyData.rh = [];
+        emptyData.psl = [];
+        emptyData.wnd = [];
+        emptyData.pre = [];
+        emptyData.sw = [];
+    } else {
+        emptyData.CO = [];
+        emptyData.NO2 = [];
+        emptyData.O3 = [];
+        emptyData.SO2 = [];
+        emptyData.PM10 = [];
+        emptyData.PM25 = [];
+    }
+    
+    return emptyData;
 }
 
 
@@ -2629,6 +3418,41 @@ function groupDatasetsSmart(datasets, maxGroups = 4) {
     
     return groups;
 }
+
+// Test function to check API connectivity
+async function testAPIConnection() {
+    try {
+        console.log('Testing API connection...');
+        
+        // Test available dates endpoint
+        const datesResponse = await fetch('api/api.php?tipo_solicitud=available_dates', {
+            method: 'GET'
+        });
+        
+        const datesText = await datesResponse.text();
+        console.log('Dates API response:', datesText);
+        
+        // Test weather data endpoint with minimal data
+        const formData = new FormData();
+        formData.append('fecha', '2024081900');
+        formData.append('type', 'temperature');
+        formData.append('coordinates', JSON.stringify([{lat: 19.0414, lng: -98.2063}]));
+        
+        const weatherResponse = await fetch('api/api.php?tipo_solicitud=extract_weather_data', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const weatherText = await weatherResponse.text();
+        console.log('Weather API response:', weatherText);
+        
+        return true;
+    } catch (error) {
+        console.error('API connection test failed:', error);
+        return false;
+    }
+}
+
 
 function updateHistoricalChart() {
     if (!currentHistData) return;

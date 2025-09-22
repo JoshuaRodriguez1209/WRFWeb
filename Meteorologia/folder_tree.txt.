@@ -1,0 +1,3365 @@
+.
+├── api
+│   ├── - copia.htaccess
+│   └── api.php
+├── app.css
+├── app.js
+├── atmos.html
+├── bootstrap
+│   ├── bootstrap.min_back.css
+│   ├── bootstrap.min.css
+│   ├── bootstrap.min.js
+│   ├── datepicker
+│   │   ├── bootstrap-datepicker.css
+│   │   └── bootstrap-datepicker.js
+│   ├── dialog
+│   │   ├── bootstrap-dialog.css
+│   │   └── bootstrap-dialog.js
+│   ├── dropdowns
+│   │   ├── dropdowns-enhancement.css
+│   │   └── dropdowns-enhancement.js
+│   ├── fonts
+│   │   ├── glyphicons-halflings-regular.eot
+│   │   ├── glyphicons-halflings-regular.svg
+│   │   ├── glyphicons-halflings-regular.ttf
+│   │   ├── glyphicons-halflings-regular.woff
+│   │   └── glyphicons-halflings-regular.woff2
+│   └── slider
+│       ├── bootstrap-slider.css
+│       └── bootstrap-slider.js
+├── cabeceras.json
+├── chem.html
+├── color_scale.csv
+├── colores.py
+├── css
+│   ├── estilos.css
+│   └── tooltips.css
+├── estaciones.json
+├── folder_tree.txt.
+├── gatmos.html
+├── gchem.html
+├── glosario.html
+├── hola.html
+├── images
+│   ├── backup
+│   │   ├── bar_CO.png
+│   │   ├── bar_NO2.png
+│   │   ├── bar_O3.png
+│   │   ├── bar_PM10.png
+│   │   ├── bar_PM25.png
+│   │   ├── bar_pre.png
+│   │   ├── bar_SO2.png
+│   │   ├── bar_t2m.png
+│   │   ├── bar_wnd.png
+│   │   ├── escala.png
+│   │   ├── icon_facebook.png
+│   │   ├── icon_twitter.png
+│   │   └── Nueva carpeta
+│   │       ├── bar_CO.png
+│   │       ├── bar_NO2.png
+│   │       ├── bar_O3.png
+│   │       └── bar_SO2.png
+│   ├── bar_CO.png
+│   ├── bar_humrel.png
+│   ├── bar_lw.png
+│   ├── bar_NO2.png
+│   ├── bar_O3.png
+│   ├── bar_PM10.png
+│   ├── bar_PM25.png
+│   ├── bar_pre.png
+│   ├── bar_SO2.png
+│   ├── bar_sw.png
+│   ├── bar_t2m.png
+│   ├── bar_tlev.png
+│   ├── bar_wnd.png
+│   ├── black.png
+│   ├── cabecera.png
+│   ├── estacion.png
+│   ├── facebook.svg
+│   ├── header
+│   │   ├── banner-intro-inicio.jpg
+│   │   ├── header-center.jpg
+│   │   ├── header-gob-final-2.png
+│   │   ├── header-gob-final-3.png
+│   │   ├── header-gob-final.png
+│   │   ├── header-gob.png
+│   │   ├── header-izq-gris.jpg
+│   │   ├── logo_2025_desarrollo_sustentable.jpeg
+│   │   ├── logo-transparente.png
+│   │   ├── logoSMADSOT.png
+│   │   ├── logosSMADSOT.png
+│   │   ├── logosSMADSOTcel.png
+│   │   ├── navbackground.jpg
+│   │   ├── puebla-logo.svg
+│   │   ├── Reporte diario (calidad del aire) 2025071617.pdf
+│   │   └── SMADSOTlogo.jpg
+│   ├── smadsot.png
+│   ├── Tarjetas
+│   │   └── tarjeta-calidad-aire.avif
+│   └── twitter.svg
+├── index.html
+├── kml
+│   ├── cabeceras.kml
+│   └── puebla.kml
+├── lib
+│   ├── chart.min.js
+│   ├── dom-to-image.js
+│   ├── jquery.min.js
+│   ├── ol
+│   │   └── v5.3.0
+│   │       ├── ol.css
+│   │       ├── ol.css.map
+│   │       ├── ol.js
+│   │       └── ol.js.map
+│   ├── ol-ext.css
+│   ├── ol-ext.js
+│   └── ol3-layerswitcher
+│       ├── ol3-layerswitcher.css
+│       └── ol3-layerswitcher.js
+├── puebla_coordinates.json
+├── puebla_state_boundary.json
+├── README.md
+└── runs
+    ├── 2024081900
+    │   ├── cabeceras
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_001_20240819_00z.json
+    │   │   │   ├── wrf_chem_002_20240819_00z.json
+    │   │   │   ├── wrf_chem_003_20240819_00z.json
+    │   │   │   ├── wrf_chem_004_20240819_00z.json
+    │   │   │   ├── wrf_chem_005_20240819_00z.json
+    │   │   │   ├── wrf_chem_006_20240819_00z.json
+    │   │   │   ├── wrf_chem_007_20240819_00z.json
+    │   │   │   ├── wrf_chem_008_20240819_00z.json
+    │   │   │   ├── wrf_chem_009_20240819_00z.json
+    │   │   │   ├── wrf_chem_010_20240819_00z.json
+    │   │   │   ├── wrf_chem_011_20240819_00z.json
+    │   │   │   ├── wrf_chem_012_20240819_00z.json
+    │   │   │   ├── wrf_chem_013_20240819_00z.json
+    │   │   │   ├── wrf_chem_014_20240819_00z.json
+    │   │   │   ├── wrf_chem_015_20240819_00z.json
+    │   │   │   ├── wrf_chem_016_20240819_00z.json
+    │   │   │   ├── wrf_chem_017_20240819_00z.json
+    │   │   │   ├── wrf_chem_018_20240819_00z.json
+    │   │   │   ├── wrf_chem_019_20240819_00z.json
+    │   │   │   ├── wrf_chem_020_20240819_00z.json
+    │   │   │   ├── wrf_chem_021_20240819_00z.json
+    │   │   │   ├── wrf_chem_022_20240819_00z.json
+    │   │   │   ├── wrf_chem_023_20240819_00z.json
+    │   │   │   ├── wrf_chem_024_20240819_00z.json
+    │   │   │   ├── wrf_chem_025_20240819_00z.json
+    │   │   │   ├── wrf_chem_026_20240819_00z.json
+    │   │   │   ├── wrf_chem_027_20240819_00z.json
+    │   │   │   ├── wrf_chem_028_20240819_00z.json
+    │   │   │   ├── wrf_chem_029_20240819_00z.json
+    │   │   │   ├── wrf_chem_030_20240819_00z.json
+    │   │   │   ├── wrf_chem_031_20240819_00z.json
+    │   │   │   ├── wrf_chem_032_20240819_00z.json
+    │   │   │   ├── wrf_chem_033_20240819_00z.json
+    │   │   │   ├── wrf_chem_034_20240819_00z.json
+    │   │   │   ├── wrf_chem_035_20240819_00z.json
+    │   │   │   ├── wrf_chem_036_20240819_00z.json
+    │   │   │   ├── wrf_chem_037_20240819_00z.json
+    │   │   │   ├── wrf_chem_038_20240819_00z.json
+    │   │   │   ├── wrf_chem_039_20240819_00z.json
+    │   │   │   ├── wrf_chem_040_20240819_00z.json
+    │   │   │   ├── wrf_chem_041_20240819_00z.json
+    │   │   │   ├── wrf_chem_042_20240819_00z.json
+    │   │   │   ├── wrf_chem_043_20240819_00z.json
+    │   │   │   ├── wrf_chem_044_20240819_00z.json
+    │   │   │   ├── wrf_chem_045_20240819_00z.json
+    │   │   │   ├── wrf_chem_046_20240819_00z.json
+    │   │   │   ├── wrf_chem_047_20240819_00z.json
+    │   │   │   ├── wrf_chem_048_20240819_00z.json
+    │   │   │   ├── wrf_chem_049_20240819_00z.json
+    │   │   │   ├── wrf_chem_050_20240819_00z.json
+    │   │   │   ├── wrf_chem_051_20240819_00z.json
+    │   │   │   ├── wrf_chem_052_20240819_00z.json
+    │   │   │   ├── wrf_chem_053_20240819_00z.json
+    │   │   │   ├── wrf_chem_054_20240819_00z.json
+    │   │   │   ├── wrf_chem_055_20240819_00z.json
+    │   │   │   ├── wrf_chem_056_20240819_00z.json
+    │   │   │   ├── wrf_chem_057_20240819_00z.json
+    │   │   │   ├── wrf_chem_058_20240819_00z.json
+    │   │   │   ├── wrf_chem_059_20240819_00z.json
+    │   │   │   ├── wrf_chem_060_20240819_00z.json
+    │   │   │   ├── wrf_chem_061_20240819_00z.json
+    │   │   │   ├── wrf_chem_062_20240819_00z.json
+    │   │   │   ├── wrf_chem_063_20240819_00z.json
+    │   │   │   ├── wrf_chem_064_20240819_00z.json
+    │   │   │   ├── wrf_chem_065_20240819_00z.json
+    │   │   │   ├── wrf_chem_066_20240819_00z.json
+    │   │   │   ├── wrf_chem_067_20240819_00z.json
+    │   │   │   ├── wrf_chem_068_20240819_00z.json
+    │   │   │   ├── wrf_chem_069_20240819_00z.json
+    │   │   │   ├── wrf_chem_070_20240819_00z.json
+    │   │   │   ├── wrf_chem_071_20240819_00z.json
+    │   │   │   ├── wrf_chem_072_20240819_00z.json
+    │   │   │   ├── wrf_chem_073_20240819_00z.json
+    │   │   │   ├── wrf_chem_074_20240819_00z.json
+    │   │   │   ├── wrf_chem_075_20240819_00z.json
+    │   │   │   ├── wrf_chem_076_20240819_00z.json
+    │   │   │   ├── wrf_chem_077_20240819_00z.json
+    │   │   │   ├── wrf_chem_078_20240819_00z.json
+    │   │   │   ├── wrf_chem_079_20240819_00z.json
+    │   │   │   ├── wrf_chem_080_20240819_00z.json
+    │   │   │   ├── wrf_chem_081_20240819_00z.json
+    │   │   │   ├── wrf_chem_082_20240819_00z.json
+    │   │   │   ├── wrf_chem_083_20240819_00z.json
+    │   │   │   ├── wrf_chem_084_20240819_00z.json
+    │   │   │   ├── wrf_chem_085_20240819_00z.json
+    │   │   │   ├── wrf_chem_086_20240819_00z.json
+    │   │   │   ├── wrf_chem_087_20240819_00z.json
+    │   │   │   ├── wrf_chem_088_20240819_00z.json
+    │   │   │   ├── wrf_chem_089_20240819_00z.json
+    │   │   │   ├── wrf_chem_090_20240819_00z.json
+    │   │   │   ├── wrf_chem_091_20240819_00z.json
+    │   │   │   ├── wrf_chem_092_20240819_00z.json
+    │   │   │   ├── wrf_chem_093_20240819_00z.json
+    │   │   │   ├── wrf_chem_094_20240819_00z.json
+    │   │   │   ├── wrf_chem_095_20240819_00z.json
+    │   │   │   ├── wrf_chem_096_20240819_00z.json
+    │   │   │   ├── wrf_chem_097_20240819_00z.json
+    │   │   │   ├── wrf_chem_098_20240819_00z.json
+    │   │   │   ├── wrf_chem_099_20240819_00z.json
+    │   │   │   ├── wrf_chem_100_20240819_00z.json
+    │   │   │   ├── wrf_chem_101_20240819_00z.json
+    │   │   │   ├── wrf_chem_102_20240819_00z.json
+    │   │   │   ├── wrf_chem_103_20240819_00z.json
+    │   │   │   ├── wrf_chem_104_20240819_00z.json
+    │   │   │   ├── wrf_chem_105_20240819_00z.json
+    │   │   │   ├── wrf_chem_106_20240819_00z.json
+    │   │   │   ├── wrf_chem_107_20240819_00z.json
+    │   │   │   ├── wrf_chem_108_20240819_00z.json
+    │   │   │   ├── wrf_chem_109_20240819_00z.json
+    │   │   │   ├── wrf_chem_110_20240819_00z.json
+    │   │   │   ├── wrf_chem_111_20240819_00z.json
+    │   │   │   ├── wrf_chem_112_20240819_00z.json
+    │   │   │   ├── wrf_chem_113_20240819_00z.json
+    │   │   │   ├── wrf_chem_114_20240819_00z.json
+    │   │   │   ├── wrf_chem_115_20240819_00z.json
+    │   │   │   ├── wrf_chem_116_20240819_00z.json
+    │   │   │   ├── wrf_chem_117_20240819_00z.json
+    │   │   │   ├── wrf_chem_118_20240819_00z.json
+    │   │   │   ├── wrf_chem_119_20240819_00z.json
+    │   │   │   ├── wrf_chem_120_20240819_00z.json
+    │   │   │   ├── wrf_chem_121_20240819_00z.json
+    │   │   │   ├── wrf_chem_122_20240819_00z.json
+    │   │   │   ├── wrf_chem_123_20240819_00z.json
+    │   │   │   ├── wrf_chem_124_20240819_00z.json
+    │   │   │   ├── wrf_chem_125_20240819_00z.json
+    │   │   │   ├── wrf_chem_126_20240819_00z.json
+    │   │   │   ├── wrf_chem_127_20240819_00z.json
+    │   │   │   ├── wrf_chem_128_20240819_00z.json
+    │   │   │   ├── wrf_chem_129_20240819_00z.json
+    │   │   │   ├── wrf_chem_130_20240819_00z.json
+    │   │   │   ├── wrf_chem_131_20240819_00z.json
+    │   │   │   ├── wrf_chem_132_20240819_00z.json
+    │   │   │   ├── wrf_chem_133_20240819_00z.json
+    │   │   │   ├── wrf_chem_134_20240819_00z.json
+    │   │   │   ├── wrf_chem_135_20240819_00z.json
+    │   │   │   ├── wrf_chem_136_20240819_00z.json
+    │   │   │   ├── wrf_chem_137_20240819_00z.json
+    │   │   │   ├── wrf_chem_138_20240819_00z.json
+    │   │   │   ├── wrf_chem_139_20240819_00z.json
+    │   │   │   ├── wrf_chem_140_20240819_00z.json
+    │   │   │   ├── wrf_chem_141_20240819_00z.json
+    │   │   │   ├── wrf_chem_142_20240819_00z.json
+    │   │   │   ├── wrf_chem_143_20240819_00z.json
+    │   │   │   ├── wrf_chem_144_20240819_00z.json
+    │   │   │   ├── wrf_chem_145_20240819_00z.json
+    │   │   │   ├── wrf_chem_146_20240819_00z.json
+    │   │   │   ├── wrf_chem_147_20240819_00z.json
+    │   │   │   ├── wrf_chem_148_20240819_00z.json
+    │   │   │   ├── wrf_chem_149_20240819_00z.json
+    │   │   │   ├── wrf_chem_150_20240819_00z.json
+    │   │   │   ├── wrf_chem_151_20240819_00z.json
+    │   │   │   ├── wrf_chem_152_20240819_00z.json
+    │   │   │   ├── wrf_chem_153_20240819_00z.json
+    │   │   │   ├── wrf_chem_154_20240819_00z.json
+    │   │   │   ├── wrf_chem_155_20240819_00z.json
+    │   │   │   ├── wrf_chem_156_20240819_00z.json
+    │   │   │   ├── wrf_chem_157_20240819_00z.json
+    │   │   │   ├── wrf_chem_158_20240819_00z.json
+    │   │   │   ├── wrf_chem_159_20240819_00z.json
+    │   │   │   ├── wrf_chem_160_20240819_00z.json
+    │   │   │   ├── wrf_chem_161_20240819_00z.json
+    │   │   │   ├── wrf_chem_162_20240819_00z.json
+    │   │   │   ├── wrf_chem_163_20240819_00z.json
+    │   │   │   ├── wrf_chem_164_20240819_00z.json
+    │   │   │   ├── wrf_chem_165_20240819_00z.json
+    │   │   │   ├── wrf_chem_166_20240819_00z.json
+    │   │   │   ├── wrf_chem_167_20240819_00z.json
+    │   │   │   ├── wrf_chem_168_20240819_00z.json
+    │   │   │   ├── wrf_chem_169_20240819_00z.json
+    │   │   │   ├── wrf_chem_170_20240819_00z.json
+    │   │   │   ├── wrf_chem_171_20240819_00z.json
+    │   │   │   ├── wrf_chem_172_20240819_00z.json
+    │   │   │   ├── wrf_chem_173_20240819_00z.json
+    │   │   │   ├── wrf_chem_174_20240819_00z.json
+    │   │   │   ├── wrf_chem_175_20240819_00z.json
+    │   │   │   ├── wrf_chem_176_20240819_00z.json
+    │   │   │   ├── wrf_chem_177_20240819_00z.json
+    │   │   │   ├── wrf_chem_178_20240819_00z.json
+    │   │   │   ├── wrf_chem_179_20240819_00z.json
+    │   │   │   ├── wrf_chem_180_20240819_00z.json
+    │   │   │   ├── wrf_chem_181_20240819_00z.json
+    │   │   │   ├── wrf_chem_182_20240819_00z.json
+    │   │   │   ├── wrf_chem_183_20240819_00z.json
+    │   │   │   ├── wrf_chem_184_20240819_00z.json
+    │   │   │   ├── wrf_chem_185_20240819_00z.json
+    │   │   │   ├── wrf_chem_186_20240819_00z.json
+    │   │   │   ├── wrf_chem_187_20240819_00z.json
+    │   │   │   ├── wrf_chem_188_20240819_00z.json
+    │   │   │   ├── wrf_chem_189_20240819_00z.json
+    │   │   │   ├── wrf_chem_190_20240819_00z.json
+    │   │   │   ├── wrf_chem_191_20240819_00z.json
+    │   │   │   ├── wrf_chem_192_20240819_00z.json
+    │   │   │   ├── wrf_chem_193_20240819_00z.json
+    │   │   │   ├── wrf_chem_194_20240819_00z.json
+    │   │   │   ├── wrf_chem_195_20240819_00z.json
+    │   │   │   ├── wrf_chem_196_20240819_00z.json
+    │   │   │   ├── wrf_chem_197_20240819_00z.json
+    │   │   │   ├── wrf_chem_198_20240819_00z.json
+    │   │   │   ├── wrf_chem_199_20240819_00z.json
+    │   │   │   ├── wrf_chem_200_20240819_00z.json
+    │   │   │   ├── wrf_chem_201_20240819_00z.json
+    │   │   │   ├── wrf_chem_202_20240819_00z.json
+    │   │   │   ├── wrf_chem_203_20240819_00z.json
+    │   │   │   ├── wrf_chem_204_20240819_00z.json
+    │   │   │   ├── wrf_chem_205_20240819_00z.json
+    │   │   │   ├── wrf_chem_206_20240819_00z.json
+    │   │   │   ├── wrf_chem_207_20240819_00z.json
+    │   │   │   ├── wrf_chem_208_20240819_00z.json
+    │   │   │   ├── wrf_chem_209_20240819_00z.json
+    │   │   │   ├── wrf_chem_210_20240819_00z.json
+    │   │   │   ├── wrf_chem_211_20240819_00z.json
+    │   │   │   ├── wrf_chem_212_20240819_00z.json
+    │   │   │   ├── wrf_chem_213_20240819_00z.json
+    │   │   │   ├── wrf_chem_214_20240819_00z.json
+    │   │   │   ├── wrf_chem_215_20240819_00z.json
+    │   │   │   ├── wrf_chem_216_20240819_00z.json
+    │   │   │   └── wrf_chem_217_20240819_00z.json
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_001_20240819_00z.json
+    │   │       ├── wrf_meteo_002_20240819_00z.json
+    │   │       ├── wrf_meteo_003_20240819_00z.json
+    │   │       ├── wrf_meteo_004_20240819_00z.json
+    │   │       ├── wrf_meteo_005_20240819_00z.json
+    │   │       ├── wrf_meteo_006_20240819_00z.json
+    │   │       ├── wrf_meteo_007_20240819_00z.json
+    │   │       ├── wrf_meteo_008_20240819_00z.json
+    │   │       ├── wrf_meteo_009_20240819_00z.json
+    │   │       ├── wrf_meteo_010_20240819_00z.json
+    │   │       ├── wrf_meteo_011_20240819_00z.json
+    │   │       ├── wrf_meteo_012_20240819_00z.json
+    │   │       ├── wrf_meteo_013_20240819_00z.json
+    │   │       ├── wrf_meteo_014_20240819_00z.json
+    │   │       ├── wrf_meteo_015_20240819_00z.json
+    │   │       ├── wrf_meteo_016_20240819_00z.json
+    │   │       ├── wrf_meteo_017_20240819_00z.json
+    │   │       ├── wrf_meteo_018_20240819_00z.json
+    │   │       ├── wrf_meteo_019_20240819_00z.json
+    │   │       ├── wrf_meteo_020_20240819_00z.json
+    │   │       ├── wrf_meteo_021_20240819_00z.json
+    │   │       ├── wrf_meteo_022_20240819_00z.json
+    │   │       ├── wrf_meteo_023_20240819_00z.json
+    │   │       ├── wrf_meteo_024_20240819_00z.json
+    │   │       ├── wrf_meteo_025_20240819_00z.json
+    │   │       ├── wrf_meteo_026_20240819_00z.json
+    │   │       ├── wrf_meteo_027_20240819_00z.json
+    │   │       ├── wrf_meteo_028_20240819_00z.json
+    │   │       ├── wrf_meteo_029_20240819_00z.json
+    │   │       ├── wrf_meteo_030_20240819_00z.json
+    │   │       ├── wrf_meteo_031_20240819_00z.json
+    │   │       ├── wrf_meteo_032_20240819_00z.json
+    │   │       ├── wrf_meteo_033_20240819_00z.json
+    │   │       ├── wrf_meteo_034_20240819_00z.json
+    │   │       ├── wrf_meteo_035_20240819_00z.json
+    │   │       ├── wrf_meteo_036_20240819_00z.json
+    │   │       ├── wrf_meteo_037_20240819_00z.json
+    │   │       ├── wrf_meteo_038_20240819_00z.json
+    │   │       ├── wrf_meteo_039_20240819_00z.json
+    │   │       ├── wrf_meteo_040_20240819_00z.json
+    │   │       ├── wrf_meteo_041_20240819_00z.json
+    │   │       ├── wrf_meteo_042_20240819_00z.json
+    │   │       ├── wrf_meteo_043_20240819_00z.json
+    │   │       ├── wrf_meteo_044_20240819_00z.json
+    │   │       ├── wrf_meteo_045_20240819_00z.json
+    │   │       ├── wrf_meteo_046_20240819_00z.json
+    │   │       ├── wrf_meteo_047_20240819_00z.json
+    │   │       ├── wrf_meteo_048_20240819_00z.json
+    │   │       ├── wrf_meteo_049_20240819_00z.json
+    │   │       ├── wrf_meteo_050_20240819_00z.json
+    │   │       ├── wrf_meteo_051_20240819_00z.json
+    │   │       ├── wrf_meteo_052_20240819_00z.json
+    │   │       ├── wrf_meteo_053_20240819_00z.json
+    │   │       ├── wrf_meteo_054_20240819_00z.json
+    │   │       ├── wrf_meteo_055_20240819_00z.json
+    │   │       ├── wrf_meteo_056_20240819_00z.json
+    │   │       ├── wrf_meteo_057_20240819_00z.json
+    │   │       ├── wrf_meteo_058_20240819_00z.json
+    │   │       ├── wrf_meteo_059_20240819_00z.json
+    │   │       ├── wrf_meteo_060_20240819_00z.json
+    │   │       ├── wrf_meteo_061_20240819_00z.json
+    │   │       ├── wrf_meteo_062_20240819_00z.json
+    │   │       ├── wrf_meteo_063_20240819_00z.json
+    │   │       ├── wrf_meteo_064_20240819_00z.json
+    │   │       ├── wrf_meteo_065_20240819_00z.json
+    │   │       ├── wrf_meteo_066_20240819_00z.json
+    │   │       ├── wrf_meteo_067_20240819_00z.json
+    │   │       ├── wrf_meteo_068_20240819_00z.json
+    │   │       ├── wrf_meteo_069_20240819_00z.json
+    │   │       ├── wrf_meteo_070_20240819_00z.json
+    │   │       ├── wrf_meteo_071_20240819_00z.json
+    │   │       ├── wrf_meteo_072_20240819_00z.json
+    │   │       ├── wrf_meteo_073_20240819_00z.json
+    │   │       ├── wrf_meteo_074_20240819_00z.json
+    │   │       ├── wrf_meteo_075_20240819_00z.json
+    │   │       ├── wrf_meteo_076_20240819_00z.json
+    │   │       ├── wrf_meteo_077_20240819_00z.json
+    │   │       ├── wrf_meteo_078_20240819_00z.json
+    │   │       ├── wrf_meteo_079_20240819_00z.json
+    │   │       ├── wrf_meteo_080_20240819_00z.json
+    │   │       ├── wrf_meteo_081_20240819_00z.json
+    │   │       ├── wrf_meteo_082_20240819_00z.json
+    │   │       ├── wrf_meteo_083_20240819_00z.json
+    │   │       ├── wrf_meteo_084_20240819_00z.json
+    │   │       ├── wrf_meteo_085_20240819_00z.json
+    │   │       ├── wrf_meteo_086_20240819_00z.json
+    │   │       ├── wrf_meteo_087_20240819_00z.json
+    │   │       ├── wrf_meteo_088_20240819_00z.json
+    │   │       ├── wrf_meteo_089_20240819_00z.json
+    │   │       ├── wrf_meteo_090_20240819_00z.json
+    │   │       ├── wrf_meteo_091_20240819_00z.json
+    │   │       ├── wrf_meteo_092_20240819_00z.json
+    │   │       ├── wrf_meteo_093_20240819_00z.json
+    │   │       ├── wrf_meteo_094_20240819_00z.json
+    │   │       ├── wrf_meteo_095_20240819_00z.json
+    │   │       ├── wrf_meteo_096_20240819_00z.json
+    │   │       ├── wrf_meteo_097_20240819_00z.json
+    │   │       ├── wrf_meteo_098_20240819_00z.json
+    │   │       ├── wrf_meteo_099_20240819_00z.json
+    │   │       ├── wrf_meteo_100_20240819_00z.json
+    │   │       ├── wrf_meteo_101_20240819_00z.json
+    │   │       ├── wrf_meteo_102_20240819_00z.json
+    │   │       ├── wrf_meteo_103_20240819_00z.json
+    │   │       ├── wrf_meteo_104_20240819_00z.json
+    │   │       ├── wrf_meteo_105_20240819_00z.json
+    │   │       ├── wrf_meteo_106_20240819_00z.json
+    │   │       ├── wrf_meteo_107_20240819_00z.json
+    │   │       ├── wrf_meteo_108_20240819_00z.json
+    │   │       ├── wrf_meteo_109_20240819_00z.json
+    │   │       ├── wrf_meteo_110_20240819_00z.json
+    │   │       ├── wrf_meteo_111_20240819_00z.json
+    │   │       ├── wrf_meteo_112_20240819_00z.json
+    │   │       ├── wrf_meteo_113_20240819_00z.json
+    │   │       ├── wrf_meteo_114_20240819_00z.json
+    │   │       ├── wrf_meteo_115_20240819_00z.json
+    │   │       ├── wrf_meteo_116_20240819_00z.json
+    │   │       ├── wrf_meteo_117_20240819_00z.json
+    │   │       ├── wrf_meteo_118_20240819_00z.json
+    │   │       ├── wrf_meteo_119_20240819_00z.json
+    │   │       ├── wrf_meteo_120_20240819_00z.json
+    │   │       ├── wrf_meteo_121_20240819_00z.json
+    │   │       ├── wrf_meteo_122_20240819_00z.json
+    │   │       ├── wrf_meteo_123_20240819_00z.json
+    │   │       ├── wrf_meteo_124_20240819_00z.json
+    │   │       ├── wrf_meteo_125_20240819_00z.json
+    │   │       ├── wrf_meteo_126_20240819_00z.json
+    │   │       ├── wrf_meteo_127_20240819_00z.json
+    │   │       ├── wrf_meteo_128_20240819_00z.json
+    │   │       ├── wrf_meteo_129_20240819_00z.json
+    │   │       ├── wrf_meteo_130_20240819_00z.json
+    │   │       ├── wrf_meteo_131_20240819_00z.json
+    │   │       ├── wrf_meteo_132_20240819_00z.json
+    │   │       ├── wrf_meteo_133_20240819_00z.json
+    │   │       ├── wrf_meteo_134_20240819_00z.json
+    │   │       ├── wrf_meteo_135_20240819_00z.json
+    │   │       ├── wrf_meteo_136_20240819_00z.json
+    │   │       ├── wrf_meteo_137_20240819_00z.json
+    │   │       ├── wrf_meteo_138_20240819_00z.json
+    │   │       ├── wrf_meteo_139_20240819_00z.json
+    │   │       ├── wrf_meteo_140_20240819_00z.json
+    │   │       ├── wrf_meteo_141_20240819_00z.json
+    │   │       ├── wrf_meteo_142_20240819_00z.json
+    │   │       ├── wrf_meteo_143_20240819_00z.json
+    │   │       ├── wrf_meteo_144_20240819_00z.json
+    │   │       ├── wrf_meteo_145_20240819_00z.json
+    │   │       ├── wrf_meteo_146_20240819_00z.json
+    │   │       ├── wrf_meteo_147_20240819_00z.json
+    │   │       ├── wrf_meteo_148_20240819_00z.json
+    │   │       ├── wrf_meteo_149_20240819_00z.json
+    │   │       ├── wrf_meteo_150_20240819_00z.json
+    │   │       ├── wrf_meteo_151_20240819_00z.json
+    │   │       ├── wrf_meteo_152_20240819_00z.json
+    │   │       ├── wrf_meteo_153_20240819_00z.json
+    │   │       ├── wrf_meteo_154_20240819_00z.json
+    │   │       ├── wrf_meteo_155_20240819_00z.json
+    │   │       ├── wrf_meteo_156_20240819_00z.json
+    │   │       ├── wrf_meteo_157_20240819_00z.json
+    │   │       ├── wrf_meteo_158_20240819_00z.json
+    │   │       ├── wrf_meteo_159_20240819_00z.json
+    │   │       ├── wrf_meteo_160_20240819_00z.json
+    │   │       ├── wrf_meteo_161_20240819_00z.json
+    │   │       ├── wrf_meteo_162_20240819_00z.json
+    │   │       ├── wrf_meteo_163_20240819_00z.json
+    │   │       ├── wrf_meteo_164_20240819_00z.json
+    │   │       ├── wrf_meteo_165_20240819_00z.json
+    │   │       ├── wrf_meteo_166_20240819_00z.json
+    │   │       ├── wrf_meteo_167_20240819_00z.json
+    │   │       ├── wrf_meteo_168_20240819_00z.json
+    │   │       ├── wrf_meteo_169_20240819_00z.json
+    │   │       ├── wrf_meteo_170_20240819_00z.json
+    │   │       ├── wrf_meteo_171_20240819_00z.json
+    │   │       ├── wrf_meteo_172_20240819_00z.json
+    │   │       ├── wrf_meteo_173_20240819_00z.json
+    │   │       ├── wrf_meteo_174_20240819_00z.json
+    │   │       ├── wrf_meteo_175_20240819_00z.json
+    │   │       ├── wrf_meteo_176_20240819_00z.json
+    │   │       ├── wrf_meteo_177_20240819_00z.json
+    │   │       ├── wrf_meteo_178_20240819_00z.json
+    │   │       ├── wrf_meteo_179_20240819_00z.json
+    │   │       ├── wrf_meteo_180_20240819_00z.json
+    │   │       ├── wrf_meteo_181_20240819_00z.json
+    │   │       ├── wrf_meteo_182_20240819_00z.json
+    │   │       ├── wrf_meteo_183_20240819_00z.json
+    │   │       ├── wrf_meteo_184_20240819_00z.json
+    │   │       ├── wrf_meteo_185_20240819_00z.json
+    │   │       ├── wrf_meteo_186_20240819_00z.json
+    │   │       ├── wrf_meteo_187_20240819_00z.json
+    │   │       ├── wrf_meteo_188_20240819_00z.json
+    │   │       ├── wrf_meteo_189_20240819_00z.json
+    │   │       ├── wrf_meteo_190_20240819_00z.json
+    │   │       ├── wrf_meteo_191_20240819_00z.json
+    │   │       ├── wrf_meteo_192_20240819_00z.json
+    │   │       ├── wrf_meteo_193_20240819_00z.json
+    │   │       ├── wrf_meteo_194_20240819_00z.json
+    │   │       ├── wrf_meteo_195_20240819_00z.json
+    │   │       ├── wrf_meteo_196_20240819_00z.json
+    │   │       ├── wrf_meteo_197_20240819_00z.json
+    │   │       ├── wrf_meteo_198_20240819_00z.json
+    │   │       ├── wrf_meteo_199_20240819_00z.json
+    │   │       ├── wrf_meteo_200_20240819_00z.json
+    │   │       ├── wrf_meteo_201_20240819_00z.json
+    │   │       ├── wrf_meteo_202_20240819_00z.json
+    │   │       ├── wrf_meteo_203_20240819_00z.json
+    │   │       ├── wrf_meteo_204_20240819_00z.json
+    │   │       ├── wrf_meteo_205_20240819_00z.json
+    │   │       ├── wrf_meteo_206_20240819_00z.json
+    │   │       ├── wrf_meteo_207_20240819_00z.json
+    │   │       ├── wrf_meteo_208_20240819_00z.json
+    │   │       ├── wrf_meteo_209_20240819_00z.json
+    │   │       ├── wrf_meteo_210_20240819_00z.json
+    │   │       ├── wrf_meteo_211_20240819_00z.json
+    │   │       ├── wrf_meteo_212_20240819_00z.json
+    │   │       ├── wrf_meteo_213_20240819_00z.json
+    │   │       ├── wrf_meteo_214_20240819_00z.json
+    │   │       ├── wrf_meteo_215_20240819_00z.json
+    │   │       ├── wrf_meteo_216_20240819_00z.json
+    │   │       └── wrf_meteo_217_20240819_00z.json
+    │   ├── CO
+    │   │   └── sfc
+    │   │       ├── wrf_CO_20240819_00z_000.png
+    │   │       ├── wrf_CO_20240819_00z_003.png
+    │   │       ├── wrf_CO_20240819_00z_006.png
+    │   │       ├── wrf_CO_20240819_00z_009.png
+    │   │       ├── wrf_CO_20240819_00z_012.png
+    │   │       ├── wrf_CO_20240819_00z_015.png
+    │   │       ├── wrf_CO_20240819_00z_018.png
+    │   │       ├── wrf_CO_20240819_00z_021.png
+    │   │       ├── wrf_CO_20240819_00z_024.png
+    │   │       ├── wrf_CO_20240819_00z_027.png
+    │   │       ├── wrf_CO_20240819_00z_030.png
+    │   │       ├── wrf_CO_20240819_00z_033.png
+    │   │       ├── wrf_CO_20240819_00z_036.png
+    │   │       ├── wrf_CO_20240819_00z_039.png
+    │   │       ├── wrf_CO_20240819_00z_042.png
+    │   │       ├── wrf_CO_20240819_00z_045.png
+    │   │       ├── wrf_CO_20240819_00z_048.png
+    │   │       ├── wrf_CO_20240819_00z_051.png
+    │   │       ├── wrf_CO_20240819_00z_054.png
+    │   │       ├── wrf_CO_20240819_00z_057.png
+    │   │       ├── wrf_CO_20240819_00z_060.png
+    │   │       ├── wrf_CO_20240819_00z_063.png
+    │   │       ├── wrf_CO_20240819_00z_066.png
+    │   │       ├── wrf_CO_20240819_00z_069.png
+    │   │       └── wrf_CO_20240819_00z_072.png
+    │   ├── hum
+    │   │   └── sfc
+    │   │       ├── wrf_sfc_humrel_20240819_00z_000.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_003.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_006.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_009.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_012.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_015.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_018.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_021.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_024.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_027.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_030.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_033.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_036.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_039.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_042.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_045.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_048.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_051.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_054.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_057.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_060.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_063.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_066.png
+    │   │       ├── wrf_sfc_humrel_20240819_00z_069.png
+    │   │       └── wrf_sfc_humrel_20240819_00z_072.png
+    │   ├── meteogramas
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_000_20240819_00z.json
+    │   │   │   ├── wrf_chem_001_20240819_00z.json
+    │   │   │   ├── wrf_chem_002_20240819_00z.json
+    │   │   │   ├── wrf_chem_003_20240819_00z.json
+    │   │   │   ├── wrf_chem_004_20240819_00z.json
+    │   │   │   ├── wrf_chem_005_20240819_00z.json
+    │   │   │   ├── wrf_chem_006_20240819_00z.json
+    │   │   │   └── wrf_chem_007_20240819_00z.json
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_000_20240819_00z.json
+    │   │       ├── wrf_meteo_001_20240819_00z.json
+    │   │       ├── wrf_meteo_002_20240819_00z.json
+    │   │       ├── wrf_meteo_003_20240819_00z.json
+    │   │       ├── wrf_meteo_004_20240819_00z.json
+    │   │       ├── wrf_meteo_005_20240819_00z.json
+    │   │       ├── wrf_meteo_006_20240819_00z.json
+    │   │       └── wrf_meteo_007_20240819_00z.json
+    │   ├── NO2
+    │   │   └── sfc
+    │   │       ├── wrf_NO2_20240819_00z_000.png
+    │   │       ├── wrf_NO2_20240819_00z_003.png
+    │   │       ├── wrf_NO2_20240819_00z_006.png
+    │   │       ├── wrf_NO2_20240819_00z_009.png
+    │   │       ├── wrf_NO2_20240819_00z_012.png
+    │   │       ├── wrf_NO2_20240819_00z_015.png
+    │   │       ├── wrf_NO2_20240819_00z_018.png
+    │   │       ├── wrf_NO2_20240819_00z_021.png
+    │   │       ├── wrf_NO2_20240819_00z_024.png
+    │   │       ├── wrf_NO2_20240819_00z_027.png
+    │   │       ├── wrf_NO2_20240819_00z_030.png
+    │   │       ├── wrf_NO2_20240819_00z_033.png
+    │   │       ├── wrf_NO2_20240819_00z_036.png
+    │   │       ├── wrf_NO2_20240819_00z_039.png
+    │   │       ├── wrf_NO2_20240819_00z_042.png
+    │   │       ├── wrf_NO2_20240819_00z_045.png
+    │   │       ├── wrf_NO2_20240819_00z_048.png
+    │   │       ├── wrf_NO2_20240819_00z_051.png
+    │   │       ├── wrf_NO2_20240819_00z_054.png
+    │   │       ├── wrf_NO2_20240819_00z_057.png
+    │   │       ├── wrf_NO2_20240819_00z_060.png
+    │   │       ├── wrf_NO2_20240819_00z_063.png
+    │   │       ├── wrf_NO2_20240819_00z_066.png
+    │   │       ├── wrf_NO2_20240819_00z_069.png
+    │   │       └── wrf_NO2_20240819_00z_072.png
+    │   ├── O3
+    │   │   └── sfc
+    │   │       ├── wrf_O3_20240819_00z_000.png
+    │   │       ├── wrf_O3_20240819_00z_003.png
+    │   │       ├── wrf_O3_20240819_00z_006.png
+    │   │       ├── wrf_O3_20240819_00z_009.png
+    │   │       ├── wrf_O3_20240819_00z_012.png
+    │   │       ├── wrf_O3_20240819_00z_015.png
+    │   │       ├── wrf_O3_20240819_00z_018.png
+    │   │       ├── wrf_O3_20240819_00z_021.png
+    │   │       ├── wrf_O3_20240819_00z_024.png
+    │   │       ├── wrf_O3_20240819_00z_027.png
+    │   │       ├── wrf_O3_20240819_00z_030.png
+    │   │       ├── wrf_O3_20240819_00z_033.png
+    │   │       ├── wrf_O3_20240819_00z_036.png
+    │   │       ├── wrf_O3_20240819_00z_039.png
+    │   │       ├── wrf_O3_20240819_00z_042.png
+    │   │       ├── wrf_O3_20240819_00z_045.png
+    │   │       ├── wrf_O3_20240819_00z_048.png
+    │   │       ├── wrf_O3_20240819_00z_051.png
+    │   │       ├── wrf_O3_20240819_00z_054.png
+    │   │       ├── wrf_O3_20240819_00z_057.png
+    │   │       ├── wrf_O3_20240819_00z_060.png
+    │   │       ├── wrf_O3_20240819_00z_063.png
+    │   │       ├── wrf_O3_20240819_00z_066.png
+    │   │       ├── wrf_O3_20240819_00z_069.png
+    │   │       └── wrf_O3_20240819_00z_072.png
+    │   ├── PM10
+    │   │   └── sfc
+    │   │       ├── wrf_PM10_20240819_00z_000.png
+    │   │       ├── wrf_PM10_20240819_00z_003.png
+    │   │       ├── wrf_PM10_20240819_00z_006.png
+    │   │       ├── wrf_PM10_20240819_00z_009.png
+    │   │       ├── wrf_PM10_20240819_00z_012.png
+    │   │       ├── wrf_PM10_20240819_00z_015.png
+    │   │       ├── wrf_PM10_20240819_00z_018.png
+    │   │       ├── wrf_PM10_20240819_00z_021.png
+    │   │       ├── wrf_PM10_20240819_00z_024.png
+    │   │       ├── wrf_PM10_20240819_00z_027.png
+    │   │       ├── wrf_PM10_20240819_00z_030.png
+    │   │       ├── wrf_PM10_20240819_00z_033.png
+    │   │       ├── wrf_PM10_20240819_00z_036.png
+    │   │       ├── wrf_PM10_20240819_00z_039.png
+    │   │       ├── wrf_PM10_20240819_00z_042.png
+    │   │       ├── wrf_PM10_20240819_00z_045.png
+    │   │       ├── wrf_PM10_20240819_00z_048.png
+    │   │       ├── wrf_PM10_20240819_00z_051.png
+    │   │       ├── wrf_PM10_20240819_00z_054.png
+    │   │       ├── wrf_PM10_20240819_00z_057.png
+    │   │       ├── wrf_PM10_20240819_00z_060.png
+    │   │       ├── wrf_PM10_20240819_00z_063.png
+    │   │       ├── wrf_PM10_20240819_00z_066.png
+    │   │       ├── wrf_PM10_20240819_00z_069.png
+    │   │       └── wrf_PM10_20240819_00z_072.png
+    │   ├── PM25
+    │   │   └── sfc
+    │   │       ├── wrf_PM25_20240819_00z_000.png
+    │   │       ├── wrf_PM25_20240819_00z_003.png
+    │   │       ├── wrf_PM25_20240819_00z_006.png
+    │   │       ├── wrf_PM25_20240819_00z_009.png
+    │   │       ├── wrf_PM25_20240819_00z_012.png
+    │   │       ├── wrf_PM25_20240819_00z_015.png
+    │   │       ├── wrf_PM25_20240819_00z_018.png
+    │   │       ├── wrf_PM25_20240819_00z_021.png
+    │   │       ├── wrf_PM25_20240819_00z_024.png
+    │   │       ├── wrf_PM25_20240819_00z_027.png
+    │   │       ├── wrf_PM25_20240819_00z_030.png
+    │   │       ├── wrf_PM25_20240819_00z_033.png
+    │   │       ├── wrf_PM25_20240819_00z_036.png
+    │   │       ├── wrf_PM25_20240819_00z_039.png
+    │   │       ├── wrf_PM25_20240819_00z_042.png
+    │   │       ├── wrf_PM25_20240819_00z_045.png
+    │   │       ├── wrf_PM25_20240819_00z_048.png
+    │   │       ├── wrf_PM25_20240819_00z_051.png
+    │   │       ├── wrf_PM25_20240819_00z_054.png
+    │   │       ├── wrf_PM25_20240819_00z_057.png
+    │   │       ├── wrf_PM25_20240819_00z_060.png
+    │   │       ├── wrf_PM25_20240819_00z_063.png
+    │   │       ├── wrf_PM25_20240819_00z_066.png
+    │   │       ├── wrf_PM25_20240819_00z_069.png
+    │   │       └── wrf_PM25_20240819_00z_072.png
+    │   ├── precacum
+    │   │   ├── wrf_sfc_precacum_20240819_00z_00.png
+    │   │   ├── wrf_sfc_precacum_20240819_00z_24.png
+    │   │   └── wrf_sfc_precacum_20240819_00z_48.png
+    │   ├── psfc
+    │   │   ├── wrf_sfc_press_20240819_00z_000.png
+    │   │   ├── wrf_sfc_press_20240819_00z_003.png
+    │   │   ├── wrf_sfc_press_20240819_00z_006.png
+    │   │   ├── wrf_sfc_press_20240819_00z_009.png
+    │   │   ├── wrf_sfc_press_20240819_00z_012.png
+    │   │   ├── wrf_sfc_press_20240819_00z_015.png
+    │   │   ├── wrf_sfc_press_20240819_00z_018.png
+    │   │   ├── wrf_sfc_press_20240819_00z_021.png
+    │   │   ├── wrf_sfc_press_20240819_00z_024.png
+    │   │   ├── wrf_sfc_press_20240819_00z_027.png
+    │   │   ├── wrf_sfc_press_20240819_00z_030.png
+    │   │   ├── wrf_sfc_press_20240819_00z_033.png
+    │   │   ├── wrf_sfc_press_20240819_00z_036.png
+    │   │   ├── wrf_sfc_press_20240819_00z_039.png
+    │   │   ├── wrf_sfc_press_20240819_00z_042.png
+    │   │   ├── wrf_sfc_press_20240819_00z_045.png
+    │   │   ├── wrf_sfc_press_20240819_00z_048.png
+    │   │   ├── wrf_sfc_press_20240819_00z_051.png
+    │   │   ├── wrf_sfc_press_20240819_00z_054.png
+    │   │   ├── wrf_sfc_press_20240819_00z_057.png
+    │   │   ├── wrf_sfc_press_20240819_00z_060.png
+    │   │   ├── wrf_sfc_press_20240819_00z_063.png
+    │   │   ├── wrf_sfc_press_20240819_00z_066.png
+    │   │   ├── wrf_sfc_press_20240819_00z_069.png
+    │   │   └── wrf_sfc_press_20240819_00z_072.png
+    │   ├── radlw
+    │   │   └── sfc
+    │   │       ├── wrf_lw_20240819_00z_000.png
+    │   │       ├── wrf_lw_20240819_00z_003.png
+    │   │       ├── wrf_lw_20240819_00z_006.png
+    │   │       ├── wrf_lw_20240819_00z_009.png
+    │   │       ├── wrf_lw_20240819_00z_012.png
+    │   │       ├── wrf_lw_20240819_00z_015.png
+    │   │       ├── wrf_lw_20240819_00z_018.png
+    │   │       ├── wrf_lw_20240819_00z_021.png
+    │   │       ├── wrf_lw_20240819_00z_024.png
+    │   │       ├── wrf_lw_20240819_00z_027.png
+    │   │       ├── wrf_lw_20240819_00z_030.png
+    │   │       ├── wrf_lw_20240819_00z_033.png
+    │   │       ├── wrf_lw_20240819_00z_036.png
+    │   │       ├── wrf_lw_20240819_00z_039.png
+    │   │       ├── wrf_lw_20240819_00z_042.png
+    │   │       ├── wrf_lw_20240819_00z_045.png
+    │   │       ├── wrf_lw_20240819_00z_048.png
+    │   │       ├── wrf_lw_20240819_00z_051.png
+    │   │       ├── wrf_lw_20240819_00z_054.png
+    │   │       ├── wrf_lw_20240819_00z_057.png
+    │   │       ├── wrf_lw_20240819_00z_060.png
+    │   │       ├── wrf_lw_20240819_00z_063.png
+    │   │       ├── wrf_lw_20240819_00z_066.png
+    │   │       ├── wrf_lw_20240819_00z_069.png
+    │   │       └── wrf_lw_20240819_00z_072.png
+    │   ├── radsw
+    │   │   └── sfc
+    │   │       ├── wrf_sw_20240819_00z_000.png
+    │   │       ├── wrf_sw_20240819_00z_003.png
+    │   │       ├── wrf_sw_20240819_00z_006.png
+    │   │       ├── wrf_sw_20240819_00z_009.png
+    │   │       ├── wrf_sw_20240819_00z_012.png
+    │   │       ├── wrf_sw_20240819_00z_015.png
+    │   │       ├── wrf_sw_20240819_00z_018.png
+    │   │       ├── wrf_sw_20240819_00z_021.png
+    │   │       ├── wrf_sw_20240819_00z_024.png
+    │   │       ├── wrf_sw_20240819_00z_027.png
+    │   │       ├── wrf_sw_20240819_00z_030.png
+    │   │       ├── wrf_sw_20240819_00z_033.png
+    │   │       ├── wrf_sw_20240819_00z_036.png
+    │   │       ├── wrf_sw_20240819_00z_039.png
+    │   │       ├── wrf_sw_20240819_00z_042.png
+    │   │       ├── wrf_sw_20240819_00z_045.png
+    │   │       ├── wrf_sw_20240819_00z_048.png
+    │   │       ├── wrf_sw_20240819_00z_051.png
+    │   │       ├── wrf_sw_20240819_00z_054.png
+    │   │       ├── wrf_sw_20240819_00z_057.png
+    │   │       ├── wrf_sw_20240819_00z_060.png
+    │   │       ├── wrf_sw_20240819_00z_063.png
+    │   │       ├── wrf_sw_20240819_00z_066.png
+    │   │       ├── wrf_sw_20240819_00z_069.png
+    │   │       └── wrf_sw_20240819_00z_072.png
+    │   ├── SO2
+    │   │   └── sfc
+    │   │       ├── wrf_SO2_20240819_00z_000.png
+    │   │       ├── wrf_SO2_20240819_00z_003.png
+    │   │       ├── wrf_SO2_20240819_00z_006.png
+    │   │       ├── wrf_SO2_20240819_00z_009.png
+    │   │       ├── wrf_SO2_20240819_00z_012.png
+    │   │       ├── wrf_SO2_20240819_00z_015.png
+    │   │       ├── wrf_SO2_20240819_00z_018.png
+    │   │       ├── wrf_SO2_20240819_00z_021.png
+    │   │       ├── wrf_SO2_20240819_00z_024.png
+    │   │       ├── wrf_SO2_20240819_00z_027.png
+    │   │       ├── wrf_SO2_20240819_00z_030.png
+    │   │       ├── wrf_SO2_20240819_00z_033.png
+    │   │       ├── wrf_SO2_20240819_00z_036.png
+    │   │       ├── wrf_SO2_20240819_00z_039.png
+    │   │       ├── wrf_SO2_20240819_00z_042.png
+    │   │       ├── wrf_SO2_20240819_00z_045.png
+    │   │       ├── wrf_SO2_20240819_00z_048.png
+    │   │       ├── wrf_SO2_20240819_00z_051.png
+    │   │       ├── wrf_SO2_20240819_00z_054.png
+    │   │       ├── wrf_SO2_20240819_00z_057.png
+    │   │       ├── wrf_SO2_20240819_00z_060.png
+    │   │       ├── wrf_SO2_20240819_00z_063.png
+    │   │       ├── wrf_SO2_20240819_00z_066.png
+    │   │       ├── wrf_SO2_20240819_00z_069.png
+    │   │       └── wrf_SO2_20240819_00z_072.png
+    │   ├── temmax
+    │   │   ├── wrf_sfc_temmax_20240819_00z_24.png
+    │   │   ├── wrf_sfc_temmax_20240819_00z_48.png
+    │   │   └── wrf_sfc_temmax_20240819_00z_72.png
+    │   ├── temmin
+    │   │   ├── wrf_sfc_temmin_20240819_00z_24.png
+    │   │   ├── wrf_sfc_temmin_20240819_00z_48.png
+    │   │   └── wrf_sfc_temmin_20240819_00z_72.png
+    │   ├── temp
+    │   │   ├── 200
+    │   │   │   ├── wrf_200_temp_20240819_00z_000.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_003.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_006.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_009.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_012.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_015.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_018.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_021.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_024.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_027.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_030.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_033.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_036.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_039.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_042.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_045.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_048.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_051.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_054.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_057.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_060.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_063.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_066.png
+    │   │   │   ├── wrf_200_temp_20240819_00z_069.png
+    │   │   │   └── wrf_200_temp_20240819_00z_072.png
+    │   │   ├── 300
+    │   │   │   ├── wrf_300_temp_20240819_00z_000.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_003.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_006.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_009.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_012.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_015.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_018.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_021.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_024.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_027.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_030.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_033.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_036.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_039.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_042.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_045.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_048.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_051.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_054.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_057.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_060.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_063.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_066.png
+    │   │   │   ├── wrf_300_temp_20240819_00z_069.png
+    │   │   │   └── wrf_300_temp_20240819_00z_072.png
+    │   │   ├── 400
+    │   │   │   ├── wrf_400_temp_20240819_00z_000.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_003.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_006.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_009.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_012.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_015.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_018.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_021.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_024.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_027.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_030.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_033.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_036.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_039.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_042.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_045.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_048.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_051.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_054.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_057.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_060.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_063.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_066.png
+    │   │   │   ├── wrf_400_temp_20240819_00z_069.png
+    │   │   │   └── wrf_400_temp_20240819_00z_072.png
+    │   │   ├── 500
+    │   │   │   ├── wrf_500_temp_20240819_00z_000.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_003.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_006.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_009.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_012.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_015.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_018.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_021.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_024.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_027.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_030.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_033.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_036.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_039.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_042.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_045.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_048.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_051.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_054.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_057.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_060.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_063.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_066.png
+    │   │   │   ├── wrf_500_temp_20240819_00z_069.png
+    │   │   │   └── wrf_500_temp_20240819_00z_072.png
+    │   │   ├── 600
+    │   │   │   ├── wrf_600_temp_20240819_00z_000.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_003.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_006.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_009.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_012.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_015.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_018.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_021.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_024.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_027.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_030.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_033.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_036.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_039.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_042.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_045.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_048.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_051.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_054.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_057.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_060.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_063.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_066.png
+    │   │   │   ├── wrf_600_temp_20240819_00z_069.png
+    │   │   │   └── wrf_600_temp_20240819_00z_072.png
+    │   │   └── 700
+    │   │       ├── wrf_700_temp_20240819_00z_000.png
+    │   │       ├── wrf_700_temp_20240819_00z_003.png
+    │   │       ├── wrf_700_temp_20240819_00z_006.png
+    │   │       ├── wrf_700_temp_20240819_00z_009.png
+    │   │       ├── wrf_700_temp_20240819_00z_012.png
+    │   │       ├── wrf_700_temp_20240819_00z_015.png
+    │   │       ├── wrf_700_temp_20240819_00z_018.png
+    │   │       ├── wrf_700_temp_20240819_00z_021.png
+    │   │       ├── wrf_700_temp_20240819_00z_024.png
+    │   │       ├── wrf_700_temp_20240819_00z_027.png
+    │   │       ├── wrf_700_temp_20240819_00z_030.png
+    │   │       ├── wrf_700_temp_20240819_00z_033.png
+    │   │       ├── wrf_700_temp_20240819_00z_036.png
+    │   │       ├── wrf_700_temp_20240819_00z_039.png
+    │   │       ├── wrf_700_temp_20240819_00z_042.png
+    │   │       ├── wrf_700_temp_20240819_00z_045.png
+    │   │       ├── wrf_700_temp_20240819_00z_048.png
+    │   │       ├── wrf_700_temp_20240819_00z_051.png
+    │   │       ├── wrf_700_temp_20240819_00z_054.png
+    │   │       ├── wrf_700_temp_20240819_00z_057.png
+    │   │       ├── wrf_700_temp_20240819_00z_060.png
+    │   │       ├── wrf_700_temp_20240819_00z_063.png
+    │   │       ├── wrf_700_temp_20240819_00z_066.png
+    │   │       ├── wrf_700_temp_20240819_00z_069.png
+    │   │       └── wrf_700_temp_20240819_00z_072.png
+    │   └── wnd
+    │       ├── 200
+    │       │   ├── wrf_200_wind_20240819_00z_000.png
+    │       │   ├── wrf_200_wind_20240819_00z_003.png
+    │       │   ├── wrf_200_wind_20240819_00z_006.png
+    │       │   ├── wrf_200_wind_20240819_00z_009.png
+    │       │   ├── wrf_200_wind_20240819_00z_012.png
+    │       │   ├── wrf_200_wind_20240819_00z_015.png
+    │       │   ├── wrf_200_wind_20240819_00z_018.png
+    │       │   ├── wrf_200_wind_20240819_00z_021.png
+    │       │   ├── wrf_200_wind_20240819_00z_024.png
+    │       │   ├── wrf_200_wind_20240819_00z_027.png
+    │       │   ├── wrf_200_wind_20240819_00z_030.png
+    │       │   ├── wrf_200_wind_20240819_00z_033.png
+    │       │   ├── wrf_200_wind_20240819_00z_036.png
+    │       │   ├── wrf_200_wind_20240819_00z_039.png
+    │       │   ├── wrf_200_wind_20240819_00z_042.png
+    │       │   ├── wrf_200_wind_20240819_00z_045.png
+    │       │   ├── wrf_200_wind_20240819_00z_048.png
+    │       │   ├── wrf_200_wind_20240819_00z_051.png
+    │       │   ├── wrf_200_wind_20240819_00z_054.png
+    │       │   ├── wrf_200_wind_20240819_00z_057.png
+    │       │   ├── wrf_200_wind_20240819_00z_060.png
+    │       │   ├── wrf_200_wind_20240819_00z_063.png
+    │       │   ├── wrf_200_wind_20240819_00z_066.png
+    │       │   ├── wrf_200_wind_20240819_00z_069.png
+    │       │   └── wrf_200_wind_20240819_00z_072.png
+    │       ├── 300
+    │       │   ├── wrf_300_wind_20240819_00z_000.png
+    │       │   ├── wrf_300_wind_20240819_00z_003.png
+    │       │   ├── wrf_300_wind_20240819_00z_006.png
+    │       │   ├── wrf_300_wind_20240819_00z_009.png
+    │       │   ├── wrf_300_wind_20240819_00z_012.png
+    │       │   ├── wrf_300_wind_20240819_00z_015.png
+    │       │   ├── wrf_300_wind_20240819_00z_018.png
+    │       │   ├── wrf_300_wind_20240819_00z_021.png
+    │       │   ├── wrf_300_wind_20240819_00z_024.png
+    │       │   ├── wrf_300_wind_20240819_00z_027.png
+    │       │   ├── wrf_300_wind_20240819_00z_030.png
+    │       │   ├── wrf_300_wind_20240819_00z_033.png
+    │       │   ├── wrf_300_wind_20240819_00z_036.png
+    │       │   ├── wrf_300_wind_20240819_00z_039.png
+    │       │   ├── wrf_300_wind_20240819_00z_042.png
+    │       │   ├── wrf_300_wind_20240819_00z_045.png
+    │       │   ├── wrf_300_wind_20240819_00z_048.png
+    │       │   ├── wrf_300_wind_20240819_00z_051.png
+    │       │   ├── wrf_300_wind_20240819_00z_054.png
+    │       │   ├── wrf_300_wind_20240819_00z_057.png
+    │       │   ├── wrf_300_wind_20240819_00z_060.png
+    │       │   ├── wrf_300_wind_20240819_00z_063.png
+    │       │   ├── wrf_300_wind_20240819_00z_066.png
+    │       │   ├── wrf_300_wind_20240819_00z_069.png
+    │       │   └── wrf_300_wind_20240819_00z_072.png
+    │       ├── 400
+    │       │   ├── wrf_400_wind_20240819_00z_000.png
+    │       │   ├── wrf_400_wind_20240819_00z_003.png
+    │       │   ├── wrf_400_wind_20240819_00z_006.png
+    │       │   ├── wrf_400_wind_20240819_00z_009.png
+    │       │   ├── wrf_400_wind_20240819_00z_012.png
+    │       │   ├── wrf_400_wind_20240819_00z_015.png
+    │       │   ├── wrf_400_wind_20240819_00z_018.png
+    │       │   ├── wrf_400_wind_20240819_00z_021.png
+    │       │   ├── wrf_400_wind_20240819_00z_024.png
+    │       │   ├── wrf_400_wind_20240819_00z_027.png
+    │       │   ├── wrf_400_wind_20240819_00z_030.png
+    │       │   ├── wrf_400_wind_20240819_00z_033.png
+    │       │   ├── wrf_400_wind_20240819_00z_036.png
+    │       │   ├── wrf_400_wind_20240819_00z_039.png
+    │       │   ├── wrf_400_wind_20240819_00z_042.png
+    │       │   ├── wrf_400_wind_20240819_00z_045.png
+    │       │   ├── wrf_400_wind_20240819_00z_048.png
+    │       │   ├── wrf_400_wind_20240819_00z_051.png
+    │       │   ├── wrf_400_wind_20240819_00z_054.png
+    │       │   ├── wrf_400_wind_20240819_00z_057.png
+    │       │   ├── wrf_400_wind_20240819_00z_060.png
+    │       │   ├── wrf_400_wind_20240819_00z_063.png
+    │       │   ├── wrf_400_wind_20240819_00z_066.png
+    │       │   ├── wrf_400_wind_20240819_00z_069.png
+    │       │   └── wrf_400_wind_20240819_00z_072.png
+    │       ├── 500
+    │       │   ├── wrf_500_wind_20240819_00z_000.png
+    │       │   ├── wrf_500_wind_20240819_00z_003.png
+    │       │   ├── wrf_500_wind_20240819_00z_006.png
+    │       │   ├── wrf_500_wind_20240819_00z_009.png
+    │       │   ├── wrf_500_wind_20240819_00z_012.png
+    │       │   ├── wrf_500_wind_20240819_00z_015.png
+    │       │   ├── wrf_500_wind_20240819_00z_018.png
+    │       │   ├── wrf_500_wind_20240819_00z_021.png
+    │       │   ├── wrf_500_wind_20240819_00z_024.png
+    │       │   ├── wrf_500_wind_20240819_00z_027.png
+    │       │   ├── wrf_500_wind_20240819_00z_030.png
+    │       │   ├── wrf_500_wind_20240819_00z_033.png
+    │       │   ├── wrf_500_wind_20240819_00z_036.png
+    │       │   ├── wrf_500_wind_20240819_00z_039.png
+    │       │   ├── wrf_500_wind_20240819_00z_042.png
+    │       │   ├── wrf_500_wind_20240819_00z_045.png
+    │       │   ├── wrf_500_wind_20240819_00z_048.png
+    │       │   ├── wrf_500_wind_20240819_00z_051.png
+    │       │   ├── wrf_500_wind_20240819_00z_054.png
+    │       │   ├── wrf_500_wind_20240819_00z_057.png
+    │       │   ├── wrf_500_wind_20240819_00z_060.png
+    │       │   ├── wrf_500_wind_20240819_00z_063.png
+    │       │   ├── wrf_500_wind_20240819_00z_066.png
+    │       │   ├── wrf_500_wind_20240819_00z_069.png
+    │       │   └── wrf_500_wind_20240819_00z_072.png
+    │       ├── 600
+    │       │   ├── wrf_600_wind_20240819_00z_000.png
+    │       │   ├── wrf_600_wind_20240819_00z_003.png
+    │       │   ├── wrf_600_wind_20240819_00z_006.png
+    │       │   ├── wrf_600_wind_20240819_00z_009.png
+    │       │   ├── wrf_600_wind_20240819_00z_012.png
+    │       │   ├── wrf_600_wind_20240819_00z_015.png
+    │       │   ├── wrf_600_wind_20240819_00z_018.png
+    │       │   ├── wrf_600_wind_20240819_00z_021.png
+    │       │   ├── wrf_600_wind_20240819_00z_024.png
+    │       │   ├── wrf_600_wind_20240819_00z_027.png
+    │       │   ├── wrf_600_wind_20240819_00z_030.png
+    │       │   ├── wrf_600_wind_20240819_00z_033.png
+    │       │   ├── wrf_600_wind_20240819_00z_036.png
+    │       │   ├── wrf_600_wind_20240819_00z_039.png
+    │       │   ├── wrf_600_wind_20240819_00z_042.png
+    │       │   ├── wrf_600_wind_20240819_00z_045.png
+    │       │   ├── wrf_600_wind_20240819_00z_048.png
+    │       │   ├── wrf_600_wind_20240819_00z_051.png
+    │       │   ├── wrf_600_wind_20240819_00z_054.png
+    │       │   ├── wrf_600_wind_20240819_00z_057.png
+    │       │   ├── wrf_600_wind_20240819_00z_060.png
+    │       │   ├── wrf_600_wind_20240819_00z_063.png
+    │       │   ├── wrf_600_wind_20240819_00z_066.png
+    │       │   ├── wrf_600_wind_20240819_00z_069.png
+    │       │   └── wrf_600_wind_20240819_00z_072.png
+    │       ├── 700
+    │       │   ├── wrf_700_wind_20240819_00z_000.png
+    │       │   ├── wrf_700_wind_20240819_00z_003.png
+    │       │   ├── wrf_700_wind_20240819_00z_006.png
+    │       │   ├── wrf_700_wind_20240819_00z_009.png
+    │       │   ├── wrf_700_wind_20240819_00z_012.png
+    │       │   ├── wrf_700_wind_20240819_00z_015.png
+    │       │   ├── wrf_700_wind_20240819_00z_018.png
+    │       │   ├── wrf_700_wind_20240819_00z_021.png
+    │       │   ├── wrf_700_wind_20240819_00z_024.png
+    │       │   ├── wrf_700_wind_20240819_00z_027.png
+    │       │   ├── wrf_700_wind_20240819_00z_030.png
+    │       │   ├── wrf_700_wind_20240819_00z_033.png
+    │       │   ├── wrf_700_wind_20240819_00z_036.png
+    │       │   ├── wrf_700_wind_20240819_00z_039.png
+    │       │   ├── wrf_700_wind_20240819_00z_042.png
+    │       │   ├── wrf_700_wind_20240819_00z_045.png
+    │       │   ├── wrf_700_wind_20240819_00z_048.png
+    │       │   ├── wrf_700_wind_20240819_00z_051.png
+    │       │   ├── wrf_700_wind_20240819_00z_054.png
+    │       │   ├── wrf_700_wind_20240819_00z_057.png
+    │       │   ├── wrf_700_wind_20240819_00z_060.png
+    │       │   ├── wrf_700_wind_20240819_00z_063.png
+    │       │   ├── wrf_700_wind_20240819_00z_066.png
+    │       │   ├── wrf_700_wind_20240819_00z_069.png
+    │       │   └── wrf_700_wind_20240819_00z_072.png
+    │       └── sfc
+    │           ├── wrf_sfc_wind_20240819_00z_000.png
+    │           ├── wrf_sfc_wind_20240819_00z_003.png
+    │           ├── wrf_sfc_wind_20240819_00z_006.png
+    │           ├── wrf_sfc_wind_20240819_00z_009.png
+    │           ├── wrf_sfc_wind_20240819_00z_012.png
+    │           ├── wrf_sfc_wind_20240819_00z_015.png
+    │           ├── wrf_sfc_wind_20240819_00z_018.png
+    │           ├── wrf_sfc_wind_20240819_00z_021.png
+    │           ├── wrf_sfc_wind_20240819_00z_024.png
+    │           ├── wrf_sfc_wind_20240819_00z_027.png
+    │           ├── wrf_sfc_wind_20240819_00z_030.png
+    │           ├── wrf_sfc_wind_20240819_00z_033.png
+    │           ├── wrf_sfc_wind_20240819_00z_036.png
+    │           ├── wrf_sfc_wind_20240819_00z_039.png
+    │           ├── wrf_sfc_wind_20240819_00z_042.png
+    │           ├── wrf_sfc_wind_20240819_00z_045.png
+    │           ├── wrf_sfc_wind_20240819_00z_048.png
+    │           ├── wrf_sfc_wind_20240819_00z_051.png
+    │           ├── wrf_sfc_wind_20240819_00z_054.png
+    │           ├── wrf_sfc_wind_20240819_00z_057.png
+    │           ├── wrf_sfc_wind_20240819_00z_060.png
+    │           ├── wrf_sfc_wind_20240819_00z_063.png
+    │           ├── wrf_sfc_wind_20240819_00z_066.png
+    │           ├── wrf_sfc_wind_20240819_00z_069.png
+    │           └── wrf_sfc_wind_20240819_00z_072.png
+    ├── 2024081912
+    │   ├── cabeceras
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_001_20240819_12z.json
+    │   │   │   ├── wrf_chem_002_20240819_12z.json
+    │   │   │   ├── wrf_chem_003_20240819_12z.json
+    │   │   │   ├── wrf_chem_004_20240819_12z.json
+    │   │   │   ├── wrf_chem_005_20240819_12z.json
+    │   │   │   ├── wrf_chem_006_20240819_12z.json
+    │   │   │   ├── wrf_chem_007_20240819_12z.json
+    │   │   │   ├── wrf_chem_008_20240819_12z.json
+    │   │   │   ├── wrf_chem_009_20240819_12z.json
+    │   │   │   ├── wrf_chem_010_20240819_12z.json
+    │   │   │   ├── wrf_chem_011_20240819_12z.json
+    │   │   │   ├── wrf_chem_012_20240819_12z.json
+    │   │   │   ├── wrf_chem_013_20240819_12z.json
+    │   │   │   ├── wrf_chem_014_20240819_12z.json
+    │   │   │   ├── wrf_chem_015_20240819_12z.json
+    │   │   │   ├── wrf_chem_016_20240819_12z.json
+    │   │   │   ├── wrf_chem_017_20240819_12z.json
+    │   │   │   ├── wrf_chem_018_20240819_12z.json
+    │   │   │   ├── wrf_chem_019_20240819_12z.json
+    │   │   │   ├── wrf_chem_020_20240819_12z.json
+    │   │   │   ├── wrf_chem_021_20240819_12z.json
+    │   │   │   ├── wrf_chem_022_20240819_12z.json
+    │   │   │   ├── wrf_chem_023_20240819_12z.json
+    │   │   │   ├── wrf_chem_024_20240819_12z.json
+    │   │   │   ├── wrf_chem_025_20240819_12z.json
+    │   │   │   ├── wrf_chem_026_20240819_12z.json
+    │   │   │   ├── wrf_chem_027_20240819_12z.json
+    │   │   │   ├── wrf_chem_028_20240819_12z.json
+    │   │   │   ├── wrf_chem_029_20240819_12z.json
+    │   │   │   ├── wrf_chem_030_20240819_12z.json
+    │   │   │   ├── wrf_chem_031_20240819_12z.json
+    │   │   │   ├── wrf_chem_032_20240819_12z.json
+    │   │   │   ├── wrf_chem_033_20240819_12z.json
+    │   │   │   ├── wrf_chem_034_20240819_12z.json
+    │   │   │   ├── wrf_chem_035_20240819_12z.json
+    │   │   │   ├── wrf_chem_036_20240819_12z.json
+    │   │   │   ├── wrf_chem_037_20240819_12z.json
+    │   │   │   ├── wrf_chem_038_20240819_12z.json
+    │   │   │   ├── wrf_chem_039_20240819_12z.json
+    │   │   │   ├── wrf_chem_040_20240819_12z.json
+    │   │   │   ├── wrf_chem_041_20240819_12z.json
+    │   │   │   ├── wrf_chem_042_20240819_12z.json
+    │   │   │   ├── wrf_chem_043_20240819_12z.json
+    │   │   │   ├── wrf_chem_044_20240819_12z.json
+    │   │   │   ├── wrf_chem_045_20240819_12z.json
+    │   │   │   ├── wrf_chem_046_20240819_12z.json
+    │   │   │   ├── wrf_chem_047_20240819_12z.json
+    │   │   │   ├── wrf_chem_048_20240819_12z.json
+    │   │   │   ├── wrf_chem_049_20240819_12z.json
+    │   │   │   ├── wrf_chem_050_20240819_12z.json
+    │   │   │   ├── wrf_chem_051_20240819_12z.json
+    │   │   │   ├── wrf_chem_052_20240819_12z.json
+    │   │   │   ├── wrf_chem_053_20240819_12z.json
+    │   │   │   ├── wrf_chem_054_20240819_12z.json
+    │   │   │   ├── wrf_chem_055_20240819_12z.json
+    │   │   │   ├── wrf_chem_056_20240819_12z.json
+    │   │   │   ├── wrf_chem_057_20240819_12z.json
+    │   │   │   ├── wrf_chem_058_20240819_12z.json
+    │   │   │   ├── wrf_chem_059_20240819_12z.json
+    │   │   │   ├── wrf_chem_060_20240819_12z.json
+    │   │   │   ├── wrf_chem_061_20240819_12z.json
+    │   │   │   ├── wrf_chem_062_20240819_12z.json
+    │   │   │   ├── wrf_chem_063_20240819_12z.json
+    │   │   │   ├── wrf_chem_064_20240819_12z.json
+    │   │   │   ├── wrf_chem_065_20240819_12z.json
+    │   │   │   ├── wrf_chem_066_20240819_12z.json
+    │   │   │   ├── wrf_chem_067_20240819_12z.json
+    │   │   │   ├── wrf_chem_068_20240819_12z.json
+    │   │   │   ├── wrf_chem_069_20240819_12z.json
+    │   │   │   ├── wrf_chem_070_20240819_12z.json
+    │   │   │   ├── wrf_chem_071_20240819_12z.json
+    │   │   │   ├── wrf_chem_072_20240819_12z.json
+    │   │   │   ├── wrf_chem_073_20240819_12z.json
+    │   │   │   ├── wrf_chem_074_20240819_12z.json
+    │   │   │   ├── wrf_chem_075_20240819_12z.json
+    │   │   │   ├── wrf_chem_076_20240819_12z.json
+    │   │   │   ├── wrf_chem_077_20240819_12z.json
+    │   │   │   ├── wrf_chem_078_20240819_12z.json
+    │   │   │   ├── wrf_chem_079_20240819_12z.json
+    │   │   │   ├── wrf_chem_080_20240819_12z.json
+    │   │   │   ├── wrf_chem_081_20240819_12z.json
+    │   │   │   ├── wrf_chem_082_20240819_12z.json
+    │   │   │   ├── wrf_chem_083_20240819_12z.json
+    │   │   │   ├── wrf_chem_084_20240819_12z.json
+    │   │   │   ├── wrf_chem_085_20240819_12z.json
+    │   │   │   ├── wrf_chem_086_20240819_12z.json
+    │   │   │   ├── wrf_chem_087_20240819_12z.json
+    │   │   │   ├── wrf_chem_088_20240819_12z.json
+    │   │   │   ├── wrf_chem_089_20240819_12z.json
+    │   │   │   ├── wrf_chem_090_20240819_12z.json
+    │   │   │   ├── wrf_chem_091_20240819_12z.json
+    │   │   │   ├── wrf_chem_092_20240819_12z.json
+    │   │   │   ├── wrf_chem_093_20240819_12z.json
+    │   │   │   ├── wrf_chem_094_20240819_12z.json
+    │   │   │   ├── wrf_chem_095_20240819_12z.json
+    │   │   │   ├── wrf_chem_096_20240819_12z.json
+    │   │   │   ├── wrf_chem_097_20240819_12z.json
+    │   │   │   ├── wrf_chem_098_20240819_12z.json
+    │   │   │   ├── wrf_chem_099_20240819_12z.json
+    │   │   │   ├── wrf_chem_100_20240819_12z.json
+    │   │   │   ├── wrf_chem_101_20240819_12z.json
+    │   │   │   ├── wrf_chem_102_20240819_12z.json
+    │   │   │   ├── wrf_chem_103_20240819_12z.json
+    │   │   │   ├── wrf_chem_104_20240819_12z.json
+    │   │   │   ├── wrf_chem_105_20240819_12z.json
+    │   │   │   ├── wrf_chem_106_20240819_12z.json
+    │   │   │   ├── wrf_chem_107_20240819_12z.json
+    │   │   │   ├── wrf_chem_108_20240819_12z.json
+    │   │   │   ├── wrf_chem_109_20240819_12z.json
+    │   │   │   ├── wrf_chem_110_20240819_12z.json
+    │   │   │   ├── wrf_chem_111_20240819_12z.json
+    │   │   │   ├── wrf_chem_112_20240819_12z.json
+    │   │   │   ├── wrf_chem_113_20240819_12z.json
+    │   │   │   ├── wrf_chem_114_20240819_12z.json
+    │   │   │   ├── wrf_chem_115_20240819_12z.json
+    │   │   │   ├── wrf_chem_116_20240819_12z.json
+    │   │   │   ├── wrf_chem_117_20240819_12z.json
+    │   │   │   ├── wrf_chem_118_20240819_12z.json
+    │   │   │   ├── wrf_chem_119_20240819_12z.json
+    │   │   │   ├── wrf_chem_120_20240819_12z.json
+    │   │   │   ├── wrf_chem_121_20240819_12z.json
+    │   │   │   ├── wrf_chem_122_20240819_12z.json
+    │   │   │   ├── wrf_chem_123_20240819_12z.json
+    │   │   │   ├── wrf_chem_124_20240819_12z.json
+    │   │   │   ├── wrf_chem_125_20240819_12z.json
+    │   │   │   ├── wrf_chem_126_20240819_12z.json
+    │   │   │   ├── wrf_chem_127_20240819_12z.json
+    │   │   │   ├── wrf_chem_128_20240819_12z.json
+    │   │   │   ├── wrf_chem_129_20240819_12z.json
+    │   │   │   ├── wrf_chem_130_20240819_12z.json
+    │   │   │   ├── wrf_chem_131_20240819_12z.json
+    │   │   │   ├── wrf_chem_132_20240819_12z.json
+    │   │   │   ├── wrf_chem_133_20240819_12z.json
+    │   │   │   ├── wrf_chem_134_20240819_12z.json
+    │   │   │   ├── wrf_chem_135_20240819_12z.json
+    │   │   │   ├── wrf_chem_136_20240819_12z.json
+    │   │   │   ├── wrf_chem_137_20240819_12z.json
+    │   │   │   ├── wrf_chem_138_20240819_12z.json
+    │   │   │   ├── wrf_chem_139_20240819_12z.json
+    │   │   │   ├── wrf_chem_140_20240819_12z.json
+    │   │   │   ├── wrf_chem_141_20240819_12z.json
+    │   │   │   ├── wrf_chem_142_20240819_12z.json
+    │   │   │   ├── wrf_chem_143_20240819_12z.json
+    │   │   │   ├── wrf_chem_144_20240819_12z.json
+    │   │   │   ├── wrf_chem_145_20240819_12z.json
+    │   │   │   ├── wrf_chem_146_20240819_12z.json
+    │   │   │   ├── wrf_chem_147_20240819_12z.json
+    │   │   │   ├── wrf_chem_148_20240819_12z.json
+    │   │   │   ├── wrf_chem_149_20240819_12z.json
+    │   │   │   ├── wrf_chem_150_20240819_12z.json
+    │   │   │   ├── wrf_chem_151_20240819_12z.json
+    │   │   │   ├── wrf_chem_152_20240819_12z.json
+    │   │   │   ├── wrf_chem_153_20240819_12z.json
+    │   │   │   ├── wrf_chem_154_20240819_12z.json
+    │   │   │   ├── wrf_chem_155_20240819_12z.json
+    │   │   │   ├── wrf_chem_156_20240819_12z.json
+    │   │   │   ├── wrf_chem_157_20240819_12z.json
+    │   │   │   ├── wrf_chem_158_20240819_12z.json
+    │   │   │   ├── wrf_chem_159_20240819_12z.json
+    │   │   │   ├── wrf_chem_160_20240819_12z.json
+    │   │   │   ├── wrf_chem_161_20240819_12z.json
+    │   │   │   ├── wrf_chem_162_20240819_12z.json
+    │   │   │   ├── wrf_chem_163_20240819_12z.json
+    │   │   │   ├── wrf_chem_164_20240819_12z.json
+    │   │   │   ├── wrf_chem_165_20240819_12z.json
+    │   │   │   ├── wrf_chem_166_20240819_12z.json
+    │   │   │   ├── wrf_chem_167_20240819_12z.json
+    │   │   │   ├── wrf_chem_168_20240819_12z.json
+    │   │   │   ├── wrf_chem_169_20240819_12z.json
+    │   │   │   ├── wrf_chem_170_20240819_12z.json
+    │   │   │   ├── wrf_chem_171_20240819_12z.json
+    │   │   │   ├── wrf_chem_172_20240819_12z.json
+    │   │   │   ├── wrf_chem_173_20240819_12z.json
+    │   │   │   ├── wrf_chem_174_20240819_12z.json
+    │   │   │   ├── wrf_chem_175_20240819_12z.json
+    │   │   │   ├── wrf_chem_176_20240819_12z.json
+    │   │   │   ├── wrf_chem_177_20240819_12z.json
+    │   │   │   ├── wrf_chem_178_20240819_12z.json
+    │   │   │   ├── wrf_chem_179_20240819_12z.json
+    │   │   │   ├── wrf_chem_180_20240819_12z.json
+    │   │   │   ├── wrf_chem_181_20240819_12z.json
+    │   │   │   ├── wrf_chem_182_20240819_12z.json
+    │   │   │   ├── wrf_chem_183_20240819_12z.json
+    │   │   │   ├── wrf_chem_184_20240819_12z.json
+    │   │   │   ├── wrf_chem_185_20240819_12z.json
+    │   │   │   ├── wrf_chem_186_20240819_12z.json
+    │   │   │   ├── wrf_chem_187_20240819_12z.json
+    │   │   │   ├── wrf_chem_188_20240819_12z.json
+    │   │   │   ├── wrf_chem_189_20240819_12z.json
+    │   │   │   ├── wrf_chem_190_20240819_12z.json
+    │   │   │   ├── wrf_chem_191_20240819_12z.json
+    │   │   │   ├── wrf_chem_192_20240819_12z.json
+    │   │   │   ├── wrf_chem_193_20240819_12z.json
+    │   │   │   ├── wrf_chem_194_20240819_12z.json
+    │   │   │   ├── wrf_chem_195_20240819_12z.json
+    │   │   │   ├── wrf_chem_196_20240819_12z.json
+    │   │   │   ├── wrf_chem_197_20240819_12z.json
+    │   │   │   ├── wrf_chem_198_20240819_12z.json
+    │   │   │   ├── wrf_chem_199_20240819_12z.json
+    │   │   │   ├── wrf_chem_200_20240819_12z.json
+    │   │   │   ├── wrf_chem_201_20240819_12z.json
+    │   │   │   ├── wrf_chem_202_20240819_12z.json
+    │   │   │   ├── wrf_chem_203_20240819_12z.json
+    │   │   │   ├── wrf_chem_204_20240819_12z.json
+    │   │   │   ├── wrf_chem_205_20240819_12z.json
+    │   │   │   ├── wrf_chem_206_20240819_12z.json
+    │   │   │   ├── wrf_chem_207_20240819_12z.json
+    │   │   │   ├── wrf_chem_208_20240819_12z.json
+    │   │   │   ├── wrf_chem_209_20240819_12z.json
+    │   │   │   ├── wrf_chem_210_20240819_12z.json
+    │   │   │   ├── wrf_chem_211_20240819_12z.json
+    │   │   │   ├── wrf_chem_212_20240819_12z.json
+    │   │   │   ├── wrf_chem_213_20240819_12z.json
+    │   │   │   ├── wrf_chem_214_20240819_12z.json
+    │   │   │   ├── wrf_chem_215_20240819_12z.json
+    │   │   │   ├── wrf_chem_216_20240819_12z.json
+    │   │   │   ├── wrf_chem_217_20240819_12z.json
+    │   │   │   ├── wrf_meteo_chem_001_20240819_12z.png
+    │   │   │   ├── wrf_meteo_chem_002_20240819_12z.png
+    │   │   │   ├── wrf_meteo_chem_003_20240819_12z.png
+    │   │   │   ├── wrf_meteo_chem_004_20240819_12z.png
+    │   │   │   ├── wrf_meteo_chem_005_20240819_12z.png
+    │   │   │   └── wrf_meteo_chem_006_20240819_12z.png
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_001_20240819_12z.json
+    │   │       ├── wrf_meteo_002_20240819_12z.json
+    │   │       ├── wrf_meteo_003_20240819_12z.json
+    │   │       ├── wrf_meteo_004_20240819_12z.json
+    │   │       ├── wrf_meteo_005_20240819_12z.json
+    │   │       ├── wrf_meteo_006_20240819_12z.json
+    │   │       ├── wrf_meteo_007_20240819_12z.json
+    │   │       ├── wrf_meteo_008_20240819_12z.json
+    │   │       ├── wrf_meteo_009_20240819_12z.json
+    │   │       ├── wrf_meteo_010_20240819_12z.json
+    │   │       ├── wrf_meteo_011_20240819_12z.json
+    │   │       ├── wrf_meteo_012_20240819_12z.json
+    │   │       ├── wrf_meteo_013_20240819_12z.json
+    │   │       ├── wrf_meteo_014_20240819_12z.json
+    │   │       ├── wrf_meteo_015_20240819_12z.json
+    │   │       ├── wrf_meteo_016_20240819_12z.json
+    │   │       ├── wrf_meteo_017_20240819_12z.json
+    │   │       ├── wrf_meteo_018_20240819_12z.json
+    │   │       ├── wrf_meteo_019_20240819_12z.json
+    │   │       ├── wrf_meteo_020_20240819_12z.json
+    │   │       ├── wrf_meteo_021_20240819_12z.json
+    │   │       ├── wrf_meteo_022_20240819_12z.json
+    │   │       ├── wrf_meteo_023_20240819_12z.json
+    │   │       ├── wrf_meteo_024_20240819_12z.json
+    │   │       ├── wrf_meteo_025_20240819_12z.json
+    │   │       ├── wrf_meteo_026_20240819_12z.json
+    │   │       ├── wrf_meteo_027_20240819_12z.json
+    │   │       ├── wrf_meteo_028_20240819_12z.json
+    │   │       ├── wrf_meteo_029_20240819_12z.json
+    │   │       ├── wrf_meteo_030_20240819_12z.json
+    │   │       ├── wrf_meteo_031_20240819_12z.json
+    │   │       ├── wrf_meteo_032_20240819_12z.json
+    │   │       ├── wrf_meteo_033_20240819_12z.json
+    │   │       ├── wrf_meteo_034_20240819_12z.json
+    │   │       ├── wrf_meteo_035_20240819_12z.json
+    │   │       ├── wrf_meteo_036_20240819_12z.json
+    │   │       ├── wrf_meteo_037_20240819_12z.json
+    │   │       ├── wrf_meteo_038_20240819_12z.json
+    │   │       ├── wrf_meteo_039_20240819_12z.json
+    │   │       ├── wrf_meteo_040_20240819_12z.json
+    │   │       ├── wrf_meteo_041_20240819_12z.json
+    │   │       ├── wrf_meteo_042_20240819_12z.json
+    │   │       ├── wrf_meteo_043_20240819_12z.json
+    │   │       ├── wrf_meteo_044_20240819_12z.json
+    │   │       ├── wrf_meteo_045_20240819_12z.json
+    │   │       ├── wrf_meteo_046_20240819_12z.json
+    │   │       ├── wrf_meteo_047_20240819_12z.json
+    │   │       ├── wrf_meteo_048_20240819_12z.json
+    │   │       ├── wrf_meteo_049_20240819_12z.json
+    │   │       ├── wrf_meteo_050_20240819_12z.json
+    │   │       ├── wrf_meteo_051_20240819_12z.json
+    │   │       ├── wrf_meteo_052_20240819_12z.json
+    │   │       ├── wrf_meteo_053_20240819_12z.json
+    │   │       ├── wrf_meteo_054_20240819_12z.json
+    │   │       ├── wrf_meteo_055_20240819_12z.json
+    │   │       ├── wrf_meteo_056_20240819_12z.json
+    │   │       ├── wrf_meteo_057_20240819_12z.json
+    │   │       ├── wrf_meteo_058_20240819_12z.json
+    │   │       ├── wrf_meteo_059_20240819_12z.json
+    │   │       ├── wrf_meteo_060_20240819_12z.json
+    │   │       ├── wrf_meteo_061_20240819_12z.json
+    │   │       ├── wrf_meteo_062_20240819_12z.json
+    │   │       ├── wrf_meteo_063_20240819_12z.json
+    │   │       ├── wrf_meteo_064_20240819_12z.json
+    │   │       ├── wrf_meteo_065_20240819_12z.json
+    │   │       ├── wrf_meteo_066_20240819_12z.json
+    │   │       ├── wrf_meteo_067_20240819_12z.json
+    │   │       ├── wrf_meteo_068_20240819_12z.json
+    │   │       ├── wrf_meteo_069_20240819_12z.json
+    │   │       ├── wrf_meteo_070_20240819_12z.json
+    │   │       ├── wrf_meteo_071_20240819_12z.json
+    │   │       ├── wrf_meteo_072_20240819_12z.json
+    │   │       ├── wrf_meteo_073_20240819_12z.json
+    │   │       ├── wrf_meteo_074_20240819_12z.json
+    │   │       ├── wrf_meteo_075_20240819_12z.json
+    │   │       ├── wrf_meteo_076_20240819_12z.json
+    │   │       ├── wrf_meteo_077_20240819_12z.json
+    │   │       ├── wrf_meteo_078_20240819_12z.json
+    │   │       ├── wrf_meteo_079_20240819_12z.json
+    │   │       ├── wrf_meteo_080_20240819_12z.json
+    │   │       ├── wrf_meteo_081_20240819_12z.json
+    │   │       ├── wrf_meteo_082_20240819_12z.json
+    │   │       ├── wrf_meteo_083_20240819_12z.json
+    │   │       ├── wrf_meteo_084_20240819_12z.json
+    │   │       ├── wrf_meteo_085_20240819_12z.json
+    │   │       ├── wrf_meteo_086_20240819_12z.json
+    │   │       ├── wrf_meteo_087_20240819_12z.json
+    │   │       ├── wrf_meteo_088_20240819_12z.json
+    │   │       ├── wrf_meteo_089_20240819_12z.json
+    │   │       ├── wrf_meteo_090_20240819_12z.json
+    │   │       ├── wrf_meteo_091_20240819_12z.json
+    │   │       ├── wrf_meteo_092_20240819_12z.json
+    │   │       ├── wrf_meteo_093_20240819_12z.json
+    │   │       ├── wrf_meteo_094_20240819_12z.json
+    │   │       ├── wrf_meteo_095_20240819_12z.json
+    │   │       ├── wrf_meteo_096_20240819_12z.json
+    │   │       ├── wrf_meteo_097_20240819_12z.json
+    │   │       ├── wrf_meteo_098_20240819_12z.json
+    │   │       ├── wrf_meteo_099_20240819_12z.json
+    │   │       ├── wrf_meteo_100_20240819_12z.json
+    │   │       ├── wrf_meteo_101_20240819_12z.json
+    │   │       ├── wrf_meteo_102_20240819_12z.json
+    │   │       ├── wrf_meteo_103_20240819_12z.json
+    │   │       ├── wrf_meteo_104_20240819_12z.json
+    │   │       ├── wrf_meteo_105_20240819_12z.json
+    │   │       ├── wrf_meteo_106_20240819_12z.json
+    │   │       ├── wrf_meteo_107_20240819_12z.json
+    │   │       ├── wrf_meteo_108_20240819_12z.json
+    │   │       ├── wrf_meteo_109_20240819_12z.json
+    │   │       ├── wrf_meteo_110_20240819_12z.json
+    │   │       ├── wrf_meteo_111_20240819_12z.json
+    │   │       ├── wrf_meteo_112_20240819_12z.json
+    │   │       ├── wrf_meteo_113_20240819_12z.json
+    │   │       ├── wrf_meteo_114_20240819_12z.json
+    │   │       ├── wrf_meteo_115_20240819_12z.json
+    │   │       ├── wrf_meteo_116_20240819_12z.json
+    │   │       ├── wrf_meteo_117_20240819_12z.json
+    │   │       ├── wrf_meteo_118_20240819_12z.json
+    │   │       ├── wrf_meteo_119_20240819_12z.json
+    │   │       ├── wrf_meteo_120_20240819_12z.json
+    │   │       ├── wrf_meteo_121_20240819_12z.json
+    │   │       ├── wrf_meteo_122_20240819_12z.json
+    │   │       ├── wrf_meteo_123_20240819_12z.json
+    │   │       ├── wrf_meteo_124_20240819_12z.json
+    │   │       ├── wrf_meteo_125_20240819_12z.json
+    │   │       ├── wrf_meteo_126_20240819_12z.json
+    │   │       ├── wrf_meteo_127_20240819_12z.json
+    │   │       ├── wrf_meteo_128_20240819_12z.json
+    │   │       ├── wrf_meteo_129_20240819_12z.json
+    │   │       ├── wrf_meteo_130_20240819_12z.json
+    │   │       ├── wrf_meteo_131_20240819_12z.json
+    │   │       ├── wrf_meteo_132_20240819_12z.json
+    │   │       ├── wrf_meteo_133_20240819_12z.json
+    │   │       ├── wrf_meteo_134_20240819_12z.json
+    │   │       ├── wrf_meteo_135_20240819_12z.json
+    │   │       ├── wrf_meteo_136_20240819_12z.json
+    │   │       ├── wrf_meteo_137_20240819_12z.json
+    │   │       ├── wrf_meteo_138_20240819_12z.json
+    │   │       ├── wrf_meteo_139_20240819_12z.json
+    │   │       ├── wrf_meteo_140_20240819_12z.json
+    │   │       ├── wrf_meteo_141_20240819_12z.json
+    │   │       ├── wrf_meteo_142_20240819_12z.json
+    │   │       ├── wrf_meteo_143_20240819_12z.json
+    │   │       ├── wrf_meteo_144_20240819_12z.json
+    │   │       ├── wrf_meteo_145_20240819_12z.json
+    │   │       ├── wrf_meteo_146_20240819_12z.json
+    │   │       ├── wrf_meteo_147_20240819_12z.json
+    │   │       ├── wrf_meteo_148_20240819_12z.json
+    │   │       ├── wrf_meteo_149_20240819_12z.json
+    │   │       ├── wrf_meteo_150_20240819_12z.json
+    │   │       ├── wrf_meteo_151_20240819_12z.json
+    │   │       ├── wrf_meteo_152_20240819_12z.json
+    │   │       ├── wrf_meteo_153_20240819_12z.json
+    │   │       ├── wrf_meteo_154_20240819_12z.json
+    │   │       ├── wrf_meteo_155_20240819_12z.json
+    │   │       ├── wrf_meteo_156_20240819_12z.json
+    │   │       ├── wrf_meteo_157_20240819_12z.json
+    │   │       ├── wrf_meteo_158_20240819_12z.json
+    │   │       ├── wrf_meteo_159_20240819_12z.json
+    │   │       ├── wrf_meteo_160_20240819_12z.json
+    │   │       ├── wrf_meteo_161_20240819_12z.json
+    │   │       ├── wrf_meteo_162_20240819_12z.json
+    │   │       ├── wrf_meteo_163_20240819_12z.json
+    │   │       ├── wrf_meteo_164_20240819_12z.json
+    │   │       ├── wrf_meteo_165_20240819_12z.json
+    │   │       ├── wrf_meteo_166_20240819_12z.json
+    │   │       ├── wrf_meteo_167_20240819_12z.json
+    │   │       ├── wrf_meteo_168_20240819_12z.json
+    │   │       ├── wrf_meteo_169_20240819_12z.json
+    │   │       ├── wrf_meteo_170_20240819_12z.json
+    │   │       ├── wrf_meteo_171_20240819_12z.json
+    │   │       ├── wrf_meteo_172_20240819_12z.json
+    │   │       ├── wrf_meteo_173_20240819_12z.json
+    │   │       ├── wrf_meteo_174_20240819_12z.json
+    │   │       ├── wrf_meteo_175_20240819_12z.json
+    │   │       ├── wrf_meteo_176_20240819_12z.json
+    │   │       ├── wrf_meteo_177_20240819_12z.json
+    │   │       ├── wrf_meteo_178_20240819_12z.json
+    │   │       ├── wrf_meteo_179_20240819_12z.json
+    │   │       ├── wrf_meteo_180_20240819_12z.json
+    │   │       ├── wrf_meteo_181_20240819_12z.json
+    │   │       ├── wrf_meteo_182_20240819_12z.json
+    │   │       ├── wrf_meteo_183_20240819_12z.json
+    │   │       ├── wrf_meteo_184_20240819_12z.json
+    │   │       ├── wrf_meteo_185_20240819_12z.json
+    │   │       ├── wrf_meteo_186_20240819_12z.json
+    │   │       ├── wrf_meteo_187_20240819_12z.json
+    │   │       ├── wrf_meteo_188_20240819_12z.json
+    │   │       ├── wrf_meteo_189_20240819_12z.json
+    │   │       ├── wrf_meteo_190_20240819_12z.json
+    │   │       ├── wrf_meteo_191_20240819_12z.json
+    │   │       ├── wrf_meteo_192_20240819_12z.json
+    │   │       ├── wrf_meteo_193_20240819_12z.json
+    │   │       ├── wrf_meteo_194_20240819_12z.json
+    │   │       ├── wrf_meteo_195_20240819_12z.json
+    │   │       ├── wrf_meteo_196_20240819_12z.json
+    │   │       ├── wrf_meteo_197_20240819_12z.json
+    │   │       ├── wrf_meteo_198_20240819_12z.json
+    │   │       ├── wrf_meteo_199_20240819_12z.json
+    │   │       ├── wrf_meteo_200_20240819_12z.json
+    │   │       ├── wrf_meteo_201_20240819_12z.json
+    │   │       ├── wrf_meteo_202_20240819_12z.json
+    │   │       ├── wrf_meteo_203_20240819_12z.json
+    │   │       ├── wrf_meteo_204_20240819_12z.json
+    │   │       ├── wrf_meteo_205_20240819_12z.json
+    │   │       ├── wrf_meteo_206_20240819_12z.json
+    │   │       ├── wrf_meteo_207_20240819_12z.json
+    │   │       ├── wrf_meteo_208_20240819_12z.json
+    │   │       ├── wrf_meteo_209_20240819_12z.json
+    │   │       ├── wrf_meteo_210_20240819_12z.json
+    │   │       ├── wrf_meteo_211_20240819_12z.json
+    │   │       ├── wrf_meteo_212_20240819_12z.json
+    │   │       ├── wrf_meteo_213_20240819_12z.json
+    │   │       ├── wrf_meteo_214_20240819_12z.json
+    │   │       ├── wrf_meteo_215_20240819_12z.json
+    │   │       ├── wrf_meteo_216_20240819_12z.json
+    │   │       └── wrf_meteo_217_20240819_12z.json
+    │   ├── CO
+    │   │   └── sfc
+    │   │       ├── wrf_CO_20240819_12z_000.png
+    │   │       ├── wrf_CO_20240819_12z_003.png
+    │   │       ├── wrf_CO_20240819_12z_006.png
+    │   │       ├── wrf_CO_20240819_12z_009.png
+    │   │       ├── wrf_CO_20240819_12z_012.png
+    │   │       ├── wrf_CO_20240819_12z_015.png
+    │   │       ├── wrf_CO_20240819_12z_018.png
+    │   │       ├── wrf_CO_20240819_12z_021.png
+    │   │       ├── wrf_CO_20240819_12z_024.png
+    │   │       ├── wrf_CO_20240819_12z_027.png
+    │   │       ├── wrf_CO_20240819_12z_030.png
+    │   │       ├── wrf_CO_20240819_12z_033.png
+    │   │       ├── wrf_CO_20240819_12z_036.png
+    │   │       ├── wrf_CO_20240819_12z_039.png
+    │   │       ├── wrf_CO_20240819_12z_042.png
+    │   │       ├── wrf_CO_20240819_12z_045.png
+    │   │       ├── wrf_CO_20240819_12z_048.png
+    │   │       ├── wrf_CO_20240819_12z_051.png
+    │   │       ├── wrf_CO_20240819_12z_054.png
+    │   │       ├── wrf_CO_20240819_12z_057.png
+    │   │       ├── wrf_CO_20240819_12z_060.png
+    │   │       ├── wrf_CO_20240819_12z_063.png
+    │   │       ├── wrf_CO_20240819_12z_066.png
+    │   │       ├── wrf_CO_20240819_12z_069.png
+    │   │       └── wrf_CO_20240819_12z_072.png
+    │   ├── hum
+    │   │   └── sfc
+    │   │       ├── wrf_sfc_humrel_20240819_12z_000.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_003.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_006.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_009.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_012.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_015.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_018.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_021.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_024.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_027.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_030.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_033.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_036.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_039.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_042.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_045.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_048.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_051.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_054.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_057.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_060.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_063.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_066.png
+    │   │       ├── wrf_sfc_humrel_20240819_12z_069.png
+    │   │       └── wrf_sfc_humrel_20240819_12z_072.png
+    │   ├── meteogramas
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_000_20240819_12z.json
+    │   │   │   ├── wrf_chem_001_20240819_12z.json
+    │   │   │   ├── wrf_chem_002_20240819_12z.json
+    │   │   │   ├── wrf_chem_003_20240819_12z.json
+    │   │   │   ├── wrf_chem_004_20240819_12z.json
+    │   │   │   ├── wrf_chem_005_20240819_12z.json
+    │   │   │   ├── wrf_chem_006_20240819_12z.json
+    │   │   │   └── wrf_chem_007_20240819_12z.json
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_000_20240819_12z.json
+    │   │       ├── wrf_meteo_001_20240819_12z.json
+    │   │       ├── wrf_meteo_002_20240819_12z.json
+    │   │       ├── wrf_meteo_003_20240819_12z.json
+    │   │       ├── wrf_meteo_004_20240819_12z.json
+    │   │       ├── wrf_meteo_005_20240819_12z.json
+    │   │       ├── wrf_meteo_006_20240819_12z.json
+    │   │       └── wrf_meteo_007_20240819_12z.json
+    │   ├── NO2
+    │   │   └── sfc
+    │   │       ├── wrf_NO2_20240819_12z_000.png
+    │   │       ├── wrf_NO2_20240819_12z_003.png
+    │   │       ├── wrf_NO2_20240819_12z_006.png
+    │   │       ├── wrf_NO2_20240819_12z_009.png
+    │   │       ├── wrf_NO2_20240819_12z_012.png
+    │   │       ├── wrf_NO2_20240819_12z_015.png
+    │   │       ├── wrf_NO2_20240819_12z_018.png
+    │   │       ├── wrf_NO2_20240819_12z_021.png
+    │   │       ├── wrf_NO2_20240819_12z_024.png
+    │   │       ├── wrf_NO2_20240819_12z_027.png
+    │   │       ├── wrf_NO2_20240819_12z_030.png
+    │   │       ├── wrf_NO2_20240819_12z_033.png
+    │   │       ├── wrf_NO2_20240819_12z_036.png
+    │   │       ├── wrf_NO2_20240819_12z_039.png
+    │   │       ├── wrf_NO2_20240819_12z_042.png
+    │   │       ├── wrf_NO2_20240819_12z_045.png
+    │   │       ├── wrf_NO2_20240819_12z_048.png
+    │   │       ├── wrf_NO2_20240819_12z_051.png
+    │   │       ├── wrf_NO2_20240819_12z_054.png
+    │   │       ├── wrf_NO2_20240819_12z_057.png
+    │   │       ├── wrf_NO2_20240819_12z_060.png
+    │   │       ├── wrf_NO2_20240819_12z_063.png
+    │   │       ├── wrf_NO2_20240819_12z_066.png
+    │   │       ├── wrf_NO2_20240819_12z_069.png
+    │   │       └── wrf_NO2_20240819_12z_072.png
+    │   ├── O3
+    │   │   └── sfc
+    │   │       ├── wrf_O3_20240819_12z_000.png
+    │   │       ├── wrf_O3_20240819_12z_003.png
+    │   │       ├── wrf_O3_20240819_12z_006.png
+    │   │       ├── wrf_O3_20240819_12z_009.png
+    │   │       ├── wrf_O3_20240819_12z_012.png
+    │   │       ├── wrf_O3_20240819_12z_015.png
+    │   │       ├── wrf_O3_20240819_12z_018.png
+    │   │       ├── wrf_O3_20240819_12z_021.png
+    │   │       ├── wrf_O3_20240819_12z_024.png
+    │   │       ├── wrf_O3_20240819_12z_027.png
+    │   │       ├── wrf_O3_20240819_12z_030.png
+    │   │       ├── wrf_O3_20240819_12z_033.png
+    │   │       ├── wrf_O3_20240819_12z_036.png
+    │   │       ├── wrf_O3_20240819_12z_039.png
+    │   │       ├── wrf_O3_20240819_12z_042.png
+    │   │       ├── wrf_O3_20240819_12z_045.png
+    │   │       ├── wrf_O3_20240819_12z_048.png
+    │   │       ├── wrf_O3_20240819_12z_051.png
+    │   │       ├── wrf_O3_20240819_12z_054.png
+    │   │       ├── wrf_O3_20240819_12z_057.png
+    │   │       ├── wrf_O3_20240819_12z_060.png
+    │   │       ├── wrf_O3_20240819_12z_063.png
+    │   │       ├── wrf_O3_20240819_12z_066.png
+    │   │       ├── wrf_O3_20240819_12z_069.png
+    │   │       └── wrf_O3_20240819_12z_072.png
+    │   ├── PM10
+    │   │   └── sfc
+    │   │       ├── wrf_PM10_20240819_12z_000.png
+    │   │       ├── wrf_PM10_20240819_12z_003.png
+    │   │       ├── wrf_PM10_20240819_12z_006.png
+    │   │       ├── wrf_PM10_20240819_12z_009.png
+    │   │       ├── wrf_PM10_20240819_12z_012.png
+    │   │       ├── wrf_PM10_20240819_12z_015.png
+    │   │       ├── wrf_PM10_20240819_12z_018.png
+    │   │       ├── wrf_PM10_20240819_12z_021.png
+    │   │       ├── wrf_PM10_20240819_12z_024.png
+    │   │       ├── wrf_PM10_20240819_12z_027.png
+    │   │       ├── wrf_PM10_20240819_12z_030.png
+    │   │       ├── wrf_PM10_20240819_12z_033.png
+    │   │       ├── wrf_PM10_20240819_12z_036.png
+    │   │       ├── wrf_PM10_20240819_12z_039.png
+    │   │       ├── wrf_PM10_20240819_12z_042.png
+    │   │       ├── wrf_PM10_20240819_12z_045.png
+    │   │       ├── wrf_PM10_20240819_12z_048.png
+    │   │       ├── wrf_PM10_20240819_12z_051.png
+    │   │       ├── wrf_PM10_20240819_12z_054.png
+    │   │       ├── wrf_PM10_20240819_12z_057.png
+    │   │       ├── wrf_PM10_20240819_12z_060.png
+    │   │       ├── wrf_PM10_20240819_12z_063.png
+    │   │       ├── wrf_PM10_20240819_12z_066.png
+    │   │       ├── wrf_PM10_20240819_12z_069.png
+    │   │       └── wrf_PM10_20240819_12z_072.png
+    │   ├── PM25
+    │   │   └── sfc
+    │   │       ├── wrf_PM25_20240819_12z_000.png
+    │   │       ├── wrf_PM25_20240819_12z_003.png
+    │   │       ├── wrf_PM25_20240819_12z_006.png
+    │   │       ├── wrf_PM25_20240819_12z_009.png
+    │   │       ├── wrf_PM25_20240819_12z_012.png
+    │   │       ├── wrf_PM25_20240819_12z_015.png
+    │   │       ├── wrf_PM25_20240819_12z_018.png
+    │   │       ├── wrf_PM25_20240819_12z_021.png
+    │   │       ├── wrf_PM25_20240819_12z_024.png
+    │   │       ├── wrf_PM25_20240819_12z_027.png
+    │   │       ├── wrf_PM25_20240819_12z_030.png
+    │   │       ├── wrf_PM25_20240819_12z_033.png
+    │   │       ├── wrf_PM25_20240819_12z_036.png
+    │   │       ├── wrf_PM25_20240819_12z_039.png
+    │   │       ├── wrf_PM25_20240819_12z_042.png
+    │   │       ├── wrf_PM25_20240819_12z_045.png
+    │   │       ├── wrf_PM25_20240819_12z_048.png
+    │   │       ├── wrf_PM25_20240819_12z_051.png
+    │   │       ├── wrf_PM25_20240819_12z_054.png
+    │   │       ├── wrf_PM25_20240819_12z_057.png
+    │   │       ├── wrf_PM25_20240819_12z_060.png
+    │   │       ├── wrf_PM25_20240819_12z_063.png
+    │   │       ├── wrf_PM25_20240819_12z_066.png
+    │   │       ├── wrf_PM25_20240819_12z_069.png
+    │   │       └── wrf_PM25_20240819_12z_072.png
+    │   ├── precacum
+    │   │   ├── wrf_sfc_precacum_20240819_12z_00.png
+    │   │   ├── wrf_sfc_precacum_20240819_12z_24.png
+    │   │   └── wrf_sfc_precacum_20240819_12z_48.png
+    │   ├── psfc
+    │   │   ├── wrf_sfc_press_20240819_12z_000.png
+    │   │   ├── wrf_sfc_press_20240819_12z_003.png
+    │   │   ├── wrf_sfc_press_20240819_12z_006.png
+    │   │   ├── wrf_sfc_press_20240819_12z_009.png
+    │   │   ├── wrf_sfc_press_20240819_12z_012.png
+    │   │   ├── wrf_sfc_press_20240819_12z_015.png
+    │   │   ├── wrf_sfc_press_20240819_12z_018.png
+    │   │   ├── wrf_sfc_press_20240819_12z_021.png
+    │   │   ├── wrf_sfc_press_20240819_12z_024.png
+    │   │   ├── wrf_sfc_press_20240819_12z_027.png
+    │   │   ├── wrf_sfc_press_20240819_12z_030.png
+    │   │   ├── wrf_sfc_press_20240819_12z_033.png
+    │   │   ├── wrf_sfc_press_20240819_12z_036.png
+    │   │   ├── wrf_sfc_press_20240819_12z_039.png
+    │   │   ├── wrf_sfc_press_20240819_12z_042.png
+    │   │   ├── wrf_sfc_press_20240819_12z_045.png
+    │   │   ├── wrf_sfc_press_20240819_12z_048.png
+    │   │   ├── wrf_sfc_press_20240819_12z_051.png
+    │   │   ├── wrf_sfc_press_20240819_12z_054.png
+    │   │   ├── wrf_sfc_press_20240819_12z_057.png
+    │   │   ├── wrf_sfc_press_20240819_12z_060.png
+    │   │   ├── wrf_sfc_press_20240819_12z_063.png
+    │   │   ├── wrf_sfc_press_20240819_12z_066.png
+    │   │   ├── wrf_sfc_press_20240819_12z_069.png
+    │   │   └── wrf_sfc_press_20240819_12z_072.png
+    │   ├── radlw
+    │   │   └── sfc
+    │   │       ├── wrf_lw_20240819_12z_000.png
+    │   │       ├── wrf_lw_20240819_12z_003.png
+    │   │       ├── wrf_lw_20240819_12z_006.png
+    │   │       ├── wrf_lw_20240819_12z_009.png
+    │   │       ├── wrf_lw_20240819_12z_012.png
+    │   │       ├── wrf_lw_20240819_12z_015.png
+    │   │       ├── wrf_lw_20240819_12z_018.png
+    │   │       ├── wrf_lw_20240819_12z_021.png
+    │   │       ├── wrf_lw_20240819_12z_024.png
+    │   │       ├── wrf_lw_20240819_12z_027.png
+    │   │       ├── wrf_lw_20240819_12z_030.png
+    │   │       ├── wrf_lw_20240819_12z_033.png
+    │   │       ├── wrf_lw_20240819_12z_036.png
+    │   │       ├── wrf_lw_20240819_12z_039.png
+    │   │       ├── wrf_lw_20240819_12z_042.png
+    │   │       ├── wrf_lw_20240819_12z_045.png
+    │   │       ├── wrf_lw_20240819_12z_048.png
+    │   │       ├── wrf_lw_20240819_12z_051.png
+    │   │       ├── wrf_lw_20240819_12z_054.png
+    │   │       ├── wrf_lw_20240819_12z_057.png
+    │   │       ├── wrf_lw_20240819_12z_060.png
+    │   │       ├── wrf_lw_20240819_12z_063.png
+    │   │       ├── wrf_lw_20240819_12z_066.png
+    │   │       ├── wrf_lw_20240819_12z_069.png
+    │   │       └── wrf_lw_20240819_12z_072.png
+    │   ├── radsw
+    │   │   └── sfc
+    │   │       ├── wrf_sw_20240819_12z_000.png
+    │   │       ├── wrf_sw_20240819_12z_003.png
+    │   │       ├── wrf_sw_20240819_12z_006.png
+    │   │       ├── wrf_sw_20240819_12z_009.png
+    │   │       ├── wrf_sw_20240819_12z_012.png
+    │   │       ├── wrf_sw_20240819_12z_015.png
+    │   │       ├── wrf_sw_20240819_12z_018.png
+    │   │       ├── wrf_sw_20240819_12z_021.png
+    │   │       ├── wrf_sw_20240819_12z_024.png
+    │   │       ├── wrf_sw_20240819_12z_027.png
+    │   │       ├── wrf_sw_20240819_12z_030.png
+    │   │       ├── wrf_sw_20240819_12z_033.png
+    │   │       ├── wrf_sw_20240819_12z_036.png
+    │   │       ├── wrf_sw_20240819_12z_039.png
+    │   │       ├── wrf_sw_20240819_12z_042.png
+    │   │       ├── wrf_sw_20240819_12z_045.png
+    │   │       ├── wrf_sw_20240819_12z_048.png
+    │   │       ├── wrf_sw_20240819_12z_051.png
+    │   │       ├── wrf_sw_20240819_12z_054.png
+    │   │       ├── wrf_sw_20240819_12z_057.png
+    │   │       ├── wrf_sw_20240819_12z_060.png
+    │   │       ├── wrf_sw_20240819_12z_063.png
+    │   │       ├── wrf_sw_20240819_12z_066.png
+    │   │       ├── wrf_sw_20240819_12z_069.png
+    │   │       └── wrf_sw_20240819_12z_072.png
+    │   ├── SO2
+    │   │   └── sfc
+    │   │       ├── wrf_SO2_20240819_12z_000.png
+    │   │       ├── wrf_SO2_20240819_12z_003.png
+    │   │       ├── wrf_SO2_20240819_12z_006.png
+    │   │       ├── wrf_SO2_20240819_12z_009.png
+    │   │       ├── wrf_SO2_20240819_12z_012.png
+    │   │       ├── wrf_SO2_20240819_12z_015.png
+    │   │       ├── wrf_SO2_20240819_12z_018.png
+    │   │       ├── wrf_SO2_20240819_12z_021.png
+    │   │       ├── wrf_SO2_20240819_12z_024.png
+    │   │       ├── wrf_SO2_20240819_12z_027.png
+    │   │       ├── wrf_SO2_20240819_12z_030.png
+    │   │       ├── wrf_SO2_20240819_12z_033.png
+    │   │       ├── wrf_SO2_20240819_12z_036.png
+    │   │       ├── wrf_SO2_20240819_12z_039.png
+    │   │       ├── wrf_SO2_20240819_12z_042.png
+    │   │       ├── wrf_SO2_20240819_12z_045.png
+    │   │       ├── wrf_SO2_20240819_12z_048.png
+    │   │       ├── wrf_SO2_20240819_12z_051.png
+    │   │       ├── wrf_SO2_20240819_12z_054.png
+    │   │       ├── wrf_SO2_20240819_12z_057.png
+    │   │       ├── wrf_SO2_20240819_12z_060.png
+    │   │       ├── wrf_SO2_20240819_12z_063.png
+    │   │       ├── wrf_SO2_20240819_12z_066.png
+    │   │       ├── wrf_SO2_20240819_12z_069.png
+    │   │       └── wrf_SO2_20240819_12z_072.png
+    │   ├── temmax
+    │   │   ├── wrf_sfc_temmax_20240819_12z_24.png
+    │   │   ├── wrf_sfc_temmax_20240819_12z_48.png
+    │   │   └── wrf_sfc_temmax_20240819_12z_72.png
+    │   ├── temmin
+    │   │   ├── wrf_sfc_temmin_20240819_12z_24.png
+    │   │   ├── wrf_sfc_temmin_20240819_12z_48.png
+    │   │   └── wrf_sfc_temmin_20240819_12z_72.png
+    │   ├── temp
+    │   │   ├── 200
+    │   │   │   ├── wrf_200_temp_20240819_12z_000.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_003.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_006.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_009.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_012.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_015.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_018.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_021.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_024.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_027.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_030.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_033.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_036.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_039.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_042.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_045.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_048.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_051.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_054.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_057.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_060.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_063.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_066.png
+    │   │   │   ├── wrf_200_temp_20240819_12z_069.png
+    │   │   │   └── wrf_200_temp_20240819_12z_072.png
+    │   │   ├── 300
+    │   │   │   ├── wrf_300_temp_20240819_12z_000.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_003.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_006.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_009.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_012.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_015.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_018.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_021.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_024.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_027.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_030.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_033.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_036.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_039.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_042.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_045.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_048.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_051.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_054.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_057.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_060.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_063.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_066.png
+    │   │   │   ├── wrf_300_temp_20240819_12z_069.png
+    │   │   │   └── wrf_300_temp_20240819_12z_072.png
+    │   │   ├── 400
+    │   │   │   ├── wrf_400_temp_20240819_12z_000.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_003.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_006.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_009.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_012.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_015.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_018.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_021.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_024.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_027.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_030.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_033.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_036.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_039.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_042.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_045.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_048.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_051.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_054.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_057.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_060.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_063.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_066.png
+    │   │   │   ├── wrf_400_temp_20240819_12z_069.png
+    │   │   │   └── wrf_400_temp_20240819_12z_072.png
+    │   │   ├── 500
+    │   │   │   ├── wrf_500_temp_20240819_12z_000.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_003.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_006.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_009.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_012.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_015.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_018.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_021.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_024.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_027.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_030.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_033.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_036.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_039.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_042.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_045.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_048.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_051.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_054.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_057.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_060.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_063.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_066.png
+    │   │   │   ├── wrf_500_temp_20240819_12z_069.png
+    │   │   │   └── wrf_500_temp_20240819_12z_072.png
+    │   │   ├── 600
+    │   │   │   ├── wrf_600_temp_20240819_12z_000.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_003.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_006.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_009.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_012.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_015.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_018.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_021.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_024.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_027.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_030.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_033.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_036.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_039.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_042.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_045.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_048.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_051.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_054.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_057.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_060.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_063.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_066.png
+    │   │   │   ├── wrf_600_temp_20240819_12z_069.png
+    │   │   │   └── wrf_600_temp_20240819_12z_072.png
+    │   │   └── 700
+    │   │       ├── wrf_700_temp_20240819_12z_000.png
+    │   │       ├── wrf_700_temp_20240819_12z_003.png
+    │   │       ├── wrf_700_temp_20240819_12z_006.png
+    │   │       ├── wrf_700_temp_20240819_12z_009.png
+    │   │       ├── wrf_700_temp_20240819_12z_012.png
+    │   │       ├── wrf_700_temp_20240819_12z_015.png
+    │   │       ├── wrf_700_temp_20240819_12z_018.png
+    │   │       ├── wrf_700_temp_20240819_12z_021.png
+    │   │       ├── wrf_700_temp_20240819_12z_024.png
+    │   │       ├── wrf_700_temp_20240819_12z_027.png
+    │   │       ├── wrf_700_temp_20240819_12z_030.png
+    │   │       ├── wrf_700_temp_20240819_12z_033.png
+    │   │       ├── wrf_700_temp_20240819_12z_036.png
+    │   │       ├── wrf_700_temp_20240819_12z_039.png
+    │   │       ├── wrf_700_temp_20240819_12z_042.png
+    │   │       ├── wrf_700_temp_20240819_12z_045.png
+    │   │       ├── wrf_700_temp_20240819_12z_048.png
+    │   │       ├── wrf_700_temp_20240819_12z_051.png
+    │   │       ├── wrf_700_temp_20240819_12z_054.png
+    │   │       ├── wrf_700_temp_20240819_12z_057.png
+    │   │       ├── wrf_700_temp_20240819_12z_060.png
+    │   │       ├── wrf_700_temp_20240819_12z_063.png
+    │   │       ├── wrf_700_temp_20240819_12z_066.png
+    │   │       ├── wrf_700_temp_20240819_12z_069.png
+    │   │       └── wrf_700_temp_20240819_12z_072.png
+    │   └── wnd
+    │       ├── 200
+    │       │   ├── wrf_200_wind_20240819_12z_000.png
+    │       │   ├── wrf_200_wind_20240819_12z_003.png
+    │       │   ├── wrf_200_wind_20240819_12z_006.png
+    │       │   ├── wrf_200_wind_20240819_12z_009.png
+    │       │   ├── wrf_200_wind_20240819_12z_012.png
+    │       │   ├── wrf_200_wind_20240819_12z_015.png
+    │       │   ├── wrf_200_wind_20240819_12z_018.png
+    │       │   ├── wrf_200_wind_20240819_12z_021.png
+    │       │   ├── wrf_200_wind_20240819_12z_024.png
+    │       │   ├── wrf_200_wind_20240819_12z_027.png
+    │       │   ├── wrf_200_wind_20240819_12z_030.png
+    │       │   ├── wrf_200_wind_20240819_12z_033.png
+    │       │   ├── wrf_200_wind_20240819_12z_036.png
+    │       │   ├── wrf_200_wind_20240819_12z_039.png
+    │       │   ├── wrf_200_wind_20240819_12z_042.png
+    │       │   ├── wrf_200_wind_20240819_12z_045.png
+    │       │   ├── wrf_200_wind_20240819_12z_048.png
+    │       │   ├── wrf_200_wind_20240819_12z_051.png
+    │       │   ├── wrf_200_wind_20240819_12z_054.png
+    │       │   ├── wrf_200_wind_20240819_12z_057.png
+    │       │   ├── wrf_200_wind_20240819_12z_060.png
+    │       │   ├── wrf_200_wind_20240819_12z_063.png
+    │       │   ├── wrf_200_wind_20240819_12z_066.png
+    │       │   ├── wrf_200_wind_20240819_12z_069.png
+    │       │   └── wrf_200_wind_20240819_12z_072.png
+    │       ├── 300
+    │       │   ├── wrf_300_wind_20240819_12z_000.png
+    │       │   ├── wrf_300_wind_20240819_12z_003.png
+    │       │   ├── wrf_300_wind_20240819_12z_006.png
+    │       │   ├── wrf_300_wind_20240819_12z_009.png
+    │       │   ├── wrf_300_wind_20240819_12z_012.png
+    │       │   ├── wrf_300_wind_20240819_12z_015.png
+    │       │   ├── wrf_300_wind_20240819_12z_018.png
+    │       │   ├── wrf_300_wind_20240819_12z_021.png
+    │       │   ├── wrf_300_wind_20240819_12z_024.png
+    │       │   ├── wrf_300_wind_20240819_12z_027.png
+    │       │   ├── wrf_300_wind_20240819_12z_030.png
+    │       │   ├── wrf_300_wind_20240819_12z_033.png
+    │       │   ├── wrf_300_wind_20240819_12z_036.png
+    │       │   ├── wrf_300_wind_20240819_12z_039.png
+    │       │   ├── wrf_300_wind_20240819_12z_042.png
+    │       │   ├── wrf_300_wind_20240819_12z_045.png
+    │       │   ├── wrf_300_wind_20240819_12z_048.png
+    │       │   ├── wrf_300_wind_20240819_12z_051.png
+    │       │   ├── wrf_300_wind_20240819_12z_054.png
+    │       │   ├── wrf_300_wind_20240819_12z_057.png
+    │       │   ├── wrf_300_wind_20240819_12z_060.png
+    │       │   ├── wrf_300_wind_20240819_12z_063.png
+    │       │   ├── wrf_300_wind_20240819_12z_066.png
+    │       │   ├── wrf_300_wind_20240819_12z_069.png
+    │       │   └── wrf_300_wind_20240819_12z_072.png
+    │       ├── 400
+    │       │   ├── wrf_400_wind_20240819_12z_000.png
+    │       │   ├── wrf_400_wind_20240819_12z_003.png
+    │       │   ├── wrf_400_wind_20240819_12z_006.png
+    │       │   ├── wrf_400_wind_20240819_12z_009.png
+    │       │   ├── wrf_400_wind_20240819_12z_012.png
+    │       │   ├── wrf_400_wind_20240819_12z_015.png
+    │       │   ├── wrf_400_wind_20240819_12z_018.png
+    │       │   ├── wrf_400_wind_20240819_12z_021.png
+    │       │   ├── wrf_400_wind_20240819_12z_024.png
+    │       │   ├── wrf_400_wind_20240819_12z_027.png
+    │       │   ├── wrf_400_wind_20240819_12z_030.png
+    │       │   ├── wrf_400_wind_20240819_12z_033.png
+    │       │   ├── wrf_400_wind_20240819_12z_036.png
+    │       │   ├── wrf_400_wind_20240819_12z_039.png
+    │       │   ├── wrf_400_wind_20240819_12z_042.png
+    │       │   ├── wrf_400_wind_20240819_12z_045.png
+    │       │   ├── wrf_400_wind_20240819_12z_048.png
+    │       │   ├── wrf_400_wind_20240819_12z_051.png
+    │       │   ├── wrf_400_wind_20240819_12z_054.png
+    │       │   ├── wrf_400_wind_20240819_12z_057.png
+    │       │   ├── wrf_400_wind_20240819_12z_060.png
+    │       │   ├── wrf_400_wind_20240819_12z_063.png
+    │       │   ├── wrf_400_wind_20240819_12z_066.png
+    │       │   ├── wrf_400_wind_20240819_12z_069.png
+    │       │   └── wrf_400_wind_20240819_12z_072.png
+    │       ├── 500
+    │       │   ├── wrf_500_wind_20240819_12z_000.png
+    │       │   ├── wrf_500_wind_20240819_12z_003.png
+    │       │   ├── wrf_500_wind_20240819_12z_006.png
+    │       │   ├── wrf_500_wind_20240819_12z_009.png
+    │       │   ├── wrf_500_wind_20240819_12z_012.png
+    │       │   ├── wrf_500_wind_20240819_12z_015.png
+    │       │   ├── wrf_500_wind_20240819_12z_018.png
+    │       │   ├── wrf_500_wind_20240819_12z_021.png
+    │       │   ├── wrf_500_wind_20240819_12z_024.png
+    │       │   ├── wrf_500_wind_20240819_12z_027.png
+    │       │   ├── wrf_500_wind_20240819_12z_030.png
+    │       │   ├── wrf_500_wind_20240819_12z_033.png
+    │       │   ├── wrf_500_wind_20240819_12z_036.png
+    │       │   ├── wrf_500_wind_20240819_12z_039.png
+    │       │   ├── wrf_500_wind_20240819_12z_042.png
+    │       │   ├── wrf_500_wind_20240819_12z_045.png
+    │       │   ├── wrf_500_wind_20240819_12z_048.png
+    │       │   ├── wrf_500_wind_20240819_12z_051.png
+    │       │   ├── wrf_500_wind_20240819_12z_054.png
+    │       │   ├── wrf_500_wind_20240819_12z_057.png
+    │       │   ├── wrf_500_wind_20240819_12z_060.png
+    │       │   ├── wrf_500_wind_20240819_12z_063.png
+    │       │   ├── wrf_500_wind_20240819_12z_066.png
+    │       │   ├── wrf_500_wind_20240819_12z_069.png
+    │       │   └── wrf_500_wind_20240819_12z_072.png
+    │       ├── 600
+    │       │   ├── wrf_600_wind_20240819_12z_000.png
+    │       │   ├── wrf_600_wind_20240819_12z_003.png
+    │       │   ├── wrf_600_wind_20240819_12z_006.png
+    │       │   ├── wrf_600_wind_20240819_12z_009.png
+    │       │   ├── wrf_600_wind_20240819_12z_012.png
+    │       │   ├── wrf_600_wind_20240819_12z_015.png
+    │       │   ├── wrf_600_wind_20240819_12z_018.png
+    │       │   ├── wrf_600_wind_20240819_12z_021.png
+    │       │   ├── wrf_600_wind_20240819_12z_024.png
+    │       │   ├── wrf_600_wind_20240819_12z_027.png
+    │       │   ├── wrf_600_wind_20240819_12z_030.png
+    │       │   ├── wrf_600_wind_20240819_12z_033.png
+    │       │   ├── wrf_600_wind_20240819_12z_036.png
+    │       │   ├── wrf_600_wind_20240819_12z_039.png
+    │       │   ├── wrf_600_wind_20240819_12z_042.png
+    │       │   ├── wrf_600_wind_20240819_12z_045.png
+    │       │   ├── wrf_600_wind_20240819_12z_048.png
+    │       │   ├── wrf_600_wind_20240819_12z_051.png
+    │       │   ├── wrf_600_wind_20240819_12z_054.png
+    │       │   ├── wrf_600_wind_20240819_12z_057.png
+    │       │   ├── wrf_600_wind_20240819_12z_060.png
+    │       │   ├── wrf_600_wind_20240819_12z_063.png
+    │       │   ├── wrf_600_wind_20240819_12z_066.png
+    │       │   ├── wrf_600_wind_20240819_12z_069.png
+    │       │   └── wrf_600_wind_20240819_12z_072.png
+    │       ├── 700
+    │       │   ├── wrf_700_wind_20240819_12z_000.png
+    │       │   ├── wrf_700_wind_20240819_12z_003.png
+    │       │   ├── wrf_700_wind_20240819_12z_006.png
+    │       │   ├── wrf_700_wind_20240819_12z_009.png
+    │       │   ├── wrf_700_wind_20240819_12z_012.png
+    │       │   ├── wrf_700_wind_20240819_12z_015.png
+    │       │   ├── wrf_700_wind_20240819_12z_018.png
+    │       │   ├── wrf_700_wind_20240819_12z_021.png
+    │       │   ├── wrf_700_wind_20240819_12z_024.png
+    │       │   ├── wrf_700_wind_20240819_12z_027.png
+    │       │   ├── wrf_700_wind_20240819_12z_030.png
+    │       │   ├── wrf_700_wind_20240819_12z_033.png
+    │       │   ├── wrf_700_wind_20240819_12z_036.png
+    │       │   ├── wrf_700_wind_20240819_12z_039.png
+    │       │   ├── wrf_700_wind_20240819_12z_042.png
+    │       │   ├── wrf_700_wind_20240819_12z_045.png
+    │       │   ├── wrf_700_wind_20240819_12z_048.png
+    │       │   ├── wrf_700_wind_20240819_12z_051.png
+    │       │   ├── wrf_700_wind_20240819_12z_054.png
+    │       │   ├── wrf_700_wind_20240819_12z_057.png
+    │       │   ├── wrf_700_wind_20240819_12z_060.png
+    │       │   ├── wrf_700_wind_20240819_12z_063.png
+    │       │   ├── wrf_700_wind_20240819_12z_066.png
+    │       │   ├── wrf_700_wind_20240819_12z_069.png
+    │       │   └── wrf_700_wind_20240819_12z_072.png
+    │       └── sfc
+    │           ├── wrf_sfc_wind_20240819_12z_000.png
+    │           ├── wrf_sfc_wind_20240819_12z_003.png
+    │           ├── wrf_sfc_wind_20240819_12z_006.png
+    │           ├── wrf_sfc_wind_20240819_12z_009.png
+    │           ├── wrf_sfc_wind_20240819_12z_012.png
+    │           ├── wrf_sfc_wind_20240819_12z_015.png
+    │           ├── wrf_sfc_wind_20240819_12z_018.png
+    │           ├── wrf_sfc_wind_20240819_12z_021.png
+    │           ├── wrf_sfc_wind_20240819_12z_024.png
+    │           ├── wrf_sfc_wind_20240819_12z_027.png
+    │           ├── wrf_sfc_wind_20240819_12z_030.png
+    │           ├── wrf_sfc_wind_20240819_12z_033.png
+    │           ├── wrf_sfc_wind_20240819_12z_036.png
+    │           ├── wrf_sfc_wind_20240819_12z_039.png
+    │           ├── wrf_sfc_wind_20240819_12z_042.png
+    │           ├── wrf_sfc_wind_20240819_12z_045.png
+    │           ├── wrf_sfc_wind_20240819_12z_048.png
+    │           ├── wrf_sfc_wind_20240819_12z_051.png
+    │           ├── wrf_sfc_wind_20240819_12z_054.png
+    │           ├── wrf_sfc_wind_20240819_12z_057.png
+    │           ├── wrf_sfc_wind_20240819_12z_060.png
+    │           ├── wrf_sfc_wind_20240819_12z_063.png
+    │           ├── wrf_sfc_wind_20240819_12z_066.png
+    │           ├── wrf_sfc_wind_20240819_12z_069.png
+    │           └── wrf_sfc_wind_20240819_12z_072.png
+    ├── 2025062812
+    │   ├── cabeceras
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_001_20250628_12z.json
+    │   │   │   ├── wrf_chem_002_20250628_12z.json
+    │   │   │   ├── wrf_chem_003_20250628_12z.json
+    │   │   │   ├── wrf_chem_004_20250628_12z.json
+    │   │   │   ├── wrf_chem_005_20250628_12z.json
+    │   │   │   ├── wrf_chem_006_20250628_12z.json
+    │   │   │   ├── wrf_chem_007_20250628_12z.json
+    │   │   │   ├── wrf_chem_008_20250628_12z.json
+    │   │   │   ├── wrf_chem_009_20250628_12z.json
+    │   │   │   ├── wrf_chem_010_20250628_12z.json
+    │   │   │   ├── wrf_chem_011_20250628_12z.json
+    │   │   │   ├── wrf_chem_012_20250628_12z.json
+    │   │   │   ├── wrf_chem_013_20250628_12z.json
+    │   │   │   ├── wrf_chem_014_20250628_12z.json
+    │   │   │   ├── wrf_chem_015_20250628_12z.json
+    │   │   │   ├── wrf_chem_016_20250628_12z.json
+    │   │   │   ├── wrf_chem_017_20250628_12z.json
+    │   │   │   ├── wrf_chem_018_20250628_12z.json
+    │   │   │   ├── wrf_chem_019_20250628_12z.json
+    │   │   │   ├── wrf_chem_020_20250628_12z.json
+    │   │   │   ├── wrf_chem_021_20250628_12z.json
+    │   │   │   ├── wrf_chem_022_20250628_12z.json
+    │   │   │   ├── wrf_chem_023_20250628_12z.json
+    │   │   │   ├── wrf_chem_024_20250628_12z.json
+    │   │   │   ├── wrf_chem_025_20250628_12z.json
+    │   │   │   ├── wrf_chem_026_20250628_12z.json
+    │   │   │   ├── wrf_chem_027_20250628_12z.json
+    │   │   │   ├── wrf_chem_028_20250628_12z.json
+    │   │   │   ├── wrf_chem_029_20250628_12z.json
+    │   │   │   ├── wrf_chem_030_20250628_12z.json
+    │   │   │   ├── wrf_chem_031_20250628_12z.json
+    │   │   │   ├── wrf_chem_032_20250628_12z.json
+    │   │   │   ├── wrf_chem_033_20250628_12z.json
+    │   │   │   ├── wrf_chem_034_20250628_12z.json
+    │   │   │   ├── wrf_chem_035_20250628_12z.json
+    │   │   │   ├── wrf_chem_036_20250628_12z.json
+    │   │   │   ├── wrf_chem_037_20250628_12z.json
+    │   │   │   ├── wrf_chem_038_20250628_12z.json
+    │   │   │   ├── wrf_chem_039_20250628_12z.json
+    │   │   │   ├── wrf_chem_040_20250628_12z.json
+    │   │   │   ├── wrf_chem_041_20250628_12z.json
+    │   │   │   ├── wrf_chem_042_20250628_12z.json
+    │   │   │   ├── wrf_chem_043_20250628_12z.json
+    │   │   │   ├── wrf_chem_044_20250628_12z.json
+    │   │   │   ├── wrf_chem_045_20250628_12z.json
+    │   │   │   ├── wrf_chem_046_20250628_12z.json
+    │   │   │   ├── wrf_chem_047_20250628_12z.json
+    │   │   │   ├── wrf_chem_048_20250628_12z.json
+    │   │   │   ├── wrf_chem_049_20250628_12z.json
+    │   │   │   ├── wrf_chem_050_20250628_12z.json
+    │   │   │   ├── wrf_chem_051_20250628_12z.json
+    │   │   │   ├── wrf_chem_052_20250628_12z.json
+    │   │   │   ├── wrf_chem_053_20250628_12z.json
+    │   │   │   ├── wrf_chem_054_20250628_12z.json
+    │   │   │   ├── wrf_chem_055_20250628_12z.json
+    │   │   │   ├── wrf_chem_056_20250628_12z.json
+    │   │   │   ├── wrf_chem_057_20250628_12z.json
+    │   │   │   ├── wrf_chem_058_20250628_12z.json
+    │   │   │   ├── wrf_chem_059_20250628_12z.json
+    │   │   │   ├── wrf_chem_060_20250628_12z.json
+    │   │   │   ├── wrf_chem_061_20250628_12z.json
+    │   │   │   ├── wrf_chem_062_20250628_12z.json
+    │   │   │   ├── wrf_chem_063_20250628_12z.json
+    │   │   │   ├── wrf_chem_064_20250628_12z.json
+    │   │   │   ├── wrf_chem_065_20250628_12z.json
+    │   │   │   ├── wrf_chem_066_20250628_12z.json
+    │   │   │   ├── wrf_chem_067_20250628_12z.json
+    │   │   │   ├── wrf_chem_068_20250628_12z.json
+    │   │   │   ├── wrf_chem_069_20250628_12z.json
+    │   │   │   ├── wrf_chem_070_20250628_12z.json
+    │   │   │   ├── wrf_chem_071_20250628_12z.json
+    │   │   │   ├── wrf_chem_072_20250628_12z.json
+    │   │   │   ├── wrf_chem_073_20250628_12z.json
+    │   │   │   ├── wrf_chem_074_20250628_12z.json
+    │   │   │   ├── wrf_chem_075_20250628_12z.json
+    │   │   │   ├── wrf_chem_076_20250628_12z.json
+    │   │   │   ├── wrf_chem_077_20250628_12z.json
+    │   │   │   ├── wrf_chem_078_20250628_12z.json
+    │   │   │   ├── wrf_chem_079_20250628_12z.json
+    │   │   │   ├── wrf_chem_080_20250628_12z.json
+    │   │   │   ├── wrf_chem_081_20250628_12z.json
+    │   │   │   ├── wrf_chem_082_20250628_12z.json
+    │   │   │   ├── wrf_chem_083_20250628_12z.json
+    │   │   │   ├── wrf_chem_084_20250628_12z.json
+    │   │   │   ├── wrf_chem_085_20250628_12z.json
+    │   │   │   ├── wrf_chem_086_20250628_12z.json
+    │   │   │   ├── wrf_chem_087_20250628_12z.json
+    │   │   │   ├── wrf_chem_088_20250628_12z.json
+    │   │   │   ├── wrf_chem_089_20250628_12z.json
+    │   │   │   ├── wrf_chem_090_20250628_12z.json
+    │   │   │   ├── wrf_chem_091_20250628_12z.json
+    │   │   │   ├── wrf_chem_092_20250628_12z.json
+    │   │   │   ├── wrf_chem_093_20250628_12z.json
+    │   │   │   ├── wrf_chem_094_20250628_12z.json
+    │   │   │   ├── wrf_chem_095_20250628_12z.json
+    │   │   │   ├── wrf_chem_096_20250628_12z.json
+    │   │   │   ├── wrf_chem_097_20250628_12z.json
+    │   │   │   ├── wrf_chem_098_20250628_12z.json
+    │   │   │   ├── wrf_chem_099_20250628_12z.json
+    │   │   │   ├── wrf_chem_100_20250628_12z.json
+    │   │   │   ├── wrf_chem_101_20250628_12z.json
+    │   │   │   ├── wrf_chem_102_20250628_12z.json
+    │   │   │   ├── wrf_chem_103_20250628_12z.json
+    │   │   │   ├── wrf_chem_104_20250628_12z.json
+    │   │   │   ├── wrf_chem_105_20250628_12z.json
+    │   │   │   ├── wrf_chem_106_20250628_12z.json
+    │   │   │   ├── wrf_chem_107_20250628_12z.json
+    │   │   │   ├── wrf_chem_108_20250628_12z.json
+    │   │   │   ├── wrf_chem_109_20250628_12z.json
+    │   │   │   ├── wrf_chem_110_20250628_12z.json
+    │   │   │   ├── wrf_chem_111_20250628_12z.json
+    │   │   │   ├── wrf_chem_112_20250628_12z.json
+    │   │   │   ├── wrf_chem_113_20250628_12z.json
+    │   │   │   ├── wrf_chem_114_20250628_12z.json
+    │   │   │   ├── wrf_chem_115_20250628_12z.json
+    │   │   │   ├── wrf_chem_116_20250628_12z.json
+    │   │   │   ├── wrf_chem_117_20250628_12z.json
+    │   │   │   ├── wrf_chem_118_20250628_12z.json
+    │   │   │   ├── wrf_chem_119_20250628_12z.json
+    │   │   │   ├── wrf_chem_120_20250628_12z.json
+    │   │   │   ├── wrf_chem_121_20250628_12z.json
+    │   │   │   ├── wrf_chem_122_20250628_12z.json
+    │   │   │   ├── wrf_chem_123_20250628_12z.json
+    │   │   │   ├── wrf_chem_124_20250628_12z.json
+    │   │   │   ├── wrf_chem_125_20250628_12z.json
+    │   │   │   ├── wrf_chem_126_20250628_12z.json
+    │   │   │   ├── wrf_chem_127_20250628_12z.json
+    │   │   │   ├── wrf_chem_128_20250628_12z.json
+    │   │   │   ├── wrf_chem_129_20250628_12z.json
+    │   │   │   ├── wrf_chem_130_20250628_12z.json
+    │   │   │   ├── wrf_chem_131_20250628_12z.json
+    │   │   │   ├── wrf_chem_132_20250628_12z.json
+    │   │   │   ├── wrf_chem_133_20250628_12z.json
+    │   │   │   ├── wrf_chem_134_20250628_12z.json
+    │   │   │   ├── wrf_chem_135_20250628_12z.json
+    │   │   │   ├── wrf_chem_136_20250628_12z.json
+    │   │   │   ├── wrf_chem_137_20250628_12z.json
+    │   │   │   ├── wrf_chem_138_20250628_12z.json
+    │   │   │   ├── wrf_chem_139_20250628_12z.json
+    │   │   │   ├── wrf_chem_140_20250628_12z.json
+    │   │   │   ├── wrf_chem_141_20250628_12z.json
+    │   │   │   ├── wrf_chem_142_20250628_12z.json
+    │   │   │   ├── wrf_chem_143_20250628_12z.json
+    │   │   │   ├── wrf_chem_144_20250628_12z.json
+    │   │   │   ├── wrf_chem_145_20250628_12z.json
+    │   │   │   ├── wrf_chem_146_20250628_12z.json
+    │   │   │   ├── wrf_chem_147_20250628_12z.json
+    │   │   │   ├── wrf_chem_148_20250628_12z.json
+    │   │   │   ├── wrf_chem_149_20250628_12z.json
+    │   │   │   ├── wrf_chem_150_20250628_12z.json
+    │   │   │   ├── wrf_chem_151_20250628_12z.json
+    │   │   │   ├── wrf_chem_152_20250628_12z.json
+    │   │   │   ├── wrf_chem_153_20250628_12z.json
+    │   │   │   ├── wrf_chem_154_20250628_12z.json
+    │   │   │   ├── wrf_chem_155_20250628_12z.json
+    │   │   │   ├── wrf_chem_156_20250628_12z.json
+    │   │   │   ├── wrf_chem_157_20250628_12z.json
+    │   │   │   ├── wrf_chem_158_20250628_12z.json
+    │   │   │   ├── wrf_chem_159_20250628_12z.json
+    │   │   │   ├── wrf_chem_160_20250628_12z.json
+    │   │   │   ├── wrf_chem_161_20250628_12z.json
+    │   │   │   ├── wrf_chem_162_20250628_12z.json
+    │   │   │   ├── wrf_chem_163_20250628_12z.json
+    │   │   │   ├── wrf_chem_164_20250628_12z.json
+    │   │   │   ├── wrf_chem_165_20250628_12z.json
+    │   │   │   ├── wrf_chem_166_20250628_12z.json
+    │   │   │   ├── wrf_chem_167_20250628_12z.json
+    │   │   │   ├── wrf_chem_168_20250628_12z.json
+    │   │   │   ├── wrf_chem_169_20250628_12z.json
+    │   │   │   ├── wrf_chem_170_20250628_12z.json
+    │   │   │   ├── wrf_chem_171_20250628_12z.json
+    │   │   │   ├── wrf_chem_172_20250628_12z.json
+    │   │   │   ├── wrf_chem_173_20250628_12z.json
+    │   │   │   ├── wrf_chem_174_20250628_12z.json
+    │   │   │   ├── wrf_chem_175_20250628_12z.json
+    │   │   │   ├── wrf_chem_176_20250628_12z.json
+    │   │   │   ├── wrf_chem_177_20250628_12z.json
+    │   │   │   ├── wrf_chem_178_20250628_12z.json
+    │   │   │   ├── wrf_chem_179_20250628_12z.json
+    │   │   │   ├── wrf_chem_180_20250628_12z.json
+    │   │   │   ├── wrf_chem_181_20250628_12z.json
+    │   │   │   ├── wrf_chem_182_20250628_12z.json
+    │   │   │   ├── wrf_chem_183_20250628_12z.json
+    │   │   │   ├── wrf_chem_184_20250628_12z.json
+    │   │   │   ├── wrf_chem_185_20250628_12z.json
+    │   │   │   ├── wrf_chem_186_20250628_12z.json
+    │   │   │   ├── wrf_chem_187_20250628_12z.json
+    │   │   │   ├── wrf_chem_188_20250628_12z.json
+    │   │   │   ├── wrf_chem_189_20250628_12z.json
+    │   │   │   ├── wrf_chem_190_20250628_12z.json
+    │   │   │   ├── wrf_chem_191_20250628_12z.json
+    │   │   │   ├── wrf_chem_192_20250628_12z.json
+    │   │   │   ├── wrf_chem_193_20250628_12z.json
+    │   │   │   ├── wrf_chem_194_20250628_12z.json
+    │   │   │   ├── wrf_chem_195_20250628_12z.json
+    │   │   │   ├── wrf_chem_196_20250628_12z.json
+    │   │   │   ├── wrf_chem_197_20250628_12z.json
+    │   │   │   ├── wrf_chem_198_20250628_12z.json
+    │   │   │   ├── wrf_chem_199_20250628_12z.json
+    │   │   │   ├── wrf_chem_200_20250628_12z.json
+    │   │   │   ├── wrf_chem_201_20250628_12z.json
+    │   │   │   ├── wrf_chem_202_20250628_12z.json
+    │   │   │   ├── wrf_chem_203_20250628_12z.json
+    │   │   │   ├── wrf_chem_204_20250628_12z.json
+    │   │   │   ├── wrf_chem_205_20250628_12z.json
+    │   │   │   ├── wrf_chem_206_20250628_12z.json
+    │   │   │   ├── wrf_chem_207_20250628_12z.json
+    │   │   │   ├── wrf_chem_208_20250628_12z.json
+    │   │   │   ├── wrf_chem_209_20250628_12z.json
+    │   │   │   ├── wrf_chem_210_20250628_12z.json
+    │   │   │   ├── wrf_chem_211_20250628_12z.json
+    │   │   │   ├── wrf_chem_212_20250628_12z.json
+    │   │   │   ├── wrf_chem_213_20250628_12z.json
+    │   │   │   ├── wrf_chem_214_20250628_12z.json
+    │   │   │   ├── wrf_chem_215_20250628_12z.json
+    │   │   │   ├── wrf_chem_216_20250628_12z.json
+    │   │   │   └── wrf_chem_217_20250628_12z.json
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_001_20250628_12z.json
+    │   │       ├── wrf_meteo_002_20250628_12z.json
+    │   │       ├── wrf_meteo_003_20250628_12z.json
+    │   │       ├── wrf_meteo_004_20250628_12z.json
+    │   │       ├── wrf_meteo_005_20250628_12z.json
+    │   │       ├── wrf_meteo_006_20250628_12z.json
+    │   │       ├── wrf_meteo_007_20250628_12z.json
+    │   │       ├── wrf_meteo_008_20250628_12z.json
+    │   │       ├── wrf_meteo_009_20250628_12z.json
+    │   │       ├── wrf_meteo_010_20250628_12z.json
+    │   │       ├── wrf_meteo_011_20250628_12z.json
+    │   │       ├── wrf_meteo_012_20250628_12z.json
+    │   │       ├── wrf_meteo_013_20250628_12z.json
+    │   │       ├── wrf_meteo_014_20250628_12z.json
+    │   │       ├── wrf_meteo_015_20250628_12z.json
+    │   │       ├── wrf_meteo_016_20250628_12z.json
+    │   │       ├── wrf_meteo_017_20250628_12z.json
+    │   │       ├── wrf_meteo_018_20250628_12z.json
+    │   │       ├── wrf_meteo_019_20250628_12z.json
+    │   │       ├── wrf_meteo_020_20250628_12z.json
+    │   │       ├── wrf_meteo_021_20250628_12z.json
+    │   │       ├── wrf_meteo_022_20250628_12z.json
+    │   │       ├── wrf_meteo_023_20250628_12z.json
+    │   │       ├── wrf_meteo_024_20250628_12z.json
+    │   │       ├── wrf_meteo_025_20250628_12z.json
+    │   │       ├── wrf_meteo_026_20250628_12z.json
+    │   │       ├── wrf_meteo_027_20250628_12z.json
+    │   │       ├── wrf_meteo_028_20250628_12z.json
+    │   │       ├── wrf_meteo_029_20250628_12z.json
+    │   │       ├── wrf_meteo_030_20250628_12z.json
+    │   │       ├── wrf_meteo_031_20250628_12z.json
+    │   │       ├── wrf_meteo_032_20250628_12z.json
+    │   │       ├── wrf_meteo_033_20250628_12z.json
+    │   │       ├── wrf_meteo_034_20250628_12z.json
+    │   │       ├── wrf_meteo_035_20250628_12z.json
+    │   │       ├── wrf_meteo_036_20250628_12z.json
+    │   │       ├── wrf_meteo_037_20250628_12z.json
+    │   │       ├── wrf_meteo_038_20250628_12z.json
+    │   │       ├── wrf_meteo_039_20250628_12z.json
+    │   │       ├── wrf_meteo_040_20250628_12z.json
+    │   │       ├── wrf_meteo_041_20250628_12z.json
+    │   │       ├── wrf_meteo_042_20250628_12z.json
+    │   │       ├── wrf_meteo_043_20250628_12z.json
+    │   │       ├── wrf_meteo_044_20250628_12z.json
+    │   │       ├── wrf_meteo_045_20250628_12z.json
+    │   │       ├── wrf_meteo_046_20250628_12z.json
+    │   │       ├── wrf_meteo_047_20250628_12z.json
+    │   │       ├── wrf_meteo_048_20250628_12z.json
+    │   │       ├── wrf_meteo_049_20250628_12z.json
+    │   │       ├── wrf_meteo_050_20250628_12z.json
+    │   │       ├── wrf_meteo_051_20250628_12z.json
+    │   │       ├── wrf_meteo_052_20250628_12z.json
+    │   │       ├── wrf_meteo_053_20250628_12z.json
+    │   │       ├── wrf_meteo_054_20250628_12z.json
+    │   │       ├── wrf_meteo_055_20250628_12z.json
+    │   │       ├── wrf_meteo_056_20250628_12z.json
+    │   │       ├── wrf_meteo_057_20250628_12z.json
+    │   │       ├── wrf_meteo_058_20250628_12z.json
+    │   │       ├── wrf_meteo_059_20250628_12z.json
+    │   │       ├── wrf_meteo_060_20250628_12z.json
+    │   │       ├── wrf_meteo_061_20250628_12z.json
+    │   │       ├── wrf_meteo_062_20250628_12z.json
+    │   │       ├── wrf_meteo_063_20250628_12z.json
+    │   │       ├── wrf_meteo_064_20250628_12z.json
+    │   │       ├── wrf_meteo_065_20250628_12z.json
+    │   │       ├── wrf_meteo_066_20250628_12z.json
+    │   │       ├── wrf_meteo_067_20250628_12z.json
+    │   │       ├── wrf_meteo_068_20250628_12z.json
+    │   │       ├── wrf_meteo_069_20250628_12z.json
+    │   │       ├── wrf_meteo_070_20250628_12z.json
+    │   │       ├── wrf_meteo_071_20250628_12z.json
+    │   │       ├── wrf_meteo_072_20250628_12z.json
+    │   │       ├── wrf_meteo_073_20250628_12z.json
+    │   │       ├── wrf_meteo_074_20250628_12z.json
+    │   │       ├── wrf_meteo_075_20250628_12z.json
+    │   │       ├── wrf_meteo_076_20250628_12z.json
+    │   │       ├── wrf_meteo_077_20250628_12z.json
+    │   │       ├── wrf_meteo_078_20250628_12z.json
+    │   │       ├── wrf_meteo_079_20250628_12z.json
+    │   │       ├── wrf_meteo_080_20250628_12z.json
+    │   │       ├── wrf_meteo_081_20250628_12z.json
+    │   │       ├── wrf_meteo_082_20250628_12z.json
+    │   │       ├── wrf_meteo_083_20250628_12z.json
+    │   │       ├── wrf_meteo_084_20250628_12z.json
+    │   │       ├── wrf_meteo_085_20250628_12z.json
+    │   │       ├── wrf_meteo_086_20250628_12z.json
+    │   │       ├── wrf_meteo_087_20250628_12z.json
+    │   │       ├── wrf_meteo_088_20250628_12z.json
+    │   │       ├── wrf_meteo_089_20250628_12z.json
+    │   │       ├── wrf_meteo_090_20250628_12z.json
+    │   │       ├── wrf_meteo_091_20250628_12z.json
+    │   │       ├── wrf_meteo_092_20250628_12z.json
+    │   │       ├── wrf_meteo_093_20250628_12z.json
+    │   │       ├── wrf_meteo_094_20250628_12z.json
+    │   │       ├── wrf_meteo_095_20250628_12z.json
+    │   │       ├── wrf_meteo_096_20250628_12z.json
+    │   │       ├── wrf_meteo_097_20250628_12z.json
+    │   │       ├── wrf_meteo_098_20250628_12z.json
+    │   │       ├── wrf_meteo_099_20250628_12z.json
+    │   │       ├── wrf_meteo_100_20250628_12z.json
+    │   │       ├── wrf_meteo_101_20250628_12z.json
+    │   │       ├── wrf_meteo_102_20250628_12z.json
+    │   │       ├── wrf_meteo_103_20250628_12z.json
+    │   │       ├── wrf_meteo_104_20250628_12z.json
+    │   │       ├── wrf_meteo_105_20250628_12z.json
+    │   │       ├── wrf_meteo_106_20250628_12z.json
+    │   │       ├── wrf_meteo_107_20250628_12z.json
+    │   │       ├── wrf_meteo_108_20250628_12z.json
+    │   │       ├── wrf_meteo_109_20250628_12z.json
+    │   │       ├── wrf_meteo_110_20250628_12z.json
+    │   │       ├── wrf_meteo_111_20250628_12z.json
+    │   │       ├── wrf_meteo_112_20250628_12z.json
+    │   │       ├── wrf_meteo_113_20250628_12z.json
+    │   │       ├── wrf_meteo_114_20250628_12z.json
+    │   │       ├── wrf_meteo_115_20250628_12z.json
+    │   │       ├── wrf_meteo_116_20250628_12z.json
+    │   │       ├── wrf_meteo_117_20250628_12z.json
+    │   │       ├── wrf_meteo_118_20250628_12z.json
+    │   │       ├── wrf_meteo_119_20250628_12z.json
+    │   │       ├── wrf_meteo_120_20250628_12z.json
+    │   │       ├── wrf_meteo_121_20250628_12z.json
+    │   │       ├── wrf_meteo_122_20250628_12z.json
+    │   │       ├── wrf_meteo_123_20250628_12z.json
+    │   │       ├── wrf_meteo_124_20250628_12z.json
+    │   │       ├── wrf_meteo_125_20250628_12z.json
+    │   │       ├── wrf_meteo_126_20250628_12z.json
+    │   │       ├── wrf_meteo_127_20250628_12z.json
+    │   │       ├── wrf_meteo_128_20250628_12z.json
+    │   │       ├── wrf_meteo_129_20250628_12z.json
+    │   │       ├── wrf_meteo_130_20250628_12z.json
+    │   │       ├── wrf_meteo_131_20250628_12z.json
+    │   │       ├── wrf_meteo_132_20250628_12z.json
+    │   │       ├── wrf_meteo_133_20250628_12z.json
+    │   │       ├── wrf_meteo_134_20250628_12z.json
+    │   │       ├── wrf_meteo_135_20250628_12z.json
+    │   │       ├── wrf_meteo_136_20250628_12z.json
+    │   │       ├── wrf_meteo_137_20250628_12z.json
+    │   │       ├── wrf_meteo_138_20250628_12z.json
+    │   │       ├── wrf_meteo_139_20250628_12z.json
+    │   │       ├── wrf_meteo_140_20250628_12z.json
+    │   │       ├── wrf_meteo_141_20250628_12z.json
+    │   │       ├── wrf_meteo_142_20250628_12z.json
+    │   │       ├── wrf_meteo_143_20250628_12z.json
+    │   │       ├── wrf_meteo_144_20250628_12z.json
+    │   │       ├── wrf_meteo_145_20250628_12z.json
+    │   │       ├── wrf_meteo_146_20250628_12z.json
+    │   │       ├── wrf_meteo_147_20250628_12z.json
+    │   │       ├── wrf_meteo_148_20250628_12z.json
+    │   │       ├── wrf_meteo_149_20250628_12z.json
+    │   │       ├── wrf_meteo_150_20250628_12z.json
+    │   │       ├── wrf_meteo_151_20250628_12z.json
+    │   │       ├── wrf_meteo_152_20250628_12z.json
+    │   │       ├── wrf_meteo_153_20250628_12z.json
+    │   │       ├── wrf_meteo_154_20250628_12z.json
+    │   │       ├── wrf_meteo_155_20250628_12z.json
+    │   │       ├── wrf_meteo_156_20250628_12z.json
+    │   │       ├── wrf_meteo_157_20250628_12z.json
+    │   │       ├── wrf_meteo_158_20250628_12z.json
+    │   │       ├── wrf_meteo_159_20250628_12z.json
+    │   │       ├── wrf_meteo_160_20250628_12z.json
+    │   │       ├── wrf_meteo_161_20250628_12z.json
+    │   │       ├── wrf_meteo_162_20250628_12z.json
+    │   │       ├── wrf_meteo_163_20250628_12z.json
+    │   │       ├── wrf_meteo_164_20250628_12z.json
+    │   │       ├── wrf_meteo_165_20250628_12z.json
+    │   │       ├── wrf_meteo_166_20250628_12z.json
+    │   │       ├── wrf_meteo_167_20250628_12z.json
+    │   │       ├── wrf_meteo_168_20250628_12z.json
+    │   │       ├── wrf_meteo_169_20250628_12z.json
+    │   │       ├── wrf_meteo_170_20250628_12z.json
+    │   │       ├── wrf_meteo_171_20250628_12z.json
+    │   │       ├── wrf_meteo_172_20250628_12z.json
+    │   │       ├── wrf_meteo_173_20250628_12z.json
+    │   │       ├── wrf_meteo_174_20250628_12z.json
+    │   │       ├── wrf_meteo_175_20250628_12z.json
+    │   │       ├── wrf_meteo_176_20250628_12z.json
+    │   │       ├── wrf_meteo_177_20250628_12z.json
+    │   │       ├── wrf_meteo_178_20250628_12z.json
+    │   │       ├── wrf_meteo_179_20250628_12z.json
+    │   │       ├── wrf_meteo_180_20250628_12z.json
+    │   │       ├── wrf_meteo_181_20250628_12z.json
+    │   │       ├── wrf_meteo_182_20250628_12z.json
+    │   │       ├── wrf_meteo_183_20250628_12z.json
+    │   │       ├── wrf_meteo_184_20250628_12z.json
+    │   │       ├── wrf_meteo_185_20250628_12z.json
+    │   │       ├── wrf_meteo_186_20250628_12z.json
+    │   │       ├── wrf_meteo_187_20250628_12z.json
+    │   │       ├── wrf_meteo_188_20250628_12z.json
+    │   │       ├── wrf_meteo_189_20250628_12z.json
+    │   │       ├── wrf_meteo_190_20250628_12z.json
+    │   │       ├── wrf_meteo_191_20250628_12z.json
+    │   │       ├── wrf_meteo_192_20250628_12z.json
+    │   │       ├── wrf_meteo_193_20250628_12z.json
+    │   │       ├── wrf_meteo_194_20250628_12z.json
+    │   │       ├── wrf_meteo_195_20250628_12z.json
+    │   │       ├── wrf_meteo_196_20250628_12z.json
+    │   │       ├── wrf_meteo_197_20250628_12z.json
+    │   │       ├── wrf_meteo_198_20250628_12z.json
+    │   │       ├── wrf_meteo_199_20250628_12z.json
+    │   │       ├── wrf_meteo_200_20250628_12z.json
+    │   │       ├── wrf_meteo_201_20250628_12z.json
+    │   │       ├── wrf_meteo_202_20250628_12z.json
+    │   │       ├── wrf_meteo_203_20250628_12z.json
+    │   │       ├── wrf_meteo_204_20250628_12z.json
+    │   │       ├── wrf_meteo_205_20250628_12z.json
+    │   │       ├── wrf_meteo_206_20250628_12z.json
+    │   │       ├── wrf_meteo_207_20250628_12z.json
+    │   │       ├── wrf_meteo_208_20250628_12z.json
+    │   │       ├── wrf_meteo_209_20250628_12z.json
+    │   │       ├── wrf_meteo_210_20250628_12z.json
+    │   │       ├── wrf_meteo_211_20250628_12z.json
+    │   │       ├── wrf_meteo_212_20250628_12z.json
+    │   │       ├── wrf_meteo_213_20250628_12z.json
+    │   │       ├── wrf_meteo_214_20250628_12z.json
+    │   │       ├── wrf_meteo_215_20250628_12z.json
+    │   │       ├── wrf_meteo_216_20250628_12z.json
+    │   │       └── wrf_meteo_217_20250628_12z.json
+    │   ├── CO
+    │   │   └── sfc
+    │   │       ├── wrf_CO_20250628_12z_000.png
+    │   │       ├── wrf_CO_20250628_12z_003.png
+    │   │       ├── wrf_CO_20250628_12z_006.png
+    │   │       ├── wrf_CO_20250628_12z_009.png
+    │   │       ├── wrf_CO_20250628_12z_012.png
+    │   │       ├── wrf_CO_20250628_12z_015.png
+    │   │       ├── wrf_CO_20250628_12z_018.png
+    │   │       ├── wrf_CO_20250628_12z_021.png
+    │   │       ├── wrf_CO_20250628_12z_024.png
+    │   │       ├── wrf_CO_20250628_12z_027.png
+    │   │       ├── wrf_CO_20250628_12z_030.png
+    │   │       ├── wrf_CO_20250628_12z_033.png
+    │   │       ├── wrf_CO_20250628_12z_036.png
+    │   │       ├── wrf_CO_20250628_12z_039.png
+    │   │       ├── wrf_CO_20250628_12z_042.png
+    │   │       ├── wrf_CO_20250628_12z_045.png
+    │   │       ├── wrf_CO_20250628_12z_048.png
+    │   │       ├── wrf_CO_20250628_12z_051.png
+    │   │       ├── wrf_CO_20250628_12z_054.png
+    │   │       ├── wrf_CO_20250628_12z_057.png
+    │   │       ├── wrf_CO_20250628_12z_060.png
+    │   │       ├── wrf_CO_20250628_12z_063.png
+    │   │       ├── wrf_CO_20250628_12z_066.png
+    │   │       ├── wrf_CO_20250628_12z_069.png
+    │   │       └── wrf_CO_20250628_12z_072.png
+    │   ├── hum
+    │   │   └── sfc
+    │   │       ├── wrf_sfc_humrel_20250628_12z_000.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_003.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_006.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_009.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_012.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_015.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_018.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_021.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_024.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_027.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_030.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_033.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_036.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_039.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_042.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_045.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_048.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_051.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_054.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_057.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_060.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_063.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_066.png
+    │   │       ├── wrf_sfc_humrel_20250628_12z_069.png
+    │   │       └── wrf_sfc_humrel_20250628_12z_072.png
+    │   ├── meteogramas
+    │   │   ├── chem
+    │   │   │   ├── wrf_chem_000_20250628_12z.json
+    │   │   │   ├── wrf_chem_001_20250628_12z.json
+    │   │   │   ├── wrf_chem_002_20250628_12z.json
+    │   │   │   ├── wrf_chem_003_20250628_12z.json
+    │   │   │   ├── wrf_chem_004_20250628_12z.json
+    │   │   │   ├── wrf_chem_005_20250628_12z.json
+    │   │   │   ├── wrf_chem_006_20250628_12z.json
+    │   │   │   └── wrf_chem_007_20250628_12z.json
+    │   │   └── meteo
+    │   │       ├── wrf_meteo_000_20250628_12z.json
+    │   │       ├── wrf_meteo_001_20250628_12z.json
+    │   │       ├── wrf_meteo_002_20250628_12z.json
+    │   │       ├── wrf_meteo_003_20250628_12z.json
+    │   │       ├── wrf_meteo_004_20250628_12z.json
+    │   │       ├── wrf_meteo_005_20250628_12z.json
+    │   │       ├── wrf_meteo_006_20250628_12z.json
+    │   │       └── wrf_meteo_007_20250628_12z.json
+    │   ├── NO2
+    │   │   └── sfc
+    │   │       ├── wrf_NO2_20250628_12z_000.png
+    │   │       ├── wrf_NO2_20250628_12z_003.png
+    │   │       ├── wrf_NO2_20250628_12z_006.png
+    │   │       ├── wrf_NO2_20250628_12z_009.png
+    │   │       ├── wrf_NO2_20250628_12z_012.png
+    │   │       ├── wrf_NO2_20250628_12z_015.png
+    │   │       ├── wrf_NO2_20250628_12z_018.png
+    │   │       ├── wrf_NO2_20250628_12z_021.png
+    │   │       ├── wrf_NO2_20250628_12z_024.png
+    │   │       ├── wrf_NO2_20250628_12z_027.png
+    │   │       ├── wrf_NO2_20250628_12z_030.png
+    │   │       ├── wrf_NO2_20250628_12z_033.png
+    │   │       ├── wrf_NO2_20250628_12z_036.png
+    │   │       ├── wrf_NO2_20250628_12z_039.png
+    │   │       ├── wrf_NO2_20250628_12z_042.png
+    │   │       ├── wrf_NO2_20250628_12z_045.png
+    │   │       ├── wrf_NO2_20250628_12z_048.png
+    │   │       ├── wrf_NO2_20250628_12z_051.png
+    │   │       ├── wrf_NO2_20250628_12z_054.png
+    │   │       ├── wrf_NO2_20250628_12z_057.png
+    │   │       ├── wrf_NO2_20250628_12z_060.png
+    │   │       ├── wrf_NO2_20250628_12z_063.png
+    │   │       ├── wrf_NO2_20250628_12z_066.png
+    │   │       ├── wrf_NO2_20250628_12z_069.png
+    │   │       └── wrf_NO2_20250628_12z_072.png
+    │   ├── O3
+    │   │   └── sfc
+    │   │       ├── wrf_O3_20250628_12z_000.png
+    │   │       ├── wrf_O3_20250628_12z_003.png
+    │   │       ├── wrf_O3_20250628_12z_006.png
+    │   │       ├── wrf_O3_20250628_12z_009.png
+    │   │       ├── wrf_O3_20250628_12z_012.png
+    │   │       ├── wrf_O3_20250628_12z_015.png
+    │   │       ├── wrf_O3_20250628_12z_018.png
+    │   │       ├── wrf_O3_20250628_12z_021.png
+    │   │       ├── wrf_O3_20250628_12z_024.png
+    │   │       ├── wrf_O3_20250628_12z_027.png
+    │   │       ├── wrf_O3_20250628_12z_030.png
+    │   │       ├── wrf_O3_20250628_12z_033.png
+    │   │       ├── wrf_O3_20250628_12z_036.png
+    │   │       ├── wrf_O3_20250628_12z_039.png
+    │   │       ├── wrf_O3_20250628_12z_042.png
+    │   │       ├── wrf_O3_20250628_12z_045.png
+    │   │       ├── wrf_O3_20250628_12z_048.png
+    │   │       ├── wrf_O3_20250628_12z_051.png
+    │   │       ├── wrf_O3_20250628_12z_054.png
+    │   │       ├── wrf_O3_20250628_12z_057.png
+    │   │       ├── wrf_O3_20250628_12z_060.png
+    │   │       ├── wrf_O3_20250628_12z_063.png
+    │   │       ├── wrf_O3_20250628_12z_066.png
+    │   │       ├── wrf_O3_20250628_12z_069.png
+    │   │       └── wrf_O3_20250628_12z_072.png
+    │   ├── PM10
+    │   │   └── sfc
+    │   │       ├── wrf_PM10_20250628_12z_000.png
+    │   │       ├── wrf_PM10_20250628_12z_003.png
+    │   │       ├── wrf_PM10_20250628_12z_006.png
+    │   │       ├── wrf_PM10_20250628_12z_009.png
+    │   │       ├── wrf_PM10_20250628_12z_012.png
+    │   │       ├── wrf_PM10_20250628_12z_015.png
+    │   │       ├── wrf_PM10_20250628_12z_018.png
+    │   │       ├── wrf_PM10_20250628_12z_021.png
+    │   │       ├── wrf_PM10_20250628_12z_024.png
+    │   │       ├── wrf_PM10_20250628_12z_027.png
+    │   │       ├── wrf_PM10_20250628_12z_030.png
+    │   │       ├── wrf_PM10_20250628_12z_033.png
+    │   │       ├── wrf_PM10_20250628_12z_036.png
+    │   │       ├── wrf_PM10_20250628_12z_039.png
+    │   │       ├── wrf_PM10_20250628_12z_042.png
+    │   │       ├── wrf_PM10_20250628_12z_045.png
+    │   │       ├── wrf_PM10_20250628_12z_048.png
+    │   │       ├── wrf_PM10_20250628_12z_051.png
+    │   │       ├── wrf_PM10_20250628_12z_054.png
+    │   │       ├── wrf_PM10_20250628_12z_057.png
+    │   │       ├── wrf_PM10_20250628_12z_060.png
+    │   │       ├── wrf_PM10_20250628_12z_063.png
+    │   │       ├── wrf_PM10_20250628_12z_066.png
+    │   │       ├── wrf_PM10_20250628_12z_069.png
+    │   │       └── wrf_PM10_20250628_12z_072.png
+    │   ├── PM25
+    │   │   └── sfc
+    │   │       ├── wrf_PM25_20250628_12z_000.png
+    │   │       ├── wrf_PM25_20250628_12z_003.png
+    │   │       ├── wrf_PM25_20250628_12z_006.png
+    │   │       ├── wrf_PM25_20250628_12z_009.png
+    │   │       ├── wrf_PM25_20250628_12z_012.png
+    │   │       ├── wrf_PM25_20250628_12z_015.png
+    │   │       ├── wrf_PM25_20250628_12z_018.png
+    │   │       ├── wrf_PM25_20250628_12z_021.png
+    │   │       ├── wrf_PM25_20250628_12z_024.png
+    │   │       ├── wrf_PM25_20250628_12z_027.png
+    │   │       ├── wrf_PM25_20250628_12z_030.png
+    │   │       ├── wrf_PM25_20250628_12z_033.png
+    │   │       ├── wrf_PM25_20250628_12z_036.png
+    │   │       ├── wrf_PM25_20250628_12z_039.png
+    │   │       ├── wrf_PM25_20250628_12z_042.png
+    │   │       ├── wrf_PM25_20250628_12z_045.png
+    │   │       ├── wrf_PM25_20250628_12z_048.png
+    │   │       ├── wrf_PM25_20250628_12z_051.png
+    │   │       ├── wrf_PM25_20250628_12z_054.png
+    │   │       ├── wrf_PM25_20250628_12z_057.png
+    │   │       ├── wrf_PM25_20250628_12z_060.png
+    │   │       ├── wrf_PM25_20250628_12z_063.png
+    │   │       ├── wrf_PM25_20250628_12z_066.png
+    │   │       ├── wrf_PM25_20250628_12z_069.png
+    │   │       └── wrf_PM25_20250628_12z_072.png
+    │   ├── precacum
+    │   │   ├── wrf_sfc_precacum_20250628_12z_00.png
+    │   │   ├── wrf_sfc_precacum_20250628_12z_24.png
+    │   │   └── wrf_sfc_precacum_20250628_12z_48.png
+    │   ├── psfc
+    │   │   ├── wrf_sfc_press_20250628_12z_000.png
+    │   │   ├── wrf_sfc_press_20250628_12z_003.png
+    │   │   ├── wrf_sfc_press_20250628_12z_006.png
+    │   │   ├── wrf_sfc_press_20250628_12z_009.png
+    │   │   ├── wrf_sfc_press_20250628_12z_012.png
+    │   │   ├── wrf_sfc_press_20250628_12z_015.png
+    │   │   ├── wrf_sfc_press_20250628_12z_018.png
+    │   │   ├── wrf_sfc_press_20250628_12z_021.png
+    │   │   ├── wrf_sfc_press_20250628_12z_024.png
+    │   │   ├── wrf_sfc_press_20250628_12z_027.png
+    │   │   ├── wrf_sfc_press_20250628_12z_030.png
+    │   │   ├── wrf_sfc_press_20250628_12z_033.png
+    │   │   ├── wrf_sfc_press_20250628_12z_036.png
+    │   │   ├── wrf_sfc_press_20250628_12z_039.png
+    │   │   ├── wrf_sfc_press_20250628_12z_042.png
+    │   │   ├── wrf_sfc_press_20250628_12z_045.png
+    │   │   ├── wrf_sfc_press_20250628_12z_048.png
+    │   │   ├── wrf_sfc_press_20250628_12z_051.png
+    │   │   ├── wrf_sfc_press_20250628_12z_054.png
+    │   │   ├── wrf_sfc_press_20250628_12z_057.png
+    │   │   ├── wrf_sfc_press_20250628_12z_060.png
+    │   │   ├── wrf_sfc_press_20250628_12z_063.png
+    │   │   ├── wrf_sfc_press_20250628_12z_066.png
+    │   │   ├── wrf_sfc_press_20250628_12z_069.png
+    │   │   └── wrf_sfc_press_20250628_12z_072.png
+    │   ├── radlw
+    │   │   └── sfc
+    │   │       ├── wrf_lw_20250628_12z_000.png
+    │   │       ├── wrf_lw_20250628_12z_003.png
+    │   │       ├── wrf_lw_20250628_12z_006.png
+    │   │       ├── wrf_lw_20250628_12z_009.png
+    │   │       ├── wrf_lw_20250628_12z_012.png
+    │   │       ├── wrf_lw_20250628_12z_015.png
+    │   │       ├── wrf_lw_20250628_12z_018.png
+    │   │       ├── wrf_lw_20250628_12z_021.png
+    │   │       ├── wrf_lw_20250628_12z_024.png
+    │   │       ├── wrf_lw_20250628_12z_027.png
+    │   │       ├── wrf_lw_20250628_12z_030.png
+    │   │       ├── wrf_lw_20250628_12z_033.png
+    │   │       ├── wrf_lw_20250628_12z_036.png
+    │   │       ├── wrf_lw_20250628_12z_039.png
+    │   │       ├── wrf_lw_20250628_12z_042.png
+    │   │       ├── wrf_lw_20250628_12z_045.png
+    │   │       ├── wrf_lw_20250628_12z_048.png
+    │   │       ├── wrf_lw_20250628_12z_051.png
+    │   │       ├── wrf_lw_20250628_12z_054.png
+    │   │       ├── wrf_lw_20250628_12z_057.png
+    │   │       ├── wrf_lw_20250628_12z_060.png
+    │   │       ├── wrf_lw_20250628_12z_063.png
+    │   │       ├── wrf_lw_20250628_12z_066.png
+    │   │       ├── wrf_lw_20250628_12z_069.png
+    │   │       └── wrf_lw_20250628_12z_072.png
+    │   ├── radsw
+    │   │   └── sfc
+    │   │       ├── wrf_sw_20250628_12z_000.png
+    │   │       ├── wrf_sw_20250628_12z_003.png
+    │   │       ├── wrf_sw_20250628_12z_006.png
+    │   │       ├── wrf_sw_20250628_12z_009.png
+    │   │       ├── wrf_sw_20250628_12z_012.png
+    │   │       ├── wrf_sw_20250628_12z_015.png
+    │   │       ├── wrf_sw_20250628_12z_018.png
+    │   │       ├── wrf_sw_20250628_12z_021.png
+    │   │       ├── wrf_sw_20250628_12z_024.png
+    │   │       ├── wrf_sw_20250628_12z_027.png
+    │   │       ├── wrf_sw_20250628_12z_030.png
+    │   │       ├── wrf_sw_20250628_12z_033.png
+    │   │       ├── wrf_sw_20250628_12z_036.png
+    │   │       ├── wrf_sw_20250628_12z_039.png
+    │   │       ├── wrf_sw_20250628_12z_042.png
+    │   │       ├── wrf_sw_20250628_12z_045.png
+    │   │       ├── wrf_sw_20250628_12z_048.png
+    │   │       ├── wrf_sw_20250628_12z_051.png
+    │   │       ├── wrf_sw_20250628_12z_054.png
+    │   │       ├── wrf_sw_20250628_12z_057.png
+    │   │       ├── wrf_sw_20250628_12z_060.png
+    │   │       ├── wrf_sw_20250628_12z_063.png
+    │   │       ├── wrf_sw_20250628_12z_066.png
+    │   │       ├── wrf_sw_20250628_12z_069.png
+    │   │       └── wrf_sw_20250628_12z_072.png
+    │   ├── SO2
+    │   │   └── sfc
+    │   │       ├── wrf_SO2_20250628_12z_000.png
+    │   │       ├── wrf_SO2_20250628_12z_003.png
+    │   │       ├── wrf_SO2_20250628_12z_006.png
+    │   │       ├── wrf_SO2_20250628_12z_009.png
+    │   │       ├── wrf_SO2_20250628_12z_012.png
+    │   │       ├── wrf_SO2_20250628_12z_015.png
+    │   │       ├── wrf_SO2_20250628_12z_018.png
+    │   │       ├── wrf_SO2_20250628_12z_021.png
+    │   │       ├── wrf_SO2_20250628_12z_024.png
+    │   │       ├── wrf_SO2_20250628_12z_027.png
+    │   │       ├── wrf_SO2_20250628_12z_030.png
+    │   │       ├── wrf_SO2_20250628_12z_033.png
+    │   │       ├── wrf_SO2_20250628_12z_036.png
+    │   │       ├── wrf_SO2_20250628_12z_039.png
+    │   │       ├── wrf_SO2_20250628_12z_042.png
+    │   │       ├── wrf_SO2_20250628_12z_045.png
+    │   │       ├── wrf_SO2_20250628_12z_048.png
+    │   │       ├── wrf_SO2_20250628_12z_051.png
+    │   │       ├── wrf_SO2_20250628_12z_054.png
+    │   │       ├── wrf_SO2_20250628_12z_057.png
+    │   │       ├── wrf_SO2_20250628_12z_060.png
+    │   │       ├── wrf_SO2_20250628_12z_063.png
+    │   │       ├── wrf_SO2_20250628_12z_066.png
+    │   │       ├── wrf_SO2_20250628_12z_069.png
+    │   │       └── wrf_SO2_20250628_12z_072.png
+    │   ├── temmax
+    │   │   ├── wrf_sfc_temmax_20250628_12z_24.png
+    │   │   ├── wrf_sfc_temmax_20250628_12z_48.png
+    │   │   └── wrf_sfc_temmax_20250628_12z_72.png
+    │   ├── temmin
+    │   │   ├── wrf_sfc_temmin_20250628_12z_24.png
+    │   │   ├── wrf_sfc_temmin_20250628_12z_48.png
+    │   │   └── wrf_sfc_temmin_20250628_12z_72.png
+    │   ├── temp
+    │   │   ├── 200
+    │   │   │   ├── wrf_200_temp_20250628_12z_000.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_003.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_006.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_009.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_012.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_015.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_018.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_021.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_024.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_027.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_030.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_033.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_036.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_039.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_042.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_045.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_048.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_051.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_054.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_057.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_060.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_063.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_066.png
+    │   │   │   ├── wrf_200_temp_20250628_12z_069.png
+    │   │   │   └── wrf_200_temp_20250628_12z_072.png
+    │   │   ├── 300
+    │   │   │   ├── wrf_300_temp_20250628_12z_000.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_003.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_006.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_009.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_012.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_015.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_018.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_021.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_024.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_027.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_030.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_033.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_036.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_039.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_042.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_045.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_048.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_051.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_054.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_057.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_060.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_063.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_066.png
+    │   │   │   ├── wrf_300_temp_20250628_12z_069.png
+    │   │   │   └── wrf_300_temp_20250628_12z_072.png
+    │   │   ├── 400
+    │   │   │   ├── wrf_400_temp_20250628_12z_000.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_003.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_006.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_009.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_012.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_015.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_018.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_021.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_024.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_027.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_030.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_033.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_036.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_039.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_042.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_045.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_048.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_051.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_054.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_057.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_060.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_063.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_066.png
+    │   │   │   ├── wrf_400_temp_20250628_12z_069.png
+    │   │   │   └── wrf_400_temp_20250628_12z_072.png
+    │   │   ├── 500
+    │   │   │   ├── wrf_500_temp_20250628_12z_000.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_003.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_006.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_009.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_012.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_015.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_018.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_021.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_024.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_027.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_030.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_033.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_036.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_039.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_042.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_045.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_048.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_051.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_054.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_057.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_060.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_063.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_066.png
+    │   │   │   ├── wrf_500_temp_20250628_12z_069.png
+    │   │   │   └── wrf_500_temp_20250628_12z_072.png
+    │   │   ├── 600
+    │   │   │   ├── wrf_600_temp_20250628_12z_000.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_003.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_006.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_009.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_012.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_015.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_018.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_021.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_024.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_027.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_030.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_033.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_036.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_039.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_042.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_045.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_048.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_051.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_054.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_057.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_060.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_063.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_066.png
+    │   │   │   ├── wrf_600_temp_20250628_12z_069.png
+    │   │   │   └── wrf_600_temp_20250628_12z_072.png
+    │   │   └── 700
+    │   │       ├── wrf_700_temp_20250628_12z_000.png
+    │   │       ├── wrf_700_temp_20250628_12z_003.png
+    │   │       ├── wrf_700_temp_20250628_12z_006.png
+    │   │       ├── wrf_700_temp_20250628_12z_009.png
+    │   │       ├── wrf_700_temp_20250628_12z_012.png
+    │   │       ├── wrf_700_temp_20250628_12z_015.png
+    │   │       ├── wrf_700_temp_20250628_12z_018.png
+    │   │       ├── wrf_700_temp_20250628_12z_021.png
+    │   │       ├── wrf_700_temp_20250628_12z_024.png
+    │   │       ├── wrf_700_temp_20250628_12z_027.png
+    │   │       ├── wrf_700_temp_20250628_12z_030.png
+    │   │       ├── wrf_700_temp_20250628_12z_033.png
+    │   │       ├── wrf_700_temp_20250628_12z_036.png
+    │   │       ├── wrf_700_temp_20250628_12z_039.png
+    │   │       ├── wrf_700_temp_20250628_12z_042.png
+    │   │       ├── wrf_700_temp_20250628_12z_045.png
+    │   │       ├── wrf_700_temp_20250628_12z_048.png
+    │   │       ├── wrf_700_temp_20250628_12z_051.png
+    │   │       ├── wrf_700_temp_20250628_12z_054.png
+    │   │       ├── wrf_700_temp_20250628_12z_057.png
+    │   │       ├── wrf_700_temp_20250628_12z_060.png
+    │   │       ├── wrf_700_temp_20250628_12z_063.png
+    │   │       ├── wrf_700_temp_20250628_12z_066.png
+    │   │       ├── wrf_700_temp_20250628_12z_069.png
+    │   │       └── wrf_700_temp_20250628_12z_072.png
+    │   └── wnd
+    │       ├── 200
+    │       │   ├── wrf_200_wind_20250628_12z_000.png
+    │       │   ├── wrf_200_wind_20250628_12z_003.png
+    │       │   ├── wrf_200_wind_20250628_12z_006.png
+    │       │   ├── wrf_200_wind_20250628_12z_009.png
+    │       │   ├── wrf_200_wind_20250628_12z_012.png
+    │       │   ├── wrf_200_wind_20250628_12z_015.png
+    │       │   ├── wrf_200_wind_20250628_12z_018.png
+    │       │   ├── wrf_200_wind_20250628_12z_021.png
+    │       │   ├── wrf_200_wind_20250628_12z_024.png
+    │       │   ├── wrf_200_wind_20250628_12z_027.png
+    │       │   ├── wrf_200_wind_20250628_12z_030.png
+    │       │   ├── wrf_200_wind_20250628_12z_033.png
+    │       │   ├── wrf_200_wind_20250628_12z_036.png
+    │       │   ├── wrf_200_wind_20250628_12z_039.png
+    │       │   ├── wrf_200_wind_20250628_12z_042.png
+    │       │   ├── wrf_200_wind_20250628_12z_045.png
+    │       │   ├── wrf_200_wind_20250628_12z_048.png
+    │       │   ├── wrf_200_wind_20250628_12z_051.png
+    │       │   ├── wrf_200_wind_20250628_12z_054.png
+    │       │   ├── wrf_200_wind_20250628_12z_057.png
+    │       │   ├── wrf_200_wind_20250628_12z_060.png
+    │       │   ├── wrf_200_wind_20250628_12z_063.png
+    │       │   ├── wrf_200_wind_20250628_12z_066.png
+    │       │   ├── wrf_200_wind_20250628_12z_069.png
+    │       │   └── wrf_200_wind_20250628_12z_072.png
+    │       ├── 300
+    │       │   ├── wrf_300_wind_20250628_12z_000.png
+    │       │   ├── wrf_300_wind_20250628_12z_003.png
+    │       │   ├── wrf_300_wind_20250628_12z_006.png
+    │       │   ├── wrf_300_wind_20250628_12z_009.png
+    │       │   ├── wrf_300_wind_20250628_12z_012.png
+    │       │   ├── wrf_300_wind_20250628_12z_015.png
+    │       │   ├── wrf_300_wind_20250628_12z_018.png
+    │       │   ├── wrf_300_wind_20250628_12z_021.png
+    │       │   ├── wrf_300_wind_20250628_12z_024.png
+    │       │   ├── wrf_300_wind_20250628_12z_027.png
+    │       │   ├── wrf_300_wind_20250628_12z_030.png
+    │       │   ├── wrf_300_wind_20250628_12z_033.png
+    │       │   ├── wrf_300_wind_20250628_12z_036.png
+    │       │   ├── wrf_300_wind_20250628_12z_039.png
+    │       │   ├── wrf_300_wind_20250628_12z_042.png
+    │       │   ├── wrf_300_wind_20250628_12z_045.png
+    │       │   ├── wrf_300_wind_20250628_12z_048.png
+    │       │   ├── wrf_300_wind_20250628_12z_051.png
+    │       │   ├── wrf_300_wind_20250628_12z_054.png
+    │       │   ├── wrf_300_wind_20250628_12z_057.png
+    │       │   ├── wrf_300_wind_20250628_12z_060.png
+    │       │   ├── wrf_300_wind_20250628_12z_063.png
+    │       │   ├── wrf_300_wind_20250628_12z_066.png
+    │       │   ├── wrf_300_wind_20250628_12z_069.png
+    │       │   └── wrf_300_wind_20250628_12z_072.png
+    │       ├── 400
+    │       │   ├── wrf_400_wind_20250628_12z_000.png
+    │       │   ├── wrf_400_wind_20250628_12z_003.png
+    │       │   ├── wrf_400_wind_20250628_12z_006.png
+    │       │   ├── wrf_400_wind_20250628_12z_009.png
+    │       │   ├── wrf_400_wind_20250628_12z_012.png
+    │       │   ├── wrf_400_wind_20250628_12z_015.png
+    │       │   ├── wrf_400_wind_20250628_12z_018.png
+    │       │   ├── wrf_400_wind_20250628_12z_021.png
+    │       │   ├── wrf_400_wind_20250628_12z_024.png
+    │       │   ├── wrf_400_wind_20250628_12z_027.png
+    │       │   ├── wrf_400_wind_20250628_12z_030.png
+    │       │   ├── wrf_400_wind_20250628_12z_033.png
+    │       │   ├── wrf_400_wind_20250628_12z_036.png
+    │       │   ├── wrf_400_wind_20250628_12z_039.png
+    │       │   ├── wrf_400_wind_20250628_12z_042.png
+    │       │   ├── wrf_400_wind_20250628_12z_045.png
+    │       │   ├── wrf_400_wind_20250628_12z_048.png
+    │       │   ├── wrf_400_wind_20250628_12z_051.png
+    │       │   ├── wrf_400_wind_20250628_12z_054.png
+    │       │   ├── wrf_400_wind_20250628_12z_057.png
+    │       │   ├── wrf_400_wind_20250628_12z_060.png
+    │       │   ├── wrf_400_wind_20250628_12z_063.png
+    │       │   ├── wrf_400_wind_20250628_12z_066.png
+    │       │   ├── wrf_400_wind_20250628_12z_069.png
+    │       │   └── wrf_400_wind_20250628_12z_072.png
+    │       ├── 500
+    │       │   ├── wrf_500_wind_20250628_12z_000.png
+    │       │   ├── wrf_500_wind_20250628_12z_003.png
+    │       │   ├── wrf_500_wind_20250628_12z_006.png
+    │       │   ├── wrf_500_wind_20250628_12z_009.png
+    │       │   ├── wrf_500_wind_20250628_12z_012.png
+    │       │   ├── wrf_500_wind_20250628_12z_015.png
+    │       │   ├── wrf_500_wind_20250628_12z_018.png
+    │       │   ├── wrf_500_wind_20250628_12z_021.png
+    │       │   ├── wrf_500_wind_20250628_12z_024.png
+    │       │   ├── wrf_500_wind_20250628_12z_027.png
+    │       │   ├── wrf_500_wind_20250628_12z_030.png
+    │       │   ├── wrf_500_wind_20250628_12z_033.png
+    │       │   ├── wrf_500_wind_20250628_12z_036.png
+    │       │   ├── wrf_500_wind_20250628_12z_039.png
+    │       │   ├── wrf_500_wind_20250628_12z_042.png
+    │       │   ├── wrf_500_wind_20250628_12z_045.png
+    │       │   ├── wrf_500_wind_20250628_12z_048.png
+    │       │   ├── wrf_500_wind_20250628_12z_051.png
+    │       │   ├── wrf_500_wind_20250628_12z_054.png
+    │       │   ├── wrf_500_wind_20250628_12z_057.png
+    │       │   ├── wrf_500_wind_20250628_12z_060.png
+    │       │   ├── wrf_500_wind_20250628_12z_063.png
+    │       │   ├── wrf_500_wind_20250628_12z_066.png
+    │       │   ├── wrf_500_wind_20250628_12z_069.png
+    │       │   └── wrf_500_wind_20250628_12z_072.png
+    │       ├── 600
+    │       │   ├── wrf_600_wind_20250628_12z_000.png
+    │       │   ├── wrf_600_wind_20250628_12z_003.png
+    │       │   ├── wrf_600_wind_20250628_12z_006.png
+    │       │   ├── wrf_600_wind_20250628_12z_009.png
+    │       │   ├── wrf_600_wind_20250628_12z_012.png
+    │       │   ├── wrf_600_wind_20250628_12z_015.png
+    │       │   ├── wrf_600_wind_20250628_12z_018.png
+    │       │   ├── wrf_600_wind_20250628_12z_021.png
+    │       │   ├── wrf_600_wind_20250628_12z_024.png
+    │       │   ├── wrf_600_wind_20250628_12z_027.png
+    │       │   ├── wrf_600_wind_20250628_12z_030.png
+    │       │   ├── wrf_600_wind_20250628_12z_033.png
+    │       │   ├── wrf_600_wind_20250628_12z_036.png
+    │       │   ├── wrf_600_wind_20250628_12z_039.png
+    │       │   ├── wrf_600_wind_20250628_12z_042.png
+    │       │   ├── wrf_600_wind_20250628_12z_045.png
+    │       │   ├── wrf_600_wind_20250628_12z_048.png
+    │       │   ├── wrf_600_wind_20250628_12z_051.png
+    │       │   ├── wrf_600_wind_20250628_12z_054.png
+    │       │   ├── wrf_600_wind_20250628_12z_057.png
+    │       │   ├── wrf_600_wind_20250628_12z_060.png
+    │       │   ├── wrf_600_wind_20250628_12z_063.png
+    │       │   ├── wrf_600_wind_20250628_12z_066.png
+    │       │   ├── wrf_600_wind_20250628_12z_069.png
+    │       │   └── wrf_600_wind_20250628_12z_072.png
+    │       ├── 700
+    │       │   ├── wrf_700_wind_20250628_12z_000.png
+    │       │   ├── wrf_700_wind_20250628_12z_003.png
+    │       │   ├── wrf_700_wind_20250628_12z_006.png
+    │       │   ├── wrf_700_wind_20250628_12z_009.png
+    │       │   ├── wrf_700_wind_20250628_12z_012.png
+    │       │   ├── wrf_700_wind_20250628_12z_015.png
+    │       │   ├── wrf_700_wind_20250628_12z_018.png
+    │       │   ├── wrf_700_wind_20250628_12z_021.png
+    │       │   ├── wrf_700_wind_20250628_12z_024.png
+    │       │   ├── wrf_700_wind_20250628_12z_027.png
+    │       │   ├── wrf_700_wind_20250628_12z_030.png
+    │       │   ├── wrf_700_wind_20250628_12z_033.png
+    │       │   ├── wrf_700_wind_20250628_12z_036.png
+    │       │   ├── wrf_700_wind_20250628_12z_039.png
+    │       │   ├── wrf_700_wind_20250628_12z_042.png
+    │       │   ├── wrf_700_wind_20250628_12z_045.png
+    │       │   ├── wrf_700_wind_20250628_12z_048.png
+    │       │   ├── wrf_700_wind_20250628_12z_051.png
+    │       │   ├── wrf_700_wind_20250628_12z_054.png
+    │       │   ├── wrf_700_wind_20250628_12z_057.png
+    │       │   ├── wrf_700_wind_20250628_12z_060.png
+    │       │   ├── wrf_700_wind_20250628_12z_063.png
+    │       │   ├── wrf_700_wind_20250628_12z_066.png
+    │       │   ├── wrf_700_wind_20250628_12z_069.png
+    │       │   └── wrf_700_wind_20250628_12z_072.png
+    │       └── sfc
+    │           ├── wrf_sfc_wind_20250628_12z_000.png
+    │           ├── wrf_sfc_wind_20250628_12z_003.png
+    │           ├── wrf_sfc_wind_20250628_12z_006.png
+    │           ├── wrf_sfc_wind_20250628_12z_009.png
+    │           ├── wrf_sfc_wind_20250628_12z_012.png
+    │           ├── wrf_sfc_wind_20250628_12z_015.png
+    │           ├── wrf_sfc_wind_20250628_12z_018.png
+    │           ├── wrf_sfc_wind_20250628_12z_021.png
+    │           ├── wrf_sfc_wind_20250628_12z_024.png
+    │           ├── wrf_sfc_wind_20250628_12z_027.png
+    │           ├── wrf_sfc_wind_20250628_12z_030.png
+    │           ├── wrf_sfc_wind_20250628_12z_033.png
+    │           ├── wrf_sfc_wind_20250628_12z_036.png
+    │           ├── wrf_sfc_wind_20250628_12z_039.png
+    │           ├── wrf_sfc_wind_20250628_12z_042.png
+    │           ├── wrf_sfc_wind_20250628_12z_045.png
+    │           ├── wrf_sfc_wind_20250628_12z_048.png
+    │           ├── wrf_sfc_wind_20250628_12z_051.png
+    │           ├── wrf_sfc_wind_20250628_12z_054.png
+    │           ├── wrf_sfc_wind_20250628_12z_057.png
+    │           ├── wrf_sfc_wind_20250628_12z_060.png
+    │           ├── wrf_sfc_wind_20250628_12z_063.png
+    │           ├── wrf_sfc_wind_20250628_12z_066.png
+    │           ├── wrf_sfc_wind_20250628_12z_069.png
+    │           └── wrf_sfc_wind_20250628_12z_072.png
+    └── folder_tree.txt
+
+152 directories, 3211 files
