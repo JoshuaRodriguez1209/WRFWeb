@@ -707,7 +707,7 @@ var procesa_var = function () {
 $(function () {
   var isAnimating = false;
   var $btn = $("#btn_toggle_animation");
-  var $icon = $btn.find("i");
+  var $icon = $("#playIcon");
 
   // Inicialmente deshabilitado hasta que check_loaded termine
   $btn.prop("disabled", true);
@@ -741,13 +741,13 @@ $(function () {
     if (!isAnimating) {
       // Iniciar animación
       animate_frames();
-      $icon.removeClass("glyphicon-play").addClass("glyphicon-stop");
+      $icon.removeClass("fa-play").addClass("fa-stop");
       $btn.attr("title", "Detener");
       isAnimating = true;
     } else {
       // Detener animación
       cancel_animate();
-      $icon.removeClass("glyphicon-stop").addClass("glyphicon-play");
+      $icon.removeClass("fa-stop").addClass("fa-play");
       $btn.attr("title", "Reproducir");
       isAnimating = false;
     }
@@ -1146,46 +1146,55 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         Descargar (.CSV)
       </button>
     </div>
-    <table style="
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95em;
-      background-color: #fff;
-      border: none;
+    <div class="pollutant-summary" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
     ">
-      <thead style="background-color: #f5f5f5;">
-        <tr>
-          <th style="padding: 10px; text-align: left;">Variable</th>
-          <th style="padding: 10px; text-align: left;">Promedio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌡️ Temperatura (°C)</td>
-          <td style="padding: 10px;">${avg(djson["t2m"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">💧 Humedad (%)</td>
-          <td style="padding: 10px;">${avg(djson["rh"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌧️ Precipitación (mm)</td>
-          <td style="padding: 10px;">${avg(djson["pre"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">☀️ Radiación (w/m²)</td>
-          <td style="padding: 10px;">${avg(djson["sw"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌬️ Viento (km/h)</td>
-          <td style="padding: 10px;">${avg(djson["wnd"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">📉 Presión (hPa)</td>
-          <td style="padding: 10px;">${avg(djson["psl"])}</td>
-        </tr>
-      </tbody>
-    </table>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ff4757;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌡️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Temperatura</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["t2m"])} °C</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#3742fa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💧</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Humedad</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["rh"])} %</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#2ed573;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌧️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Precipitación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["pre"])} mm</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ffa502;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">☀️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Radiación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["sw"])} w/m²</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#747d8c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌬️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Viento</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["wnd"])} km/h</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#57606f;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">📉</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Presión</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["psl"])} hPa</div>
+        </div>
+      </div>
+    </div>
   </div>
 `;
         contenDialog.append(resumenHTML);
@@ -2710,3 +2719,434 @@ window.clearHistCombobox = function () {
 // Los botones se inicializan automáticamente desde set_atmos() o set_chem()
 
 //-------------------------------------------------------------------------------
+
+function loadMapCabeceras() {
+  if (!municipalitiesData) return;
+  const select = document.getElementById('map-search');
+  if (!select) return;
+
+  select.innerHTML = ''; // limpiar
+
+  const cabeceras = municipalitiesData.features
+    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
+
+  cabeceras.forEach(feature => {
+    const option = document.createElement('option');
+    option.value = feature.properties.clave;
+    option.textContent = feature.properties.nombre;
+    select.appendChild(option);
+  });
+}
+
+(function makeMapComboboxRobusto(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // UI
+  const wrap = document.createElement('div');
+  wrap.id = 'map-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  const list = document.createElement('ul');
+  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', maxHeight:'260px', overflowY:'auto',
+    margin:'0', padding:'0', listStyle:'none', display:'none',
+    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Oculta select y monta wrapper
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // Lógica
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [], filtered = [], open = false, active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '')
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
+  function closeList(){ list.style.display='none'; open = false; active = -1; }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+function choose(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  const it = filtered[idx];
+  input.value = it.label;
+  sel.value = it.value;
+
+  sel.dispatchEvent(new Event('change',{ bubbles:true}));
+
+  // Centrar el mapa en el municipio seleccionado
+  const municipio = mapSearchMunicipiosData.find(
+    m => m.clave === it.value
+  );
+  
+  if (municipio && m_map) {
+    // Obtener las coordenadas directamente del municipio
+    const coords = municipio.coordinates; // [lng, lat]
+    console.log(coords);
+    // Centrar el mapa en esas coordenadas usando OpenLayers
+    const view = m_map.getView();
+    view.animate({zoom: 12}, {center:[coords[0],coords[1]]}); // Zoom más cercano para ver el municipio
+  }
+
+  closeList();
+}
+
+  // Aislar clicks internos
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir/filtrar/teclado
+  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
+  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
+  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
+
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
+      case 'Tab':       closeList(); break;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
+  mo.observe(sel, { childList: true });
+})();
+
+window.clearMapCombobox = function () {
+  const sel   = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('map-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Datos de municipios para map-search
+let mapSearchMunicipiosData = [];
+
+// Función para cargar municipios para map-search
+async function loadMapSearchMunicipios() {
+  try {
+    const response = await fetch('./cabeceras.json');
+    const data = await response.json();
+    
+    mapSearchMunicipiosData = data.features.map(feature => ({
+      nombre: feature.properties.nombre,
+      clave: feature.properties.clave,
+      coordinates: feature.geometry.coordinates // [lng, lat]
+    }));
+    
+    populateMapSearch();
+    console.log(`Map-search: Cargados ${mapSearchMunicipiosData.length} municipios`);
+  } catch (error) {
+    console.error('Error cargando municipios para map-search:', error);
+  }
+}
+
+// Función para centrar el mapa en un municipio
+function centerMapOnMunicipioSearch(municipioClave) {
+  const municipio = mapSearchMunicipiosData.find(m => m.clave === municipioClave);
+  if (!municipio || !m_map) return;
+  
+  const [lng, lat] = municipio.coordinates;
+  const view = m_map.getView();
+  
+  // Centrar el mapa en las coordenadas del municipio
+  view.animate({
+    center: ol.proj.fromLonLat([lng, lat]),
+    zoom: 12, // Zoom más cercano para ver el municipio
+    duration: 1000 // Animación de 1 segundo
+  });
+  
+  console.log(`Mapa centrado en: ${municipio.nombre} [${lng}, ${lat}]`);
+}
+
+// Map Search Combobox - Basado en el sistema del historial
+(function makeMapSearchCombobox(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.getElementById('map-search-combobox');
+  if (!wrap) return;
+
+  const input = wrap.querySelector('input.form-control');
+  if (!input) return;
+
+  // Lista como "portal" en <body>
+  const list = document.getElementById('map-search-combobox-list');
+  if (!list) return;
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.listStyle = 'none';
+      li.style.backgroundColor = idx === active ? '#e9ecef' : 'white';
+      li.style.borderBottom = '1px solid #eee';
+      
+      li.addEventListener('click', () => choose(idx));
+      li.addEventListener('mouseenter', () => { active = idx; render(); });
+      
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!items.length) snapshotItems();
+    if (!items.length) return;
+    
+    list.style.display = 'block';
+    list.style.position = 'fixed';
+    list.style.zIndex = '9999';
+    list.style.backgroundColor = 'white';
+    list.style.border = '1px solid #ccc';
+    list.style.borderRadius = '4px';
+    list.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    list.style.maxHeight = '200px';
+    list.style.overflowY = 'auto';
+    list.style.margin = '0';
+    list.style.padding = '0';
+    
+    positionList();
+    render();
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+    
+    // Centrar el mapa en el municipio seleccionado
+    if (it.value) {
+      centerMapOnMunicipioSearch(it.value);
+    }
+  }
+
+  // ----- Eventos -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', openList);
+  input.addEventListener('click', openList);
+  input.addEventListener('input', e => {
+    const val = e.target.value;
+    if (!open) openList();
+    filterNow(val);
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+})();
+
+// Función para poblar el map-search con municipios
+function populateMapSearch() {
+  const select = document.getElementById('map-search');
+  if (!select || !mapSearchMunicipiosData.length) return;
+  
+  select.innerHTML = '<option value="">Seleccione un municipio</option>';
+  mapSearchMunicipiosData.forEach(municipio => {
+    const option = document.createElement('option');
+    option.value = municipio.clave;
+    option.textContent = municipio.nombre;
+    select.appendChild(option);
+  });
+}
+
+// Clear map search combobox function
+window.clearMapSearchCombobox = function () {
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap = document.getElementById('map-search-combobox');
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  const list = document.getElementById('map-search-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Inicializar map-search cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMapSearchMunicipios);
+} else {
+  loadMapSearchMunicipios();
+}

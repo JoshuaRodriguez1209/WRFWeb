@@ -38,9 +38,9 @@ $("#btn_play_animation").click(function(){
 });
 
 //-- Inicio Modificacion--> 
-//Se agrego la siguiente funcion
-$("#btn_rango").change(function(){	
-	m_rango = 1650 - $("#btn_rango").val();
+//Se agrego la siguiente funcion para el control de velocidad
+$("#speedSlider").change(function(){	
+	m_rango = 1650 - $("#speedSlider").val();
 });
 //-- Fin Modificacion-->  
 
@@ -202,21 +202,26 @@ window.onclick = function(event) {
   }
 }
 
-$("#controls-toggle").click(function (e) {
+// Weather Controls Panel Toggle
+$("#toggle-controls-btn").click(function (e) {
   e.stopPropagation();
-  $(".controls-panel").addClass("expanded").removeClass("collapsed");
-  $(this).hide();
+  $("#weather-controls").addClass("is-open");
 });
 
+$("#close-controls-btn").click(function (e) {
+  e.stopPropagation();
+  $("#weather-controls").removeClass("is-open");
+});
+
+// Close panel when clicking outside
 $(document).click(function (e) {
-  const panel = $(".controls-panel");
-  const toggle = $("#controls-toggle");
+  const panel = $("#weather-controls");
+  const toggleBtn = $("#toggle-controls-btn");
   if (
     !panel.is(e.target) && panel.has(e.target).length === 0 &&
-    !toggle.is(e.target) && toggle.has(e.target).length === 0
+    !toggleBtn.is(e.target) && toggleBtn.has(e.target).length === 0
   ) {
-    panel.removeClass("expanded").addClass("collapsed");
-    toggle.show();
+    panel.removeClass("is-open");
   }
 });
 $(document).on("click", "#btn_atmos", function () {
@@ -241,7 +246,7 @@ $(document).on("click", "#btn_aire", function () {
   $("#hist").hide();
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
-  $("#panel_header_text").text("Calidad del aire para el Estado de Puebla");
+  $("#panel-header-text").text("Calidad del aire para el Estado de Puebla");
   m_glosario = "gchem.html";
   
   // Limpiar estado del historial
