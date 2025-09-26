@@ -2,18 +2,30 @@
 
 //------------------------------------------------------------------------------------------
 function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
-  var layer = new ol.layer.Vector({
+  const layer = new ol.layer.Vector({
     opacity: opacidad,
     title: titulo,
     type: tipo,
     visible: bvisible,
     source: new ol.source.Vector({
       url: str_file_kml,
+      // Si tu KML trae estilos y quieres ignorarlos, descomenta la línea de abajo:
+      // format: new ol.format.KML({ extractStyles: false }),
       format: new ol.format.KML(),
     }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255, 255, 255, 1)', // contorno blanco
+        width: 2                           // grosor del contorno
+      }),
+      fill: new ol.style.Fill({
+        color: 'rgba(255, 255, 255, 0)'    // sin relleno (transparente)
+      })
+    })
   });
   return layer;
 }
+
 
 //------------------------------------------------------------------------------------------
 function set_layer(map, str_file_image, tipo, data_layer) {
@@ -30,11 +42,15 @@ function set_layer(map, str_file_image, tipo, data_layer) {
     }),
   });
 
+  clipLayer(data_layer.layer); // Aplicar recorte
+
   data_layer.setParam(str_file_image);
   if (tipo == "add") {
-    map.getLayers().insertAt(1, data_layer.layer);
+    map.getLayers().insertAt(1, data_layer.layer); // Insertar en el índice 2 para estar sobre la máscara
   }
 }
+
+
 
 //-------------------------------------------------------------------------------
 var m_lyr_tile = new ol.layer.Tile({
@@ -54,6 +70,27 @@ var m_layer_municipios = create_layer_kml_base(
   0.7,
   true
 );
+
+function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
+  const layer = new ol.layer.Vector({
+    opacity: opacidad,
+    title: titulo,
+    type: tipo,
+    visible: bvisible,
+    source: new ol.source.Vector({
+      url: str_file_kml,
+      format: new ol.format.KML({ extractStyles: false }) // <- importante
+    }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255,255,255,1)', // contorno blanco
+        width: 2
+      }),
+      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // sin relleno
+    })
+  });
+  return layer;
+}
 
 //------------------------------------------------------------------------------------------
 var mousePositionControl = new ol.control.MousePosition({
@@ -87,8 +124,8 @@ var m_control = new ol.control.Control({ element: notification });
 var m_view = new ol.View({
   projection: "EPSG:4326",
   center: [-97.7711, 19.0105],
-  zoom: 8.3,
-  minZoom: 8.3,
+  zoom: 9,
+  minZoom: 9,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -126,47 +163,61 @@ var m_map = new ol.Map({
   view: m_view,
 });
 
-// Create a style for the mask
-const maskStyle = new ol.style.Style({
-  fill: new ol.style.Fill({
-    color: 'rgba(0, 0, 0, 1)', // Semi-transparent black
-  }),
-});
+// Variable para almacenar la geometría de recorte de Puebla
+let pueblaClippingGeometry = null;
 
-// Fetch the Puebla boundary
+// Función para aplicar el recorte a una capa
+const clipLayer = (layer) => {
+  if (!pueblaClippingGeometry || !layer) return;
+
+  layer.on('postrender', (e) => {
+    if (!e.context) return;
+    const vectorContext = ol.render.getVectorContext(e);
+    e.context.globalCompositeOperation = 'destination-in';
+    vectorContext.drawFeature(
+      new ol.Feature(pueblaClippingGeometry),
+      new ol.style.Style({
+        fill: new ol.style.Fill({ color: 'black' }),
+      })
+    );
+    e.context.globalCompositeOperation = 'source-over';
+  });
+};
+
+// Cargar la geometría de Puebla una sola vez
 fetch('./puebla_state_boundary.json')
   .then(response => response.json())
   .then(pueblaCoords => {
-    const pueblaPolygonForExtent = new ol.geom.Polygon(pueblaCoords);
+    pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
     
-    // Create the outer polygon that covers a larger area
+    // Crear una capa de máscara negra para el fondo
     const extent = [-180, -90, 180, 90];
     const outerPolygon = ol.geom.Polygon.fromExtent(extent);
-
-    // The coordinates are already in EPSG:4326, which matches the view.
-    // We need to get the linear ring from our Puebla polygon.
-    const pueblaLinearRing = pueblaPolygonForExtent.getLinearRing(0);
-    
-    // Append the Puebla polygon as a hole to the outer polygon.
+    const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
     outerPolygon.appendLinearRing(pueblaLinearRing);
 
     const maskFeature = new ol.Feature({
       geometry: outerPolygon,
     });
 
-    const maskSource = new ol.source.Vector({
-      features: [maskFeature],
-    });
-
     const maskLayer = new ol.layer.Vector({
-      source: maskSource,
-      style: maskStyle,
+      renderBuffer: 250,
+      source: new ol.source.Vector({
+        features: [maskFeature],
+      }),
+      style: new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(0, 0, 0, 1)',
+        }),
+      }),
       title: 'Mascara Puebla',
-      type: 'mask' // Custom property
+      type: 'mask'
     });
 
-    // Add the mask layer below other operational layers but above the base map
     m_map.getLayers().insertAt(1, maskLayer);
+
+    // Re-renderizar el mapa para asegurar que el clipping se aplique si las capas ya cargaron
+    m_map.render();
   })
   .catch(error => console.error('Error loading Puebla boundary:', error));
 
@@ -175,31 +226,6 @@ var m_dlayer = new CDataLayer(m_map);
 //-------------------------------------------------------------------------------
 
 const isMobile = window.innerWidth < 768;
-const graticule = new ol.Graticule({
-  showLabels: true,
-  wrapX: false,
-  lonLabelPosition: isMobile ? 0.93 : 0.99,
-  latLabelPosition: isMobile ? 0.79 : 0.93, // posición más dentro del canvas
-  targetSize: 200,
-  strokeStyle: new ol.style.Stroke({
-    color: "rgba(100,100,100,0.7)",
-    width: 2,
-    lineDash: [2, 4],
-  }),
-  lonLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-    textBaseline: "top",
-  }),
-  latLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    textAlign: "left", // alinea texto hacia dentro
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-  }),
-});
-graticule.setMap(m_map);
 
 //-------------------------------------------------------------------------------
 m_map.on("postcompose", function (event) {
@@ -578,7 +604,8 @@ async function animate_frames() {
           const filteredLayer = applyFilterToImage(m_dlayer_act.img);
           if (filteredLayer) {
             if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
-            m_map.addLayer(filteredLayer);
+            m_map.getLayers().insertAt(1, filteredLayer);
+            //m_map.addLayer(filteredLayer);
             const permanentDateElement = document.querySelector(
               "#filter-info .permanent-date"
             );
@@ -588,11 +615,13 @@ async function animate_frames() {
             window.filtered_layer = filteredLayer;
             m_dlayer = m_dlayer_act;
           } else {
-            m_map.addLayer(m_dlayer_act.layer);
+            //m_map.addLayer(m_dlayer_act.layer);
+            m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           }
         } else {
           m_map.removeLayer(m_dlayer.layer);
-          m_map.addLayer(m_dlayer_act.layer);
+          //m_map.addLayer(m_dlayer_act.layer);
+          m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
         }
         pos_frame = pos_frame + 1;
@@ -1586,6 +1615,7 @@ function applyFilterToImage(img) {
       imageExtent: extent,
     }),
   });
+  clipLayer(filteredLayer); // Aplicar recorte a la capa con filtro
   return filteredLayer;
 }
 
@@ -1593,7 +1623,8 @@ function put_FilteredImage(filteredLayer) {
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   if (m_dlayer.layer) m_dlayer.layer.setVisible(false);
 
-  m_map.addLayer(filteredLayer);
+  //m_map.addLayer(filteredLayer);
+  m_map.getLayers().insertAt(1, filteredLayer);
   window.filtered_layer = filteredLayer;
 }
 

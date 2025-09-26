@@ -390,30 +390,8 @@ function updateHistoricalView() {
   }, 300); // 300ms de throttling
 }
 
-const sideMenu = document.getElementById("side-menu");
 
-// Solo en escritorio
-if (window.innerWidth > 768) {
-  // Expandir al pasar el mouse
-  sideMenu.addEventListener("mouseenter", () => {
-    sideMenu.classList.add("expanded");
-  });
 
-  // Contraer al salir el mouse del menú
-  sideMenu.addEventListener("mouseleave", () => {
-    sideMenu.classList.remove("expanded");
-  });
-
-  // Clic en botones del menú => contraer
-  ["btn_atmos", "btn_aire", "btn_hist"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener("click", () => {
-        sideMenu.classList.remove("expanded");
-      });
-    }
-  });
-}
 
 // Función para resetear el estado del historial
 function resetHistorialState() {
