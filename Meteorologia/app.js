@@ -110,6 +110,7 @@ var scaleLineControl = new ol.control.ScaleLine({
 //-------------------------------------------------------------------------------
 
 var m_map = new ol.Map({
+  renderBuffer: 1000, // Aumentar el búfer para un renderizado más suave
   controls: ol.control.defaults({ zoom: false }).extend([
     mousePositionControl,
     m_notification,
@@ -124,6 +125,51 @@ var m_map = new ol.Map({
   layers: [m_lyr_tile, m_layer_municipios],
   view: m_view,
 });
+
+// Create a style for the mask
+const maskStyle = new ol.style.Style({
+  fill: new ol.style.Fill({
+    color: 'rgba(0, 0, 0, 1)', // Semi-transparent black
+  }),
+});
+
+// Fetch the Puebla boundary
+fetch('./puebla_state_boundary.json')
+  .then(response => response.json())
+  .then(pueblaCoords => {
+    const pueblaPolygonForExtent = new ol.geom.Polygon(pueblaCoords);
+    
+    // Create the outer polygon that covers a larger area
+    const extent = [-180, -90, 180, 90];
+    const outerPolygon = ol.geom.Polygon.fromExtent(extent);
+
+    // The coordinates are already in EPSG:4326, which matches the view.
+    // We need to get the linear ring from our Puebla polygon.
+    const pueblaLinearRing = pueblaPolygonForExtent.getLinearRing(0);
+    
+    // Append the Puebla polygon as a hole to the outer polygon.
+    outerPolygon.appendLinearRing(pueblaLinearRing);
+
+    const maskFeature = new ol.Feature({
+      geometry: outerPolygon,
+    });
+
+    const maskSource = new ol.source.Vector({
+      features: [maskFeature],
+    });
+
+    const maskLayer = new ol.layer.Vector({
+      source: maskSource,
+      style: maskStyle,
+      title: 'Mascara Puebla',
+      type: 'mask' // Custom property
+    });
+
+    // Add the mask layer below other operational layers but above the base map
+    m_map.getLayers().insertAt(1, maskLayer);
+  })
+  .catch(error => console.error('Error loading Puebla boundary:', error));
+
 
 var m_dlayer = new CDataLayer(m_map);
 //-------------------------------------------------------------------------------
