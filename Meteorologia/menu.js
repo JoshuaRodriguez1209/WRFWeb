@@ -221,9 +221,15 @@ $(document).click(function (e) {
 $(document).on("click", "#btn_atmos", function () {
   $("#app").show();
   $("#map").show();
+  $("#hist").hide();
+  $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   $("#panel-header-text").text("Pronóstico meteorológico para el Estado de Puebla");
   m_glosario = "gatmos.html";
+  
+  // Limpiar estado del historial
+  resetHistorialState();
+  
   m_map.updateSize();
   set_atmos();
 });
@@ -231,9 +237,15 @@ $(document).on("click", "#btn_atmos", function () {
 $(document).on("click", "#btn_aire", function () {
   $("#app").show();
   $("#map").show();
+  $("#hist").hide();
+  $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   $("#panel_header_text").text("Calidad del aire para el Estado de Puebla");
   m_glosario = "gchem.html";
+  
+  // Limpiar estado del historial
+  resetHistorialState();
+  
   m_map.updateSize();
   set_chem();
 });
@@ -250,8 +262,8 @@ $(document).on("click", "#btn_hist", function () {
   // Cargar cabeceras en el selector
   loadHistoricalCabeceras();
   
-  // Initialize variable toggles for initial type
-  createVariableToggles($("#hist-tipo-select").val());
+  // Initialize variable toggles for initial type - seleccionar todas al inicio
+  createVariableToggles($("#hist-tipo-select").val(), true);
 });
 
 // Función para cargar las cabeceras
@@ -273,22 +285,57 @@ async function loadHistoricalCabeceras() {
       select.appendChild(option);
     });
 
-    // Eventos para actualizar datos
-    $('#hist-cabecera-select, #hist-tipo-select').on('change', updateHistoricalView);
+    // Eventos para actualizar datos - remover listeners previos para evitar duplicados
+    $('#hist-cabecera-select, #hist-tipo-select').off('change', updateHistoricalView).on('change', updateHistoricalView);
   } catch (error) {
     console.error('Error cargando cabeceras:', error);
     m_notification.show('Error cargando datos históricos', 3000);
   }
 }
 
+// Variables para tracking de cambios
+let updateHistoricalViewTimeout = null;
+let lastCabeceraId = null;
+let lastTipo = null;
+
 // Función para actualizar la vista histórica
 function updateHistoricalView() {
-  const cabeceraId = $('#hist-cabecera-select').val();
-  const tipo = $('#hist-tipo-select').val();
+  // Limpiar timeout anterior para evitar múltiples llamadas
+  if (updateHistoricalViewTimeout) {
+    clearTimeout(updateHistoricalViewTimeout);
+  }
   
-  if (!cabeceraId) return;
+  // Usar timeout para throttling
+  updateHistoricalViewTimeout = setTimeout(() => {
+    const cabeceraId = $('#hist-cabecera-select').val();
+    const tipo = $('#hist-tipo-select').val();
+    
+    if (!cabeceraId) {
+      // Limpiar tabla si no hay municipio seleccionado
+      const tbody = document.getElementById('histStatsTable');
+      if (tbody) tbody.innerHTML = '';
+      lastCabeceraId = null;
+      lastTipo = tipo;
+      return;
+    }
+    
+    // Detectar qué cambió
+    const municipioChanged = lastCabeceraId !== cabeceraId;
+    const tipoChanged = lastTipo !== tipo;
+    
+    // Actualizar tracking
+    lastCabeceraId = cabeceraId;
+    lastTipo = tipo;
+    
+    // Si cambió el tipo, recrear toggles con todas las variables seleccionadas
+    // Si solo cambió el municipio, mantener variables seleccionadas actuales
+    if (tipoChanged && typeof createVariableToggles === 'function') {
+      createVariableToggles(tipo, true); // Seleccionar todas al cambiar tipo
+    } else if (municipioChanged && typeof createVariableToggles === 'function') {
+      createVariableToggles(tipo, false); // Mantener selección al cambiar municipio
+    }
 
-  // Get the last run from select element
+    // Get the last run from select element
   const runs = document.getElementById('select_run');
   const lastRun = runs.options[runs.options.length - 1].value;
   
@@ -340,6 +387,7 @@ function updateHistoricalView() {
       `);
       console.error('Error:', error);
     });
+  }, 300); // 300ms de throttling
 }
 
 const sideMenu = document.getElementById("side-menu");
@@ -365,4 +413,78 @@ if (window.innerWidth > 768) {
       });
     }
   });
+}
+
+// Función para resetear el estado del historial
+function resetHistorialState() {
+  try {
+    // Limpiar municipio seleccionado
+    const cabeceraSelect = document.getElementById('hist-cabecera-select');
+    if (cabeceraSelect) {
+      cabeceraSelect.value = '';
+    }
+    
+    // Limpiar input del combobox también
+    const comboboxInput = document.querySelector('#hist-combobox input.form-control');
+    if (comboboxInput) {
+      comboboxInput.value = '';
+    }
+    
+    // Resetear select de tipo a variables meteorológicas
+    const tipoSelect = document.getElementById('hist-tipo-select');
+    if (tipoSelect) {
+      tipoSelect.value = 'meteo';
+    }
+    
+    // Limpiar datos actuales
+    if (typeof currentHistData !== 'undefined') {
+      currentHistData = null;
+    }
+    
+    // Limpiar variables seleccionadas
+    if (typeof selectedVariables !== 'undefined') {
+      selectedVariables.clear();
+    }
+    
+    // Limpiar contenido del historial
+    const histContent = document.getElementById('hist-content');
+    if (histContent) {
+      histContent.innerHTML = '';
+    }
+    
+    // Limpiar container de gráficas
+    const chartsHost = document.getElementById('chartsHost');
+    if (chartsHost) {
+      chartsHost.innerHTML = '';
+    }
+    
+    // Limpiar tabla de estadísticas
+    const statsTable = document.getElementById('histStatsTable');
+    if (statsTable) {
+      statsTable.innerHTML = '';
+    }
+    
+    // Ocultar lista de combobox
+    const comboboxList = document.getElementById('hist-combobox-list');
+    if (comboboxList) {
+      comboboxList.style.display = 'none';
+    }
+    
+    // Limpiar gráficas si existen
+    if (typeof destroyHistCharts === 'function') {
+      destroyHistCharts();
+    }
+    
+    // Recrear toggles para el tipo por defecto
+    if (typeof createVariableToggles === 'function') {
+      createVariableToggles('meteo', true);
+    }
+    
+    // Resetear variables de tracking
+    lastCabeceraId = null;
+    lastTipo = 'meteo';
+    
+  } catch (error) {
+    console.error('Error reseteando estado del historial:', error);
+  }
 }

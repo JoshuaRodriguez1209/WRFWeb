@@ -1149,11 +1149,16 @@ function updateHistoricalChart() {
   if (!currentHistData) return;
   
   const tipoSeleccionado = $("#hist-tipo-select").val();
+  
+  // Actualizar gráfica principal
   if (tipoSeleccionado === 'meteo') {
     createMeteoHistoricalChart(currentHistData);
   } else {
     createChemHistoricalChart(currentHistData);
   }
+  
+  // Actualizar gráficas individuales
+  renderIndividualChartsFromSelectedVariables(tipoSeleccionado);
   
   // Update stats table
   updateStatsTable(tipoSeleccionado);
@@ -1164,17 +1169,39 @@ function updateStatsTable(tipo) {
   if (!currentHistData) return;
   
   const tbody = document.getElementById('histStatsTable');
+  if (!tbody) return;
+  
+  // Limpiar tabla completamente antes de recrearla
   tbody.innerHTML = '';
   
   const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
   
+  // Validar que las variables seleccionadas existan en el tipo actual
+  const validSelectedVariables = new Set();
   selectedVariables.forEach(key => {
+    if (variables[key] && currentHistData[key]) {
+      validSelectedVariables.add(key);
+    }
+  });
+  
+  // Actualizar selectedVariables con solo las válidas
+  selectedVariables.clear();
+  validSelectedVariables.forEach(key => selectedVariables.add(key));
+  
+  // Crear un DocumentFragment para mejor rendimiento
+  const fragment = document.createDocumentFragment();
+  
+  // Solo mostrar variables válidas y seleccionadas - usar Array para evitar duplicados
+  const processedVariables = Array.from(validSelectedVariables);
+  
+  processedVariables.forEach(key => {
     if (currentHistData[key] && variables[key]) {
       const values = currentHistData[key];
       const stats = calculateStats(values);
       const { label, unit, icon } = variables[key];
       
       const row = document.createElement('tr');
+      row.setAttribute('data-variable', key); // Para debugging y control
       row.innerHTML = `
         <td><i class="${icon}" style="margin-right: 8px"></i>${label}</td>
         <td>${stats.avg.toFixed(2)}</td>
@@ -1182,17 +1209,32 @@ function updateStatsTable(tipo) {
         <td>${stats.min.toFixed(2)}</td>
         <td>${unit}</td>
       `;
-      tbody.appendChild(row);
+      fragment.appendChild(row);
     }
   });
+  
+  // Agregar todas las filas de una vez
+  tbody.appendChild(fragment);
 }
 
 // Event handler for tipo-select changes
 $("#hist-tipo-select").on('change', function() {
   const tipo = $(this).val();
-  createVariableToggles(tipo);
+  
+  // Limpiar estado anterior
+  destroyHistCharts();
+  
+  // Limpiar tabla de estadísticas
+  const tbody = document.getElementById('histStatsTable');
+  if (tbody) tbody.innerHTML = '';
+  
+  // Crear nuevos toggles para el tipo seleccionado - SELECCIONAR TODAS las variables al cambiar modo
+  createVariableToggles(tipo, true);
+  
+  // Si hay datos, regenerar gráficas y tabla con TODAS las variables
   if (currentHistData) {
-    tipo === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
+    updateHistoricalChart();
+    updateStatsTable(tipo);
   }
 });
 
@@ -1646,13 +1688,21 @@ async function createHistoricalView(jsonPath, container, tipo) {
 
     container.append(wrapper);
 
+    // Actualizar datos globales
+    currentHistData = data;
+    
+    // Crear gráficas usando el sistema de toggles y variables seleccionadas
     if (tipo === 'meteo') {
       createMeteoHistoricalChart(data);
-      createMeteoHistoricalTable(data);
     } else {
       createChemHistoricalChart(data);
-      createChemHistoricalTable(data);
     }
+    
+    // Renderizar gráficas individuales para las variables seleccionadas
+    renderIndividualChartsFromSelectedVariables(tipo);
+    
+    // Actualizar tabla de estadísticas
+    updateStatsTable(tipo);
 
   } catch (error) {
     console.error('Error:', error);
@@ -1792,6 +1842,34 @@ const chart = new Chart(cv.getContext('2d'), {
 
     currentHistCharts.push(chart);
   });
+}
+
+// Función para renderizar gráficas individuales basadas en variables seleccionadas
+function renderIndividualChartsFromSelectedVariables(tipo) {
+  if (!currentHistData || !currentHistLabels) return;
+  
+  const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  const datasets = [];
+  
+  // Crear datasets solo para variables seleccionadas
+  selectedVariables.forEach(key => {
+    if (variables[key] && Array.isArray(currentHistData[key])) {
+      const config = variables[key];
+      datasets.push({
+        label: `${config.label} (${config.unit})`,
+        data: currentHistData[key],
+        borderColor: config.color,
+        backgroundColor: `${config.color}20`,
+        borderWidth: 2,
+        tension: 0.35,
+        fill: false,
+        variableKey: key,
+        config: config
+      });
+    }
+  });
+  
+  renderIndividualCharts(datasets, currentHistLabels, tipo);
 }
 
 // Función para crear gráficas individuales por variable (estilo MeteorologiaGit)
@@ -1950,16 +2028,49 @@ function slug(text) {
 
 
 // Function to create variable toggles
-function createVariableToggles(type) {
+function createVariableToggles(type, selectAllVariables = true) {
   const container = document.getElementById('variable-toggles');
-  container.innerHTML = ''; // Clear existing toggles
-  selectedVariables.clear(); // Reset selected variables
+  if (!container) return;
+  
+  // Guardar variables seleccionadas anteriores si no se debe seleccionar todo
+  const previouslySelected = selectAllVariables ? new Set() : new Set(selectedVariables);
+  
+  // Limpiar contenedor
+  container.innerHTML = '';
+  
+  // Si se debe seleccionar todo, limpiar variables seleccionadas
+  if (selectAllVariables) {
+    selectedVariables.clear();
+  }
+  
+  // Limpiar gráficas anteriores solo si no hay datos aún
+  if (!currentHistData || selectAllVariables) {
+    destroyHistCharts();
+    const chartsHost = document.getElementById('chartsHost');
+    if (chartsHost) {
+      chartsHost.innerHTML = '<p style="text-align:center; color:#777; padding:20px;">Seleccione un municipio para ver los datos.</p>';
+    }
+  }
   
   const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
   
   Object.entries(variables).forEach(([key, config]) => {
     const toggle = document.createElement('div');
-    toggle.className = 'variable-toggle active';
+    
+    // Determinar si este toggle debería estar activo
+    let isActive;
+    if (selectAllVariables) {
+      isActive = true; // Seleccionar todo
+      selectedVariables.add(key);
+    } else {
+      // Mantener selección previa si la variable existe en el nuevo tipo
+      isActive = previouslySelected.has(key);
+      if (isActive) {
+        selectedVariables.add(key);
+      }
+    }
+    
+    toggle.className = isActive ? 'variable-toggle active' : 'variable-toggle';
     toggle.dataset.variable = key;
     toggle.innerHTML = `
       <div class="icon"><i class="${config.icon}"></i></div>
@@ -1974,10 +2085,10 @@ function createVariableToggles(type) {
         selectedVariables.delete(key);
       }
       updateHistoricalChart();
+      updateStatsTable(type);
     });
     
     container.appendChild(toggle);
-    selectedVariables.add(key); // Initially select all variables
   });
 }
 
@@ -2289,11 +2400,14 @@ function calculateStats(values) {
   // Agregar event listener para conectar con la API real (menu.js)
   // Verificamos que la función updateHistoricalView esté disponible
   if (typeof updateHistoricalView === 'function') {
+    // Remover listener previo para evitar duplicados
+    sel.removeEventListener('change', updateHistoricalView);
     sel.addEventListener('change', updateHistoricalView);
   } else {
     // Si no está disponible, intentamos más tarde cuando se cargue menu.js
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof updateHistoricalView === 'function') {
+        sel.removeEventListener('change', updateHistoricalView);
         sel.addEventListener('change', updateHistoricalView);
       }
     });
