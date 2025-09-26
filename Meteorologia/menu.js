@@ -7,15 +7,16 @@ $("#select_run").change(function(){
 	procesa_var();
 });
 
-$("#select_dat").change(function(){	
+// Los parámetros ahora son botones, manejados en app.js
+// $("#select_dat").change(function(){	
 //	cancel_animate();
-	
-	procesa_dat();
-});
+//	procesa_dat();
+// });
 
+// Ahora las variables son un select dropdown
 $("#select_var").change(function(){
 //	cancel_animate();
-	
+	selectedVariable = $(this).val();
 	procesa_var();
 });
 

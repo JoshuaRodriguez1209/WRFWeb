@@ -30,6 +30,11 @@ function CDataLayer(map, tipo = "add", str_file = null) {
       }),
     });
 
+    // Aplicar recorte también a la capa por defecto
+    if (typeof clipLayer === 'function') {
+      clipLayer(this.layer);
+    }
+
     map.getLayers().insertAt(1, this.layer);
   }
 }
@@ -79,7 +84,12 @@ CDataLayer.prototype.pad = function (num, size) {
 };
 
 CDataLayer.prototype.setBar = function (str_file) {
-  const option = document.getElementById("select_var");
+  // Obtener el texto de la variable seleccionada en el select
+  const getActiveVariableText = () => {
+    const selectVar = document.getElementById('select_var');
+    return selectVar && selectVar.selectedIndex >= 0 ? 
+           selectVar.options[selectVar.selectedIndex].text : 'Variable';
+  };
   if (str_file.indexOf("temmax") > 0 || str_file.indexOf("temmin") > 0) {
     this.tipo_barra = TEMP;
     this.unidades = " °C";
@@ -88,7 +98,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "TEMP",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("psfc") > 0) {
     this.tipo_barra = TEMP;
@@ -98,7 +108,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "TEMP",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("_temp_") > 0) {
     this.tipo_barra = TEMPLEV;
@@ -108,7 +118,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "TEMPLEV",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("_CO_") > 0) {
     this.tipo_barra = CO;
@@ -117,7 +127,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "CO",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
     this.img_escala = m_img_co;
   } else if (str_file.indexOf("_NO2_") > 0) {
@@ -128,7 +138,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "NO2",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     )
   } else if (str_file.indexOf("_O3_") > 0) {
     this.tipo_barra = O3;
@@ -138,7 +148,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "O3",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     )
   } else if (str_file.indexOf("_SO2_") > 0) {
     this.tipo_barra = SO2;
@@ -148,7 +158,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "SO2",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     )
   } else if (str_file.indexOf("_PM10_") > 0) {
     this.tipo_barra = PM10;
@@ -158,7 +168,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "PM10",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     )
   } else if (str_file.indexOf("_PM25_") > 0) {
     this.tipo_barra = PM25;
@@ -168,7 +178,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "PM25",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     )
   } else if (str_file.indexOf("humrel") > 0) {
     this.tipo_barra = HUM;
@@ -178,7 +188,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "HUM",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("precacum") > 0) {
     this.tipo_barra = RAIN;
@@ -188,7 +198,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "RAIN",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("_sw_") > 0) {
     this.tipo_barra = SRAD;
@@ -198,7 +208,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "SRAD",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("_lw_") > 0) {
     this.tipo_barra = LRAD;
@@ -208,7 +218,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "LRAD",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   } else if (str_file.indexOf("wind") > 0) {
     this.tipo_barra = WIND;
@@ -218,7 +228,7 @@ CDataLayer.prototype.setBar = function (str_file) {
       "./color_scale.csv",
       "WIND",
       this.unidades,
-      option.options[option.selectedIndex].text
+      getActiveVariableText()
     );
   }
 };

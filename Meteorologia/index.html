@@ -202,16 +202,19 @@
             <!-- opciones dinámicas -->
           </select>
 
-          <!-- Parámetro -->
-          <label for="select_dat">Parámetro</label>
-          <select id="select_dat">
-            <option value="temp">Temperatura</option>
-            <option value="hum">Humedad</option>
-          </select>
+          <!-- Parámetros -->
+          <label>Parámetros</label>
+          <div class="layer-buttons" id="parameter-buttons">
+            <!-- Botones dinámicos se generarán aquí -->
+          </div>
 
-          <!-- Sub-parámetro -->
-          <label for="select_var">Sub-parámetro</label>
-          <select id="select_var"></select>
+          <!-- Variables -->
+          <div id="variables-container">
+            <label for="select_var">Variables</label>
+            <select id="select_var">
+              <!-- Opciones dinámicas según parámetro seleccionado -->
+            </select>
+          </div>
 
           <!-- Pronósticos -->
           <label for="selectHora">Pronósticos a (horas)</label>

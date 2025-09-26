@@ -34,7 +34,7 @@ function set_layer(map, str_file_image, tipo, data_layer) {
   }
 
   data_layer.layer = new ol.layer.Image({
-    opacity: 0.5,
+    opacity: 1,
     source: new ol.source.ImageStatic({
       url: str_file_image,
       crossOrigin: "anonymous",
@@ -50,6 +50,57 @@ function set_layer(map, str_file_image, tipo, data_layer) {
   }
 }
 
+//---------------------------------------------------------------------------
+
+// geometry: ol/geom/Polygon o MultiPolygon en EPSG:3857
+function applyMaskToLayer(layer, geometry) {
+  function drawPolygonPath(ctx, geom, transform) {
+    // Soporta Polygon o MultiPolygon
+    const polys = geom.getType() === 'Polygon' ? [geom.getCoordinates()] : geom.getCoordinates();
+    ctx.beginPath();
+    for (const rings of polys) {
+      for (const ring of rings) {
+        for (let i = 0; i < ring.length; i++) {
+          const c = ring[i];
+          const x = c[0] * transform[0] + c[1] * transform[2] + transform[4];
+          const y = c[0] * transform[1] + c[1] * transform[3] + transform[5];
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+    }
+  }
+
+  const pre = (e) => {
+    // Solo Canvas renderer
+    if (!e.context || !e.frameState) return;
+    const ctx = e.context;
+    const t = e.frameState.coordinateToPixelTransform;
+    ctx.save();
+    drawPolygonPath(ctx, geometry, t);
+    ctx.clip(); // <-- recorta TODO lo que pinte esta capa
+  };
+
+  const post = (e) => {
+    if (!e.context) return;
+    e.context.restore();
+  };
+
+  // Evita duplicar listeners si ya estaban puestos
+  layer.un('prerender', pre);
+  layer.un('postrender', post);
+  layer.on('prerender', pre);
+  layer.on('postrender', post);
+
+  // Que actualice mientras interactúas (suaviza el “parpadeo”)
+  if (typeof layer.setUpdateWhileInteracting === 'function') {
+    layer.setUpdateWhileInteracting(true);
+  }
+  if (layer.getSource() && typeof layer.getSource().setRenderReprojectionEdges === 'function') {
+    // opcional: puede ayudar cuando hay reproyección
+    layer.getSource().setRenderReprojectionEdges(true);
+  }
+}
 
 
 //-------------------------------------------------------------------------------
@@ -375,73 +426,188 @@ var list_runs = function (datos) {
 };
 
 //-------------------------------------------------------------------------------
+var selectedParameter = null;
+var selectedVariable = null;
+
+// Crear botones de parámetros principales
+var createParameterButtons = function(parameterData) {
+  var container = document.getElementById('parameter-buttons');
+  container.innerHTML = '';
+  selectedParameter = null;
+  
+  parameterData.forEach(function(param, index) {
+    var button = document.createElement('button');
+    button.className = 'layer-btn';
+    button.setAttribute('data-parameter', param.value);
+    button.innerHTML = '<i class="' + param.icon + '"></i> ' + param.label;
+    
+    button.addEventListener('click', function() {
+      // Remover active de todos los botones
+      document.querySelectorAll('#parameter-buttons .layer-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      
+      // Activar el botón clickeado
+      this.classList.add('active');
+      selectedParameter = param.value;
+      procesa_dat();
+    });
+    
+    container.appendChild(button);
+    
+    // Activar el primer botón por defecto
+    if (index === 0) {
+      button.classList.add('active');
+      selectedParameter = param.value;
+    }
+  });
+  
+  // Procesar la primera opción automáticamente
+  if (parameterData.length > 0) {
+    procesa_dat();
+  }
+};
+
+// Actualizar select de variables según parámetro seleccionado
 var procesa_dat = function () {
-  var val_dat = "";
-  switch ($("#select_dat").val()) {
+  var variableData = [];
+  switch (selectedParameter) {
     case "temp":
-      val_dat = '<option value="temmax">Temperatura max</option>';
-      val_dat += '<option value="temmin">Temperatura min</option>';
-      val_dat += '<option value="temp/700">Temperatura a 700mb</option>';
-      val_dat += '<option value="temp/600">Temperatura a 600mb</option>';
-      val_dat += '<option value="temp/500">Temperatura a 500mb</option>';
-      val_dat += '<option value="temp/400">Temperatura a 400mb</option>';
-      val_dat += '<option value="temp/300">Temperatura a 300mb</option>';
-      val_dat += '<option value="temp/200">Temperatura a 200mb</option>';
+      variableData = [
+        {value: "temmax", label: "Temperatura máxima"},
+        {value: "temmin", label: "Temperatura mínima"},
+        {value: "temp/700", label: "Temperatura 700mb"},
+        {value: "temp/600", label: "Temperatura 600mb"},
+        {value: "temp/500", label: "Temperatura 500mb"},
+        {value: "temp/400", label: "Temperatura 400mb"},
+        {value: "temp/300", label: "Temperatura 300mb"},
+        {value: "temp/200", label: "Temperatura 200mb"}
+      ];
       break;
-    case "quim":
-      val_dat = '<option value="CO/sfc">Monóxido de Carbono</option>';
-      val_dat += '<option value="NO2/sfc">Dióxido de Nitrógeno</option>';
-      val_dat += '<option value="O3/sfc">Ozono</option>';
-      val_dat += '<option value="SO2/sfc">Dióxido de Azufre</option>';
-      val_dat += '<option value="PM10/sfc">Partículas PM 10</option>';
-      val_dat += '<option value="PM25/sfc">Partículas PM 2.5</option>';
+    case "CO":
+      variableData = [
+        {value: "CO/sfc", label: "Monóxido de Carbono en superficie"}
+      ];
+      break;
+    case "NO2":
+      variableData = [
+        {value: "NO2/sfc", label: "Dióxido de Nitrógeno en superficie"}
+      ];
+      break;
+    case "O3":
+      variableData = [
+        {value: "O3/sfc", label: "Ozono en superficie"}
+      ];
+      break;
+    case "SO2":
+      variableData = [
+        {value: "SO2/sfc", label: "Dióxido de Azufre en superficie"}
+      ];
+      break;
+    case "PM25":
+      variableData = [
+        {value: "PM25/sfc", label: "PM 2.5 en superficie"}
+      ];
+      break;
+    case "PM10":
+      variableData = [
+        {value: "PM10/sfc", label: "PM 10 en superficie"}
+      ];
       break;
     case "hum":
-      val_dat = '<option value="hum/sfc">Humedad en superficie</option>';
+      variableData = [
+        {value: "hum/sfc", label: "Humedad en superficie"}
+      ];
       break;
     case "prec":
-      val_dat = '<option value="precacum">Precipitación acumulada</option>';
+      variableData = [
+        {value: "precacum", label: "Precipitación acumulada"}
+      ];
       break;
     case "rad":
-      val_dat = '<option value="radsw/sfc">Radiación de onda corta</option>';
-      val_dat += '<option value="radlw/sfc">Radiación de onda larga</option>';
+      variableData = [
+        {value: "radsw/sfc", label: "Radiación onda corta"},
+        {value: "radlw/sfc", label: "Radiación onda larga"}
+      ];
       break;
     case "wind":
-      val_dat = '<option value="wnd/sfc">Viento en superficie</option>';
-      val_dat += '<option value="wnd/700">Viento a 700mb</option>';
-      val_dat += '<option value="wnd/600">Viento a 600mb</option>';
-      val_dat += '<option value="wnd/500">Viento a 500mb</option>';
-      val_dat += '<option value="wnd/400">Viento a 400mb</option>';
-      val_dat += '<option value="wnd/300">Viento a 300mb</option>';
-      val_dat += '<option value="wnd/200">Viento a 200mb</option>';
+      variableData = [
+        {value: "wnd/sfc", label: "Viento superficie"},
+        {value: "wnd/700", label: "Viento 700mb"},
+        {value: "wnd/600", label: "Viento 600mb"},
+        {value: "wnd/500", label: "Viento 500mb"},
+        {value: "wnd/400", label: "Viento 400mb"},
+        {value: "wnd/300", label: "Viento 300mb"},
+        {value: "wnd/200", label: "Viento 200mb"}
+      ];
       break;
     case "psfc":
-      val_dat = '<option value="psfc">Presión barométrica</option>';
+      variableData = [
+        {value: "psfc", label: "Presión barométrica"}
+      ];
       break;
   }
 
-  $("#select_var").html(val_dat);
-  procesa_var();
+  updateVariableSelect(variableData);
+};
+
+// Actualizar select de variables
+var updateVariableSelect = function(variableData) {
+  var select = document.getElementById('select_var');
+  var selectContainer = document.getElementById('variables-container');
+  
+  // Si solo hay una variable, ocultar el select y usar directamente
+  if (variableData.length <= 1) {
+    selectContainer.style.display = 'none';
+    selectedVariable = variableData.length > 0 ? variableData[0].value : null;
+  } else {
+    // Múltiples variables: mostrar select
+    selectContainer.style.display = 'block';
+    select.innerHTML = '';
+    
+    variableData.forEach(function(variable, index) {
+      var option = document.createElement('option');
+      option.value = variable.value;
+      option.textContent = variable.label;
+      select.appendChild(option);
+      
+      // Seleccionar la primera opción por defecto
+      if (index === 0) {
+        selectedVariable = variable.value;
+      }
+    });
+  }
+  
+  // Procesar la primera variable automáticamente
+  if (variableData.length > 0) {
+    setTimeout(procesa_var, 100);
+  }
 };
 
 var set_atmos = function () {
-  var val_dat = '<option value="temp">Temperatura</option>';
-
-  val_dat += '<option value="hum">Humedad</option>';
-  val_dat += '<option value="prec">Precipitación</option>';
-  val_dat += '<option value="rad">Radiación</option>';
-  val_dat += '<option value="wind">Viento</option>';
-  val_dat += '<option value="psfc">Presión</option>';
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "temp", label: "Temperatura", icon: "fa-solid fa-temperature-half"},
+    {value: "hum", label: "Humedad", icon: "fa-solid fa-droplet"},
+    {value: "prec", label: "Precipitación", icon: "fa-solid fa-cloud-rain"},
+    {value: "rad", label: "Radiación", icon: "fa-solid fa-sun"},
+    {value: "wind", label: "Viento", icon: "fa-solid fa-wind"},
+    {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 var set_chem = function () {
-  var val_dat = (val_dat = '<option value="quim">Contaminantes</option>');
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "CO", label: "CO", icon: "fa-solid fa-smog"},
+    {value: "NO2", label: "NO₂", icon: "fa-solid fa-smog"},
+    {value: "O3", label: "O₃", icon: "fa-solid fa-smog"},
+    {value: "SO2", label: "SO₂", icon: "fa-solid fa-smog"},
+    {value: "PM25", label: "PM2.5", icon: "fa-solid fa-circle-dot"},
+    {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 //-------------------------------------------------------------------------------
@@ -515,8 +681,13 @@ async function update_var() {
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
+  if (!selectedVariable) {
+    console.log('No hay variable seleccionada');
+    return;
+  }
+  
   var str_run = $("#select_run").val();
-  var str_var = $("#select_var").val();
+  var str_var = selectedVariable;
   m_dir_runs = str_run.substring(1);
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
   m_map;
@@ -645,23 +816,51 @@ function cancel_animate() {
 var m_show = false;
 var m_zoom = m_view.getZoom();
 
-var create_style = function (str_file) {
+var create_style = function (tipo) {
+  // Determinar el color basado en el tipo de punto
+  let circleColor = '#c19862'; // Color dorado por defecto
+  let strokeColor = '#ffffff'; // Contorno blanco
+  let strokeWidth = 2;
+  let opacity = 0.8;
+  
+  // Si es una estación (meteogramas)
+  if (tipo === 'estacion') {
+    circleColor = '#5a1b30'; // Color rojo oscuro para estaciones
+    strokeColor = '#c19862'; // Contorno dorado
+    strokeWidth = 3;
+    opacity = 0.9;
+  }
+  // Si es una cabecera
+  else if (tipo === 'cabecera') {
+    circleColor = '#c19862'; // Color dorado para cabeceras
+    strokeColor = '#ffffff'; // Contorno blanco
+    strokeWidth = 2;
+    opacity = 0.8;
+  }
+  
+  const scale = get_scale();
+  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
+  
   return new ol.style.Style({
-    image: new ol.style.Icon({
-      anchor: [0.5, 0.5],
-      anchorXUnits: "fraction",
-      anchorYUnits: "fraction",
-      scale: get_scale(),
-      src: str_file,
+    image: new ol.style.Circle({
+      radius: radius,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
     }),
     text: new ol.style.Text({
       offsetX: 8,
       offsetY: 16,
       textAlign: "left",
-      font: "14px Calibri,sans-serif",
-      fill: new ol.style.Fill({ color: "#000" }),
+      font: "18px Calibri,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
       stroke: new ol.style.Stroke({
-        color: "#fff",
+        color: "#000",
         width: 1,
       }),
       text: "",
@@ -768,16 +967,16 @@ m_map.on("pointermove", function (evt) {
 
 //------------------------------------------------------------------------
 var list_estaciones = function (datos) {
-  add_features(datos, "estacion", "/meteogramas/", "./images/estacion.png");
+  add_features(datos, "estacion", "/meteogramas/", "estacion");
 };
 
 //------------------------------------------------------------------------
 var list_cabeceras = function (datos) {
-  add_features(datos, "cabecera", "/cabeceras/", "./images/cabecera.png");
+  add_features(datos, "cabecera", "/cabeceras/", "cabecera");
 };
 
 //------------------------------------------------------------------------
-var add_features = function (datos, local, dir, urlIcon) {
+var add_features = function (datos, local, dir, tipo) {
   var format = new ol.format.GeoJSON();
   var features = format.readFeatures(datos);
 
@@ -785,7 +984,7 @@ var add_features = function (datos, local, dir, urlIcon) {
     var feature = features[i];
     feature.set("local", local);
     feature.set("dir", dir);
-    feature.setStyle(create_style(urlIcon));
+    feature.setStyle(create_style(tipo));
     set_text(feature);
 
     var coord = feature.getGeometry().getCoordinates();
@@ -811,9 +1010,12 @@ m_view.on("propertychange", function (e) {
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
-
-      feature.getStyle().getImage().setScale(scale);
-      feature.getStyle().getText().setScale(scale);
+      
+      // Determinar el tipo de punto por sus propiedades
+      var local = feature.get("local");
+      
+      // Recrear el estilo con el nuevo radio
+      feature.setStyle(create_style(local));
       set_text(feature);
     }
   }
@@ -1805,7 +2007,7 @@ const meteorologicalVariables = {
 const airQualityVariables = {
   CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
   NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
-  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-shield-halved' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-smog' },
   SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: 'fa-solid fa-smog' },
   PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: 'fa-solid fa-circle' },
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
@@ -2504,4 +2706,7 @@ window.clearHistCombobox = function () {
   const list = document.getElementById('hist-combobox-list');
   if (list) list.style.display = 'none';
 };
+
+// Los botones se inicializan automáticamente desde set_atmos() o set_chem()
+
 //-------------------------------------------------------------------------------
