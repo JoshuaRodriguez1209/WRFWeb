@@ -602,3 +602,43 @@ body.map-active #main-content {
     
 }
 
+* Enhanced Gradient Scale */
+.legend { 
+    position: absolute; 
+    bottom: 20px; 
+    right: 20px; 
+    background: rgba(255, 255, 255, 0.95); 
+    backdrop-filter: blur(10px); 
+    border-radius: 10px; 
+    padding: 15px; 
+    box-shadow: 0 5px 20px var(--shadow-color); 
+    z-index: 1000; 
+    width: 250px;
+    cursor: pointer;
+    user-select: none;
+}
+.legend-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-color); text-align: center; }
+.legend-gradient { 
+    width: 100%; 
+    height: 20px; 
+    border-radius: 5px; 
+    position: relative;
+    cursor: pointer;
+}
+.legend-labels { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--dark-gray); }
+.legend-labels span { flex: 1; text-align: center; }
+.legend-labels span:first-child { text-align: left; }
+.legend-labels span:last-child { text-align: right; }
+
+/* Filter indicator */
+.filter-indicator {
+    position: absolute;
+    top: -5px;
+    left: 0;
+    height: 30px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid white;
+    border-radius: 3px;
+    pointer-events: none;
+    display: none;
+}

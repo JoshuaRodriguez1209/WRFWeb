@@ -2,18 +2,30 @@
 
 //------------------------------------------------------------------------------------------
 function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
-  var layer = new ol.layer.Vector({
+  const layer = new ol.layer.Vector({
     opacity: opacidad,
     title: titulo,
     type: tipo,
     visible: bvisible,
     source: new ol.source.Vector({
       url: str_file_kml,
+      // Si tu KML trae estilos y quieres ignorarlos, descomenta la línea de abajo:
+      // format: new ol.format.KML({ extractStyles: false }),
       format: new ol.format.KML(),
     }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255, 255, 255, 1)', // contorno blanco
+        width: 2                           // grosor del contorno
+      }),
+      fill: new ol.style.Fill({
+        color: 'rgba(255, 255, 255, 0)'    // sin relleno (transparente)
+      })
+    })
   });
   return layer;
 }
+
 
 //------------------------------------------------------------------------------------------
 function set_layer(map, str_file_image, tipo, data_layer) {
@@ -22,7 +34,7 @@ function set_layer(map, str_file_image, tipo, data_layer) {
   }
 
   data_layer.layer = new ol.layer.Image({
-    opacity: 0.5,
+    opacity: 1,
     source: new ol.source.ImageStatic({
       url: str_file_image,
       crossOrigin: "anonymous",
@@ -30,11 +42,66 @@ function set_layer(map, str_file_image, tipo, data_layer) {
     }),
   });
 
+  clipLayer(data_layer.layer); // Aplicar recorte
+
   data_layer.setParam(str_file_image);
   if (tipo == "add") {
-    map.getLayers().insertAt(1, data_layer.layer);
+    map.getLayers().insertAt(1, data_layer.layer); // Insertar en el índice 2 para estar sobre la máscara
   }
 }
+
+//---------------------------------------------------------------------------
+
+// geometry: ol/geom/Polygon o MultiPolygon en EPSG:3857
+function applyMaskToLayer(layer, geometry) {
+  function drawPolygonPath(ctx, geom, transform) {
+    // Soporta Polygon o MultiPolygon
+    const polys = geom.getType() === 'Polygon' ? [geom.getCoordinates()] : geom.getCoordinates();
+    ctx.beginPath();
+    for (const rings of polys) {
+      for (const ring of rings) {
+        for (let i = 0; i < ring.length; i++) {
+          const c = ring[i];
+          const x = c[0] * transform[0] + c[1] * transform[2] + transform[4];
+          const y = c[0] * transform[1] + c[1] * transform[3] + transform[5];
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+    }
+  }
+
+  const pre = (e) => {
+    // Solo Canvas renderer
+    if (!e.context || !e.frameState) return;
+    const ctx = e.context;
+    const t = e.frameState.coordinateToPixelTransform;
+    ctx.save();
+    drawPolygonPath(ctx, geometry, t);
+    ctx.clip(); // <-- recorta TODO lo que pinte esta capa
+  };
+
+  const post = (e) => {
+    if (!e.context) return;
+    e.context.restore();
+  };
+
+  // Evita duplicar listeners si ya estaban puestos
+  layer.un('prerender', pre);
+  layer.un('postrender', post);
+  layer.on('prerender', pre);
+  layer.on('postrender', post);
+
+  // Que actualice mientras interactúas (suaviza el “parpadeo”)
+  if (typeof layer.setUpdateWhileInteracting === 'function') {
+    layer.setUpdateWhileInteracting(true);
+  }
+  if (layer.getSource() && typeof layer.getSource().setRenderReprojectionEdges === 'function') {
+    // opcional: puede ayudar cuando hay reproyección
+    layer.getSource().setRenderReprojectionEdges(true);
+  }
+}
+
 
 //-------------------------------------------------------------------------------
 var m_lyr_tile = new ol.layer.Tile({
@@ -54,6 +121,27 @@ var m_layer_municipios = create_layer_kml_base(
   0.7,
   true
 );
+
+function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
+  const layer = new ol.layer.Vector({
+    opacity: opacidad,
+    title: titulo,
+    type: tipo,
+    visible: bvisible,
+    source: new ol.source.Vector({
+      url: str_file_kml,
+      format: new ol.format.KML({ extractStyles: false }) // <- importante
+    }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255,255,255,1)', // contorno blanco
+        width: 2
+      }),
+      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // sin relleno
+    })
+  });
+  return layer;
+}
 
 //------------------------------------------------------------------------------------------
 var mousePositionControl = new ol.control.MousePosition({
@@ -87,8 +175,8 @@ var m_control = new ol.control.Control({ element: notification });
 var m_view = new ol.View({
   projection: "EPSG:4326",
   center: [-97.7711, 19.0105],
-  zoom: 8.3,
-  minZoom: 8.3,
+  zoom: 9,
+  minZoom: 9,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -110,6 +198,7 @@ var scaleLineControl = new ol.control.ScaleLine({
 //-------------------------------------------------------------------------------
 
 var m_map = new ol.Map({
+  renderBuffer: 1000, // Aumentar el búfer para un renderizado más suave
   controls: ol.control.defaults({ zoom: false }).extend([
     mousePositionControl,
     m_notification,
@@ -125,35 +214,69 @@ var m_map = new ol.Map({
   view: m_view,
 });
 
+// Variable para almacenar la geometría de recorte de Puebla
+let pueblaClippingGeometry = null;
+
+// Función para aplicar el recorte a una capa
+const clipLayer = (layer) => {
+  if (!pueblaClippingGeometry || !layer) return;
+
+  layer.on('postrender', (e) => {
+    if (!e.context) return;
+    const vectorContext = ol.render.getVectorContext(e);
+    e.context.globalCompositeOperation = 'destination-in';
+    vectorContext.drawFeature(
+      new ol.Feature(pueblaClippingGeometry),
+      new ol.style.Style({
+        fill: new ol.style.Fill({ color: 'black' }),
+      })
+    );
+    e.context.globalCompositeOperation = 'source-over';
+  });
+};
+
+// Cargar la geometría de Puebla una sola vez
+fetch('./puebla_state_boundary.json')
+  .then(response => response.json())
+  .then(pueblaCoords => {
+    pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
+    
+    // Crear una capa de máscara negra para el fondo
+    const extent = [-180, -90, 180, 90];
+    const outerPolygon = ol.geom.Polygon.fromExtent(extent);
+    const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
+    outerPolygon.appendLinearRing(pueblaLinearRing);
+
+    const maskFeature = new ol.Feature({
+      geometry: outerPolygon,
+    });
+
+    const maskLayer = new ol.layer.Vector({
+      renderBuffer: 250,
+      source: new ol.source.Vector({
+        features: [maskFeature],
+      }),
+      style: new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(0, 0, 0, 1)',
+        }),
+      }),
+      title: 'Mascara Puebla',
+      type: 'mask'
+    });
+
+    m_map.getLayers().insertAt(1, maskLayer);
+
+    // Re-renderizar el mapa para asegurar que el clipping se aplique si las capas ya cargaron
+    m_map.render();
+  })
+  .catch(error => console.error('Error loading Puebla boundary:', error));
+
+
 var m_dlayer = new CDataLayer(m_map);
 //-------------------------------------------------------------------------------
 
 const isMobile = window.innerWidth < 768;
-const graticule = new ol.Graticule({
-  showLabels: true,
-  wrapX: false,
-  lonLabelPosition: isMobile ? 0.93 : 0.99,
-  latLabelPosition: isMobile ? 0.79 : 0.93, // posición más dentro del canvas
-  targetSize: 200,
-  strokeStyle: new ol.style.Stroke({
-    color: "rgba(100,100,100,0.7)",
-    width: 2,
-    lineDash: [2, 4],
-  }),
-  lonLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-    textBaseline: "top",
-  }),
-  latLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    textAlign: "left", // alinea texto hacia dentro
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-  }),
-});
-graticule.setMap(m_map);
 
 //-------------------------------------------------------------------------------
 m_map.on("postcompose", function (event) {
@@ -303,73 +426,188 @@ var list_runs = function (datos) {
 };
 
 //-------------------------------------------------------------------------------
+var selectedParameter = null;
+var selectedVariable = null;
+
+// Crear botones de parámetros principales
+var createParameterButtons = function(parameterData) {
+  var container = document.getElementById('parameter-buttons');
+  container.innerHTML = '';
+  selectedParameter = null;
+  
+  parameterData.forEach(function(param, index) {
+    var button = document.createElement('button');
+    button.className = 'layer-btn';
+    button.setAttribute('data-parameter', param.value);
+    button.innerHTML = '<i class="' + param.icon + '"></i> ' + param.label;
+    
+    button.addEventListener('click', function() {
+      // Remover active de todos los botones
+      document.querySelectorAll('#parameter-buttons .layer-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      
+      // Activar el botón clickeado
+      this.classList.add('active');
+      selectedParameter = param.value;
+      procesa_dat();
+    });
+    
+    container.appendChild(button);
+    
+    // Activar el primer botón por defecto
+    if (index === 0) {
+      button.classList.add('active');
+      selectedParameter = param.value;
+    }
+  });
+  
+  // Procesar la primera opción automáticamente
+  if (parameterData.length > 0) {
+    procesa_dat();
+  }
+};
+
+// Actualizar select de variables según parámetro seleccionado
 var procesa_dat = function () {
-  var val_dat = "";
-  switch ($("#select_dat").val()) {
+  var variableData = [];
+  switch (selectedParameter) {
     case "temp":
-      val_dat = '<option value="temmax">Temperatura max</option>';
-      val_dat += '<option value="temmin">Temperatura min</option>';
-      val_dat += '<option value="temp/700">Temperatura a 700mb</option>';
-      val_dat += '<option value="temp/600">Temperatura a 600mb</option>';
-      val_dat += '<option value="temp/500">Temperatura a 500mb</option>';
-      val_dat += '<option value="temp/400">Temperatura a 400mb</option>';
-      val_dat += '<option value="temp/300">Temperatura a 300mb</option>';
-      val_dat += '<option value="temp/200">Temperatura a 200mb</option>';
+      variableData = [
+        {value: "temmax", label: "Temperatura máxima"},
+        {value: "temmin", label: "Temperatura mínima"},
+        {value: "temp/700", label: "Temperatura 700mb"},
+        {value: "temp/600", label: "Temperatura 600mb"},
+        {value: "temp/500", label: "Temperatura 500mb"},
+        {value: "temp/400", label: "Temperatura 400mb"},
+        {value: "temp/300", label: "Temperatura 300mb"},
+        {value: "temp/200", label: "Temperatura 200mb"}
+      ];
       break;
-    case "quim":
-      val_dat = '<option value="CO/sfc">Monóxido de Carbono</option>';
-      val_dat += '<option value="NO2/sfc">Dióxido de Nitrógeno</option>';
-      val_dat += '<option value="O3/sfc">Ozono</option>';
-      val_dat += '<option value="SO2/sfc">Dióxido de Azufre</option>';
-      val_dat += '<option value="PM10/sfc">Partículas PM 10</option>';
-      val_dat += '<option value="PM25/sfc">Partículas PM 2.5</option>';
+    case "CO":
+      variableData = [
+        {value: "CO/sfc", label: "Monóxido de Carbono en superficie"}
+      ];
+      break;
+    case "NO2":
+      variableData = [
+        {value: "NO2/sfc", label: "Dióxido de Nitrógeno en superficie"}
+      ];
+      break;
+    case "O3":
+      variableData = [
+        {value: "O3/sfc", label: "Ozono en superficie"}
+      ];
+      break;
+    case "SO2":
+      variableData = [
+        {value: "SO2/sfc", label: "Dióxido de Azufre en superficie"}
+      ];
+      break;
+    case "PM25":
+      variableData = [
+        {value: "PM25/sfc", label: "PM 2.5 en superficie"}
+      ];
+      break;
+    case "PM10":
+      variableData = [
+        {value: "PM10/sfc", label: "PM 10 en superficie"}
+      ];
       break;
     case "hum":
-      val_dat = '<option value="hum/sfc">Humedad en superficie</option>';
+      variableData = [
+        {value: "hum/sfc", label: "Humedad en superficie"}
+      ];
       break;
     case "prec":
-      val_dat = '<option value="precacum">Precipitación acumulada</option>';
+      variableData = [
+        {value: "precacum", label: "Precipitación acumulada"}
+      ];
       break;
     case "rad":
-      val_dat = '<option value="radsw/sfc">Radiación de onda corta</option>';
-      val_dat += '<option value="radlw/sfc">Radiación de onda larga</option>';
+      variableData = [
+        {value: "radsw/sfc", label: "Radiación onda corta"},
+        {value: "radlw/sfc", label: "Radiación onda larga"}
+      ];
       break;
     case "wind":
-      val_dat = '<option value="wnd/sfc">Viento en superficie</option>';
-      val_dat += '<option value="wnd/700">Viento a 700mb</option>';
-      val_dat += '<option value="wnd/600">Viento a 600mb</option>';
-      val_dat += '<option value="wnd/500">Viento a 500mb</option>';
-      val_dat += '<option value="wnd/400">Viento a 400mb</option>';
-      val_dat += '<option value="wnd/300">Viento a 300mb</option>';
-      val_dat += '<option value="wnd/200">Viento a 200mb</option>';
+      variableData = [
+        {value: "wnd/sfc", label: "Viento superficie"},
+        {value: "wnd/700", label: "Viento 700mb"},
+        {value: "wnd/600", label: "Viento 600mb"},
+        {value: "wnd/500", label: "Viento 500mb"},
+        {value: "wnd/400", label: "Viento 400mb"},
+        {value: "wnd/300", label: "Viento 300mb"},
+        {value: "wnd/200", label: "Viento 200mb"}
+      ];
       break;
     case "psfc":
-      val_dat = '<option value="psfc">Presión barométrica</option>';
+      variableData = [
+        {value: "psfc", label: "Presión barométrica"}
+      ];
       break;
   }
 
-  $("#select_var").html(val_dat);
-  procesa_var();
+  updateVariableSelect(variableData);
+};
+
+// Actualizar select de variables
+var updateVariableSelect = function(variableData) {
+  var select = document.getElementById('select_var');
+  var selectContainer = document.getElementById('variables-container');
+  
+  // Si solo hay una variable, ocultar el select y usar directamente
+  if (variableData.length <= 1) {
+    selectContainer.style.display = 'none';
+    selectedVariable = variableData.length > 0 ? variableData[0].value : null;
+  } else {
+    // Múltiples variables: mostrar select
+    selectContainer.style.display = 'block';
+    select.innerHTML = '';
+    
+    variableData.forEach(function(variable, index) {
+      var option = document.createElement('option');
+      option.value = variable.value;
+      option.textContent = variable.label;
+      select.appendChild(option);
+      
+      // Seleccionar la primera opción por defecto
+      if (index === 0) {
+        selectedVariable = variable.value;
+      }
+    });
+  }
+  
+  // Procesar la primera variable automáticamente
+  if (variableData.length > 0) {
+    setTimeout(procesa_var, 100);
+  }
 };
 
 var set_atmos = function () {
-  var val_dat = '<option value="temp">Temperatura</option>';
-
-  val_dat += '<option value="hum">Humedad</option>';
-  val_dat += '<option value="prec">Precipitación</option>';
-  val_dat += '<option value="rad">Radiación</option>';
-  val_dat += '<option value="wind">Viento</option>';
-  val_dat += '<option value="psfc">Presión</option>';
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "temp", label: "Temperatura", icon: "fa-solid fa-temperature-half"},
+    {value: "hum", label: "Humedad", icon: "fa-solid fa-droplet"},
+    {value: "prec", label: "Precipitación", icon: "fa-solid fa-cloud-rain"},
+    {value: "rad", label: "Radiación", icon: "fa-solid fa-sun"},
+    {value: "wind", label: "Viento", icon: "fa-solid fa-wind"},
+    {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 var set_chem = function () {
-  var val_dat = (val_dat = '<option value="quim">Contaminantes</option>');
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "CO", label: "CO", icon: "fa-solid fa-smog"},
+    {value: "NO2", label: "NO₂", icon: "fa-solid fa-smog"},
+    {value: "O3", label: "O₃", icon: "fa-solid fa-smog"},
+    {value: "SO2", label: "SO₂", icon: "fa-solid fa-smog"},
+    {value: "PM25", label: "PM2.5", icon: "fa-solid fa-circle-dot"},
+    {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 //-------------------------------------------------------------------------------
@@ -443,8 +681,13 @@ async function update_var() {
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
+  if (!selectedVariable) {
+    console.log('No hay variable seleccionada');
+    return;
+  }
+  
   var str_run = $("#select_run").val();
-  var str_var = $("#select_var").val();
+  var str_var = selectedVariable;
   m_dir_runs = str_run.substring(1);
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
   m_map;
@@ -464,7 +707,7 @@ var procesa_var = function () {
 $(function () {
   var isAnimating = false;
   var $btn = $("#btn_toggle_animation");
-  var $icon = $btn.find("i");
+  var $icon = $("#playIcon");
 
   // Inicialmente deshabilitado hasta que check_loaded termine
   $btn.prop("disabled", true);
@@ -498,13 +741,13 @@ $(function () {
     if (!isAnimating) {
       // Iniciar animación
       animate_frames();
-      $icon.removeClass("glyphicon-play").addClass("glyphicon-stop");
+      $icon.removeClass("fa-play").addClass("fa-stop");
       $btn.attr("title", "Detener");
       isAnimating = true;
     } else {
       // Detener animación
       cancel_animate();
-      $icon.removeClass("glyphicon-stop").addClass("glyphicon-play");
+      $icon.removeClass("fa-stop").addClass("fa-play");
       $btn.attr("title", "Reproducir");
       isAnimating = false;
     }
@@ -532,7 +775,8 @@ async function animate_frames() {
           const filteredLayer = applyFilterToImage(m_dlayer_act.img);
           if (filteredLayer) {
             if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
-            m_map.addLayer(filteredLayer);
+            m_map.getLayers().insertAt(1, filteredLayer);
+            //m_map.addLayer(filteredLayer);
             const permanentDateElement = document.querySelector(
               "#filter-info .permanent-date"
             );
@@ -542,11 +786,13 @@ async function animate_frames() {
             window.filtered_layer = filteredLayer;
             m_dlayer = m_dlayer_act;
           } else {
-            m_map.addLayer(m_dlayer_act.layer);
+            //m_map.addLayer(m_dlayer_act.layer);
+            m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           }
         } else {
           m_map.removeLayer(m_dlayer.layer);
-          m_map.addLayer(m_dlayer_act.layer);
+          //m_map.addLayer(m_dlayer_act.layer);
+          m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
         }
         pos_frame = pos_frame + 1;
@@ -570,23 +816,51 @@ function cancel_animate() {
 var m_show = false;
 var m_zoom = m_view.getZoom();
 
-var create_style = function (str_file) {
+var create_style = function (tipo) {
+  // Determinar el color basado en el tipo de punto
+  let circleColor = '#c19862'; // Color dorado por defecto
+  let strokeColor = '#ffffff'; // Contorno blanco
+  let strokeWidth = 2;
+  let opacity = 0.8;
+  
+  // Si es una estación (meteogramas)
+  if (tipo === 'estacion') {
+    circleColor = '#5a1b30'; // Color rojo oscuro para estaciones
+    strokeColor = '#c19862'; // Contorno dorado
+    strokeWidth = 3;
+    opacity = 0.9;
+  }
+  // Si es una cabecera
+  else if (tipo === 'cabecera') {
+    circleColor = '#c19862'; // Color dorado para cabeceras
+    strokeColor = '#ffffff'; // Contorno blanco
+    strokeWidth = 2;
+    opacity = 0.8;
+  }
+  
+  const scale = get_scale();
+  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
+  
   return new ol.style.Style({
-    image: new ol.style.Icon({
-      anchor: [0.5, 0.5],
-      anchorXUnits: "fraction",
-      anchorYUnits: "fraction",
-      scale: get_scale(),
-      src: str_file,
+    image: new ol.style.Circle({
+      radius: radius,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
     }),
     text: new ol.style.Text({
       offsetX: 8,
       offsetY: 16,
       textAlign: "left",
-      font: "14px Calibri,sans-serif",
-      fill: new ol.style.Fill({ color: "#000" }),
+      font: "18px Calibri,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
       stroke: new ol.style.Stroke({
-        color: "#fff",
+        color: "#000",
         width: 1,
       }),
       text: "",
@@ -693,16 +967,16 @@ m_map.on("pointermove", function (evt) {
 
 //------------------------------------------------------------------------
 var list_estaciones = function (datos) {
-  add_features(datos, "estacion", "/meteogramas/", "./images/estacion.png");
+  add_features(datos, "estacion", "/meteogramas/", "estacion");
 };
 
 //------------------------------------------------------------------------
 var list_cabeceras = function (datos) {
-  add_features(datos, "cabecera", "/cabeceras/", "./images/cabecera.png");
+  add_features(datos, "cabecera", "/cabeceras/", "cabecera");
 };
 
 //------------------------------------------------------------------------
-var add_features = function (datos, local, dir, urlIcon) {
+var add_features = function (datos, local, dir, tipo) {
   var format = new ol.format.GeoJSON();
   var features = format.readFeatures(datos);
 
@@ -710,7 +984,7 @@ var add_features = function (datos, local, dir, urlIcon) {
     var feature = features[i];
     feature.set("local", local);
     feature.set("dir", dir);
-    feature.setStyle(create_style(urlIcon));
+    feature.setStyle(create_style(tipo));
     set_text(feature);
 
     var coord = feature.getGeometry().getCoordinates();
@@ -736,9 +1010,12 @@ m_view.on("propertychange", function (e) {
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
-
-      feature.getStyle().getImage().setScale(scale);
-      feature.getStyle().getText().setScale(scale);
+      
+      // Determinar el tipo de punto por sus propiedades
+      var local = feature.get("local");
+      
+      // Recrear el estilo con el nuevo radio
+      feature.setStyle(create_style(local));
       set_text(feature);
     }
   }
@@ -869,46 +1146,55 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         Descargar (.CSV)
       </button>
     </div>
-    <table style="
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95em;
-      background-color: #fff;
-      border: none;
+    <div class="pollutant-summary" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
     ">
-      <thead style="background-color: #f5f5f5;">
-        <tr>
-          <th style="padding: 10px; text-align: left;">Variable</th>
-          <th style="padding: 10px; text-align: left;">Promedio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌡️ Temperatura (°C)</td>
-          <td style="padding: 10px;">${avg(djson["t2m"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">💧 Humedad (%)</td>
-          <td style="padding: 10px;">${avg(djson["rh"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌧️ Precipitación (mm)</td>
-          <td style="padding: 10px;">${avg(djson["pre"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">☀️ Radiación (w/m²)</td>
-          <td style="padding: 10px;">${avg(djson["sw"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌬️ Viento (km/h)</td>
-          <td style="padding: 10px;">${avg(djson["wnd"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">📉 Presión (hPa)</td>
-          <td style="padding: 10px;">${avg(djson["psl"])}</td>
-        </tr>
-      </tbody>
-    </table>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ff4757;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌡️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Temperatura</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["t2m"])} °C</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#3742fa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💧</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Humedad</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["rh"])} %</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#2ed573;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌧️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Precipitación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["pre"])} mm</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ffa502;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">☀️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Radiación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["sw"])} w/m²</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#747d8c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌬️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Viento</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["wnd"])} km/h</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#57606f;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">📉</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Presión</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["psl"])} hPa</div>
+        </div>
+      </div>
+    </div>
   </div>
 `;
         contenDialog.append(resumenHTML);
@@ -1540,6 +1826,7 @@ function applyFilterToImage(img) {
       imageExtent: extent,
     }),
   });
+  clipLayer(filteredLayer); // Aplicar recorte a la capa con filtro
   return filteredLayer;
 }
 
@@ -1547,7 +1834,8 @@ function put_FilteredImage(filteredLayer) {
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   if (m_dlayer.layer) m_dlayer.layer.setVisible(false);
 
-  m_map.addLayer(filteredLayer);
+  //m_map.addLayer(filteredLayer);
+  m_map.getLayers().insertAt(1, filteredLayer);
   window.filtered_layer = filteredLayer;
 }
 
@@ -1613,14 +1901,33 @@ function getClosestValueFromRGB(r, g, b) {
 function showInfo(value) {
   hideInfo();
   const info = document.getElementById("filter-info");
-  const units = document.getElementById("gradient-units").textContent;
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
   const existingRange = info.querySelector(".dynamic-range");
   const rangeElement = document.createElement("div");
   rangeElement.className = "dynamic-range";
-  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${
-    units || ""
-  }</strong>`;
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${units}</strong>`;
   info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
 }
 
 function hideInfo() {
@@ -1728,7 +2035,7 @@ const meteorologicalVariables = {
 const airQualityVariables = {
   CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
   NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
-  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-shield-halved' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-smog' },
   SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: 'fa-solid fa-smog' },
   PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: 'fa-solid fa-circle' },
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
@@ -2427,4 +2734,622 @@ window.clearHistCombobox = function () {
   const list = document.getElementById('hist-combobox-list');
   if (list) list.style.display = 'none';
 };
+
+// Los botones se inicializan automáticamente desde set_atmos() o set_chem()
+
 //-------------------------------------------------------------------------------
+
+function loadMapCabeceras() {
+  if (!municipalitiesData) return;
+  const select = document.getElementById('map-search');
+  if (!select) return;
+
+  select.innerHTML = ''; // limpiar
+
+  const cabeceras = municipalitiesData.features
+    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
+
+  cabeceras.forEach(feature => {
+    const option = document.createElement('option');
+    option.value = feature.properties.clave;
+    option.textContent = feature.properties.nombre;
+    select.appendChild(option);
+  });
+}
+
+(function makeMapComboboxRobusto(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // UI
+  const wrap = document.createElement('div');
+  wrap.id = 'map-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  const list = document.createElement('ul');
+  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', maxHeight:'260px', overflowY:'auto',
+    margin:'0', padding:'0', listStyle:'none', display:'none',
+    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Oculta select y monta wrapper
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // Lógica
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [], filtered = [], open = false, active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '')
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
+  function closeList(){ list.style.display='none'; open = false; active = -1; }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+function choose(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  const it = filtered[idx];
+  input.value = it.label;
+  sel.value = it.value;
+
+  sel.dispatchEvent(new Event('change',{ bubbles:true}));
+
+  // Centrar el mapa en el municipio seleccionado
+  const municipio = mapSearchMunicipiosData.find(
+    m => m.clave === it.value
+  );
+  
+  if (municipio && m_map) {
+    // Obtener las coordenadas directamente del municipio
+    const coords = municipio.coordinates; // [lng, lat]
+    console.log(coords);
+    // Centrar el mapa en esas coordenadas usando OpenLayers
+    const view = m_map.getView();
+    view.animate({zoom: 12}, {center:[coords[0],coords[1]]}); // Zoom más cercano para ver el municipio
+  }
+
+  closeList();
+}
+
+  // Aislar clicks internos
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir/filtrar/teclado
+  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
+  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
+  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
+
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
+      case 'Tab':       closeList(); break;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
+  mo.observe(sel, { childList: true });
+})();
+
+window.clearMapCombobox = function () {
+  const sel   = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('map-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Datos de municipios para map-search
+let mapSearchMunicipiosData = [];
+
+// Función para cargar municipios para map-search
+async function loadMapSearchMunicipios() {
+  try {
+    const response = await fetch('./cabeceras.json');
+    const data = await response.json();
+    
+    mapSearchMunicipiosData = data.features.map(feature => ({
+      nombre: feature.properties.nombre,
+      clave: feature.properties.clave,
+      coordinates: feature.geometry.coordinates // [lng, lat]
+    }));
+    
+    populateMapSearch();
+    console.log(`Map-search: Cargados ${mapSearchMunicipiosData.length} municipios`);
+  } catch (error) {
+    console.error('Error cargando municipios para map-search:', error);
+  }
+}
+
+// Función para centrar el mapa en un municipio
+function centerMapOnMunicipioSearch(municipioClave) {
+  const municipio = mapSearchMunicipiosData.find(m => m.clave === municipioClave);
+  if (!municipio || !m_map) return;
+  
+  const [lng, lat] = municipio.coordinates;
+  const view = m_map.getView();
+  
+  // Centrar el mapa en las coordenadas del municipio
+  view.animate({
+    center: ol.proj.fromLonLat([lng, lat]),
+    zoom: 12, // Zoom más cercano para ver el municipio
+    duration: 1000 // Animación de 1 segundo
+  });
+  
+  console.log(`Mapa centrado en: ${municipio.nombre} [${lng}, ${lat}]`);
+}
+
+// Map Search Combobox - Basado en el sistema del historial
+(function makeMapSearchCombobox(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.getElementById('map-search-combobox');
+  if (!wrap) return;
+
+  const input = wrap.querySelector('input.form-control');
+  if (!input) return;
+
+  // Lista como "portal" en <body>
+  const list = document.getElementById('map-search-combobox-list');
+  if (!list) return;
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.listStyle = 'none';
+      li.style.backgroundColor = idx === active ? '#e9ecef' : 'white';
+      li.style.borderBottom = '1px solid #eee';
+      
+      li.addEventListener('click', () => choose(idx));
+      li.addEventListener('mouseenter', () => { active = idx; render(); });
+      
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!items.length) snapshotItems();
+    if (!items.length) return;
+    
+    list.style.display = 'block';
+    list.style.position = 'fixed';
+    list.style.zIndex = '9999';
+    list.style.backgroundColor = 'white';
+    list.style.border = '1px solid #ccc';
+    list.style.borderRadius = '4px';
+    list.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    list.style.maxHeight = '200px';
+    list.style.overflowY = 'auto';
+    list.style.margin = '0';
+    list.style.padding = '0';
+    
+    positionList();
+    render();
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+    
+    // Centrar el mapa en el municipio seleccionado
+    if (it.value) {
+      centerMapOnMunicipioSearch(it.value);
+    }
+  }
+
+  // ----- Eventos -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', openList);
+  input.addEventListener('click', openList);
+  input.addEventListener('input', e => {
+    const val = e.target.value;
+    if (!open) openList();
+    filterNow(val);
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+})();
+
+// Función para poblar el map-search con municipios
+function populateMapSearch() {
+  const select = document.getElementById('map-search');
+  if (!select || !mapSearchMunicipiosData.length) return;
+  
+  select.innerHTML = '<option value="">Seleccione un municipio</option>';
+  mapSearchMunicipiosData.forEach(municipio => {
+    const option = document.createElement('option');
+    option.value = municipio.clave;
+    option.textContent = municipio.nombre;
+    select.appendChild(option);
+  });
+}
+
+// Clear map search combobox function
+window.clearMapSearchCombobox = function () {
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap = document.getElementById('map-search-combobox');
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  const list = document.getElementById('map-search-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Inicializar map-search cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMapSearchMunicipios);
+} else {
+  loadMapSearchMunicipios();
+}
+
+// Nueva función para manejar la leyenda horizontal
+function setupLegendClickFilter() {
+    const legendGradient = document.getElementById('legend-gradient');
+    const filterIndicator = document.getElementById('filter-indicator');
+    
+    if (!legendGradient) return;
+    
+    let isSelecting = false;
+    let startX = 0;
+    
+    legendGradient.addEventListener('mousedown', (e) => {
+        isSelecting = true;
+        startX = e.offsetX;
+        filterIndicator.style.left = startX + 'px';
+        filterIndicator.style.width = '2px';
+        filterIndicator.classList.add('active');
+        e.preventDefault();
+    });
+    
+    legendGradient.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+        
+        const currentX = e.offsetX;
+        const width = Math.abs(currentX - startX);
+        const left = Math.min(startX, currentX);
+        
+        filterIndicator.style.left = left + 'px';
+        filterIndicator.style.width = width + 'px';
+    });
+    
+    legendGradient.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
+        isSelecting = false;
+        
+        const endX = e.offsetX;
+        const gradientWidth = legendGradient.offsetWidth;
+        
+        const minPercent = Math.min(startX, endX) / gradientWidth;
+        const maxPercent = Math.max(startX, endX) / gradientWidth;
+        
+        if (Math.abs(endX - startX) > 5) {
+            // Aplicar filtro basado en el rango seleccionado
+            applyLegendFilter(minPercent, maxPercent);
+        } else {
+            // Click simple - obtener valor puntual
+            const percent = startX / gradientWidth;
+            applyLegendFilter(percent - 0.05, percent + 0.05);
+        }
+    });
+    
+    // Doble click en la leyenda para limpiar filtro
+    legendGradient.addEventListener('dblclick', (e) => {
+        clearLegendFilter();
+        e.preventDefault();
+        e.stopPropagation();
+    });
+}
+
+function applyLegendFilter(minPercent, maxPercent) {
+    if (!window.gradientLookup || !window.gradientLookup.length) return;
+    
+    const totalSteps = window.gradientLookup.length;
+    const minIndex = Math.floor(minPercent * totalSteps);
+    const maxIndex = Math.ceil(maxPercent * totalSteps);
+    
+    if (minIndex >= 0 && maxIndex < totalSteps) {
+        const minValue = window.gradientLookup[minIndex].value;
+        const maxValue = window.gradientLookup[maxIndex].value;
+        const avgValue = (minValue + maxValue) / 2;
+        
+        // Simular el color para el filtrado
+        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
+        if (colorEntry && colorEntry.hex) {
+            const hex = colorEntry.hex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            filter_color = [r, g, b];
+            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+            showInfo(range);
+            const filteredLayer = applyFilterToImage(m_lienzo.img);
+            put_FilteredImage(filteredLayer);
+        }
+    }
+}
+
+function clearLegendFilter() {
+    const filterIndicator = document.getElementById('filter-indicator');
+    if (filterIndicator) {
+        filterIndicator.classList.remove('active');
+    }
+    filter_color = null;
+    hideInfo();
+    m_map.removeLayer(window.filtered_layer);
+    if (m_dlayer.layer) m_dlayer.layer.setVisible(true);
+}
+
+// Función para actualizar la leyenda con nueva variable
+function updateLegend(title, gradient, minValue, maxValue, unit) {
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legend-title');
+    const legendGradient = document.getElementById('legend-gradient');
+    const legendLabels = document.getElementById('legend-labels');
+    
+    if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
+    
+    legend.style.display = 'block';
+    legendTitle.textContent = title;
+    legendGradient.style.background = gradient;
+    
+    // Crear etiquetas - CORREGIDAS: de mayor a menor (invertido)
+    legendLabels.innerHTML = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        // Invertir los valores: empezar por el máximo y bajar al mínimo
+        const value = maxValue - (maxValue - minValue) * (i / steps);
+        const span = document.createElement('span');
+        span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
+        legendLabels.appendChild(span);
+    }
+}
+
+// Inicializar la leyenda cuando se carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    setupLegendClickFilter();
+});
+
+// Función para actualizar la leyenda con nueva variable
+function updateLegend(title, gradient, minValue, maxValue, unit) {
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legend-title');
+    const legendGradient = document.getElementById('legend-gradient');
+    const legendLabels = document.getElementById('legend-labels');
+    
+    if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
+    
+    legend.style.display = 'block';
+    legendTitle.textContent = title;
+    legendGradient.style.background = gradient;
+    
+    // Crear etiquetas - CORREGIDAS: de mayor a menor (invertido)
+    legendLabels.innerHTML = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        // Invertir los valores: empezar por el máximo y bajar al mínimo
+        const value = maxValue - (maxValue - minValue) * (i / steps);
+        const span = document.createElement('span');
+        span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
+        legendLabels.appendChild(span);
+    }
+}
+function showInfo(value) {
+  hideInfo();
+  const info = document.getElementById("filter-info");
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
+  const existingRange = info.querySelector(".dynamic-range");
+  const rangeElement = document.createElement("div");
+  rangeElement.className = "dynamic-range";
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${units}</strong>`;
+  info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
+}

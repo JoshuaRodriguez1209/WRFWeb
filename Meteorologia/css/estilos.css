@@ -497,39 +497,51 @@
     width: 100%;
   }
 }
+
 .ol-scale-line {
   background: rgba(0, 123, 255, 0.85);
-  border-radius: 6px;
-  padding: 6px 14px;
+  border-radius: 4px;
+  padding: 4px 8px;
   font-family: "Poppins", sans-serif !important;
   font-size: 18px !important;
-  font-weight: bold;
+  font-weight: 600;
   color: whitesmoke !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   position: fixed !important;
   bottom: 70px !important;
-  left: auto !important;
-  right: 20px !important;
+  left: 100px !important;
+  right: auto !important;
   z-index: 2000 !important;
   line-height: 1.2;
+  max-width: 110px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ol-scale-line-inner {
-  font-size: 18px !important;
+  font-size: 12px !important;
   background: none !important;
   border: none !important;
   color: inherit !important;
+  text-align: center !important;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 @media (max-width: 768px) {
   .ol-scale-line {
-    font-size: 12px !important;
-    padding: 8px 8px;
+    font-size: 10px !important;
+    padding: 3px 6px;
     bottom: 50px !important;
-    right: 12px !important;
+    left: 10px !important;
+    max-width: 80px;
   }
 
   .ol-scale-line-inner {
-    font-size: 12px !important;
+    font-size: 10px !important;
   }
 }
 .side-menu {
@@ -1432,5 +1444,286 @@
   
   .download-btn i {
     font-size: 11px;
+  }
+}
+
+#map-top-bar {
+  position: fixed;
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
+  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
+  left: 100px; /* Dejando espacio para el menú lateral */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
+  z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  transition: left 0.3s ease; /* Transición suave cuando el menú se expande */
+  width: 300px; /* Ancho fijo para el control */
+}
+
+
+
+/* Ajustar cuando el menú lateral está expandido */
+.side-menu.expanded + #main-content #map-top-bar {
+  left: 210px; /* 200px del menú expandido + 10px de margen */
+}
+
+/* Selector con tarjetita */
+#map-top-bar #municipio-map-control {
+  background: rgba(255,255,255,.95);
+  padding: 10px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  z-index: 1;
+}
+
+#map-top-bar #municipio-map-control label {
+  font-size: 14px;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #333;
+}
+
+#map-combobox,
+#hist-combobox {
+  width: 100%;
+}
+
+#map-combobox input.form-control,
+#hist-combobox input.form-control {
+  height: 40px;
+  font-size: 15px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  padding: 6px 12px;
+  width: 100%;
+  box-shadow: none;
+}
+
+#map-combobox input.form-control:focus,
+#hist-combobox input.form-control:focus {
+  border-color: #c19862be;
+  outline: none;
+}
+
+/* Listas */
+#map-combobox-list,
+#hist-combobox-list {
+  background: white;
+  border: 1px solid #cf1717;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  z-index: 3000;
+}
+
+#map-combobox-list li,
+#hist-combobox-list li {
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
+#map-combobox-list li:hover,
+#hist-combobox-list li:hover {
+  background-color: #f5f5f5;
+}
+
+#map-combobox-list li.active,
+#hist-combobox-list li.active {
+  background-color: #e0e0e0;
+  color: white;
+}
+
+
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px; /* Si la navbar se reduce en móvil */
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: 300px;
+  }
+  
+  #municipio-map-control {
+    width: 100%;
+  }
+}
+
+/* Responsive: si la pantalla es angosta, apila logo y selector */
+@media (max-width: 768px) {
+  #map-top-bar {
+    top: 120px;        /* reduce si tu navbar también reduce */
+    left: 10px;
+    right: 10px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Tarjeta contenedora estilo “tabla bonita” */
+.table-card{
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+/* Header de la tarjeta */
+.table-card__header{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.table-card__title{
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Botón descargar */
+.btn-download{
+  background-color: #007bff;
+  color:#fff;
+  border:0;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor:pointer;
+}
+.btn-download:hover{ background:#0056b3; }
+
+/* Tabla base */
+.data-table{
+  width:100%;
+  border-collapse: collapse;
+  font-size: .95rem;
+  background:#fff;
+}
+
+/* Encabezado */
+.data-table thead th{
+  text-align:left;
+  padding:10px;
+  background:#f5f5f5;
+  font-weight:600;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+/* Celdas */
+.data-table td{
+  padding:10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Zebra */
+.data-table--zebra tbody tr:nth-child(odd){ background:#fcfcfc; }
+.data-table--zebra tbody tr:nth-child(even){ background:#f0f8ff; }
+
+/* Responsive en modales estrechos */
+@media (max-width:768px){
+  .table-card{ padding:12px; }
+  .table-card__title{ font-size:1rem; }
+  .data-table{ font-size:.9rem; }
+}
+
+/* Nueva leyenda con estilo MeteorologiaGit */
+.legend { 
+    position: absolute; 
+    bottom: 20px; 
+    right: 20px; 
+    background: rgba(255, 255, 255, 0.95); 
+    backdrop-filter: blur(10px); 
+    border-radius: 10px; 
+    padding: 15px; 
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15); 
+    z-index: 2000; 
+    width: 250px;
+    cursor: pointer;
+    user-select: none;
+    font-family: "Poppins", sans-serif;
+}
+
+.legend-title { 
+    font-size: 14px; 
+    font-weight: 600; 
+    margin-bottom: 10px; 
+    color: #333; 
+    text-align: center; 
+}
+
+.legend-gradient { 
+    width: 100%; 
+    height: 20px; 
+    border-radius: 5px; 
+    position: relative;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.legend-labels { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-top: 5px; 
+    font-size: 11px; 
+    color: #666; 
+}
+
+.legend-labels span { 
+    flex: 1; 
+    text-align: center; 
+}
+
+.legend-labels span:first-child { 
+    text-align: left; 
+}
+
+.legend-labels span:last-child { 
+    text-align: right; 
+}
+
+/* Filter indicator */
+.filter-indicator {
+    position: absolute;
+    top: -5px;
+    left: 0;
+    width: 4px;
+    height: 30px;
+    background: #ff4444;
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.filter-indicator.active {
+    opacity: 1;
+}
+@media (max-width: 768px) {
+  .legend {
+    bottom: 10px;
+    right: 10px;
+    width: 200px;
+    padding: 12px;
+  }
+  
+  .legend-title {
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  
+  .legend-gradient {
+    height: 16px;
+  }
+  
+  .legend-labels {
+    font-size: 10px;
+    margin-top: 4px;
   }
 }

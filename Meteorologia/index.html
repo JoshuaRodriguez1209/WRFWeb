@@ -33,6 +33,12 @@
     <link rel="stylesheet" href="./css/estilos.css" />
     <link rel="stylesheet" href="app.css" />
 
+    <style>
+      /* Ocultar el layer switcher de OpenLayers */
+      .ol-unselectable.ol-control.layer-switcher {
+        display: none !important;
+      }
+    </style>
 
     <script src="./lib/dom-to-image.js"></script>
 
@@ -186,81 +192,109 @@
         </button>
       </div>
       <div id="map">
-        <!-- ICONO TIPO FLECHA PARA MOSTRAR CONTROLES -->
-        <div id="controls-toggle">
-          <i class="glyphicon glyphicon-chevron-left"></i>
-        </div>
 
-        <!-- Panel de controles -->
-        <div class="controls-panel">
-          <!-- Encabezado -->
-          <div class="panel-header"><p id="panel-header-text"></p></div>
-
-          <!-- Fecha -->
-          <label for="select_run">Fecha</label>
-          <select id="select_run">
-            <!-- opciones dinámicas -->
-          </select>
-
-          <!-- Parámetro -->
-          <label for="select_dat">Parámetro</label>
-          <select id="select_dat">
-            <option value="temp">Temperatura</option>
-            <option value="hum">Humedad</option>
-          </select>
-
-          <!-- Sub-parámetro -->
-          <label for="select_var">Sub-parámetro</label>
-          <select id="select_var"></select>
-
-          <!-- Pronósticos -->
-          <label for="selectHora">Pronósticos a (horas)</label>
-          <select id="selectHora">
-            <option>12</option>
-            <option>24</option>
-            <option>48</option>
-          </select>
-
-          <!-- Controles de animación -->
-          <div class="anim-controls">
-            <label>Animar</label>
-            <button id="btn_toggle_animation" title="Reproducir">
-              <i class="glyphicon glyphicon-play"></i>
-            </button>
-          </div>
-
-          <!-- Velocidad -->
-          <label for="btn_rango">Velocidad</label>
-          <input id="btn_rango" type="range" min="150" max="1500" step="50" />
-
-          <!-- Pie de panel -->
-          <div class="controls-footer">
-            <button onclick="location.reload()" id="btn_glo_quitar">
-              <i class="glyphicon glyphicon-arrow-left"></i> ATRÁS
-            </button>
-            <button id="btn_glo">
-              <i class="glyphicon glyphicon-book"></i> GLOSARIO
-            </button>
-            <button id="btn_datos">
-              <i class="glyphicon glyphicon-download"></i> DATOS
-            </button>
-            <button id="btn_recarga">
-              <i class="glyphicon glyphicon-reload"></i> RECARGAR
-            </button>
+        <!-- Barra superior dentro del mapa -->
+        <div id="map-top-bar">
+          <div id="municipio-map-control">
+            <label for="map-search">Buscar municipio</label>
+            <!-- Select original oculto para compatibilidad -->
+            <select id="map-search" class="form-control" style="display: none;">
+              <option value="">Seleccione un municipio</option>
+            </select>
           </div>
         </div>
-        <div id="gradient-container" class="vertical">
-          <div class="gradient-title">
-            <span id="gradient-title">Variable</span>
-            <span id="gradient-units">Unidades</span>
+
+
+        <!-- Map Controls Button -->
+        <div class="map-controls">
+          <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
+            <i class="fa-solid fa-layer-group"></i>
+          </button>
+        </div>
+
+        <!-- Weather Controls Panel -->
+        <div class="weather-controls" id="weather-controls">
+          <!-- Controls Header -->
+          <div class="controls-header">
+            <h3>Control de Capas</h3>
+            <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
           </div>
-          <div class="gradient-scale-wrapper">
-            <canvas
-              id="dynamic-gradient-canvas"
-              class="gradient-bar"
-              width="22"
-            ></canvas>
-            <div class="gradient-values" id="gradient-values"></div>
+
+          <!-- Controls Body -->
+          <div class="controls-body">
+            <!-- Panel Header Text -->
+            <div class="control-group">
+              <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
+            </div>
+
+            <!-- Fecha -->
+            <div class="control-group">
+              <label for="select_run">Fecha</label>
+              <select id="select_run">
+                <!-- opciones dinámicas -->
+              </select>
+            </div>
+
+            <!-- Parámetros -->
+            <div class="control-group">
+              <label>Parámetros</label>
+              <div class="layer-buttons" id="parameter-buttons">
+                <!-- Botones dinámicos se generarán aquí -->
+              </div>
+            </div>
+
+            <!-- Variables -->
+            <div class="control-group" id="variables-container">
+              <label for="select_var">Variables</label>
+              <select id="select_var">
+                <!-- Opciones dinámicas según parámetro seleccionado -->
+              </select>
+            </div>
+
+            <!-- Pronósticos -->
+            <div class="control-group">
+              <label for="selectHora">Pronósticos a (horas)</label>
+              <select id="selectHora">
+                <option>12</option>
+                <option>24</option>
+                <option>48</option>
+              </select>
+            </div>
+
+            <!-- Animation Controls -->
+            <div class="animation-controls">
+              <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
+                <i class="fa-solid fa-play" id="playIcon"></i>
+              </button>
+              <div class="speed-slider">
+                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
+                <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+              </div>
+            </div>
+
+            <!-- Controls Footer -->
+            <div class="controls-footer">
+              <button class="footer-btn" id="btn_glo">
+                <i class="fa-solid fa-book"></i> Glosario
+              </button>
+              <button class="footer-btn" id="btn_datos">
+                <i class="fa-solid fa-download"></i> Datos
+              </button>
+              <button class="footer-btn" id="btn_recarga">
+                <i class="fa-solid fa-reload"></i> Limpiar Filtro
+              </button>
+            </div>
+          </div>
+        </div>
+        <<!-- Nueva leyenda con estilo MeteorologiaGit -->
+        <div class="legend" id="legend" style="display: none;">
+          <div class="legend-title" id="legend-title">Temperatura</div>
+          <div class="legend-gradient" id="legend-gradient">
+            <div class="filter-indicator" id="filter-indicator"></div>
+          </div>
+          <div class="legend-labels" id="legend-labels"></div>
+          <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
+            Haz clic para filtrar • Doble clic para limpiar
           </div>
         </div>
         <div id="filter-info">
@@ -330,9 +364,13 @@
     </div>
   </body>
   <canvas id="filter-canvas" style="display: none"></canvas>
+  <canvas id="dynamic-gradient-canvas" style="display: none" width="22" height="500"></canvas>
   <script src="./defines.js"></script>
   <script src="./lienzo.js"></script>
   <script src="./utils.js"></script>
   <script src="./app.js"></script>
   <script src="./menu.js"></script>
+  <link rel="stylesheet" href="./css/estilos.css" />
+  <link rel="stylesheet" href="app.css" />
+
 </html>
