@@ -686,7 +686,7 @@
 
 #filter-info {
   position: absolute;
-  top: 50px;
+  top: 65px;
   left: 50%; 
   transform: translateX(-50%); 
   z-index: 3001; 
@@ -1449,8 +1449,7 @@
 
 #map-top-bar {
   position: fixed;
-  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
-  top: 160px; /* Exactamente debajo de la navbar que mide 150px */
+  top: 175px; /* Exactamente debajo de la navbar que mide 150px */
   left: 100px; /* Dejando espacio para el menú lateral */
   z-index: 1000; /* Por encima del mapa pero debajo de la navbar */
   z-index: 1000; /* Por encima del mapa pero debajo de la navbar */

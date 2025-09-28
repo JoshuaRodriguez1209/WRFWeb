@@ -87,8 +87,37 @@ CDataLayer.prototype.setBar = function (str_file) {
   // Obtener el texto de la variable seleccionada en el select
   const getActiveVariableText = () => {
     const selectVar = document.getElementById('select_var');
-    return selectVar && selectVar.selectedIndex >= 0 ? 
-           selectVar.options[selectVar.selectedIndex].text : 'Variable';
+    const variablesContainer = document.getElementById('variables-container');
+    
+    // Si el select de variables está visible y tiene una opción seleccionada
+    if (variablesContainer && variablesContainer.style.display !== 'none' && 
+        selectVar && selectVar.selectedIndex >= 0) {
+      return selectVar.options[selectVar.selectedIndex].text;
+    }
+    
+    // Si no hay select visible, usar el parámetro actualmente seleccionado
+    if (typeof selectedParameter !== 'undefined' && selectedParameter) {
+      // Mapeo de parámetros a nombres legibles
+      const parameterNames = {
+        'temp': 'Temperatura',
+        'hum': 'Humedad',
+        'prec': 'Precipitación',
+        'rad': 'Radiación',
+        'wind': 'Viento',
+        'psfc': 'Presión',
+        'CO': 'Monóxido de Carbono',
+        'NO2': 'Dióxido de Nitrógeno',
+        'O3': 'Ozono',
+        'SO2': 'Dióxido de Azufre',
+        'PM25': 'PM 2.5',
+        'PM10': 'PM 10'
+      };
+      
+      return parameterNames[selectedParameter] || selectedParameter;
+    }
+    
+    // Fallback
+    return 'Variable';
   };
   if (str_file.indexOf("temmax") > 0 || str_file.indexOf("temmin") > 0) {
     this.tipo_barra = TEMP;

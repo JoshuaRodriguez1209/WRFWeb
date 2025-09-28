@@ -76,8 +76,7 @@ body.map-active #main-content {
 /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
 .map-controls {
     position: absolute;
-    top: 160px;
-    top: 160px;
+    top: 65px;
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -135,10 +134,10 @@ body.map-active #main-content {
 
 .weather-controls {
     position: absolute;
-    top: 180px;
+    top: 65px;
     right: 0;
     width: 380px;
-    height: calc(100% - 340px);
+    height: calc(100% - 250px);
     background: white;
     border-radius: 8px;
     box-shadow: -5px 0 25px var(--shadow-color);
@@ -522,7 +521,7 @@ body.map-active #main-content {
     
     .weather-controls {
         position: absolute;
-        top: 20px;
+        top: 15px;
         right: 0px;
         width: calc(100% - 40px);
         max-width: 380px;
