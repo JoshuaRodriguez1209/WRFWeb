@@ -39,12 +39,6 @@
         display: none !important;
       }
     </style>
-    <style>
-      /* Ocultar el layer switcher de OpenLayers */
-      .ol-unselectable.ol-control.layer-switcher {
-        display: none !important;
-      }
-    </style>
 
     <script src="./lib/dom-to-image.js"></script>
 
@@ -216,24 +210,6 @@
           <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
             <i class="fa-solid fa-layer-group"></i>
           </button>
-
-        <!-- Barra superior dentro del mapa -->
-        <div id="map-top-bar">
-          <div id="municipio-map-control">
-            <label for="map-search">Buscar municipio</label>
-            <!-- Select original oculto para compatibilidad -->
-            <select id="map-search" class="form-control" style="display: none;">
-              <option value="">Seleccione un municipio</option>
-            </select>
-          </div>
-        </div>
-
-
-        <!-- Map Controls Button -->
-        <div class="map-controls">
-          <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
-            <i class="fa-solid fa-layer-group"></i>
-          </button>
         </div>
 
         <!-- Weather Controls Panel -->
@@ -250,44 +226,7 @@
             <div class="control-group">
               <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
             </div>
-        <!-- Weather Controls Panel -->
-        <div class="weather-controls" id="weather-controls">
-          <!-- Controls Header -->
-          <div class="controls-header">
-            <h3>Control de Capas</h3>
-            <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
-          </div>
 
-          <!-- Controls Body -->
-          <div class="controls-body">
-            <!-- Panel Header Text -->
-            <div class="control-group">
-              <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
-            </div>
-
-            <!-- Fecha -->
-            <div class="control-group">
-              <label for="select_run">Fecha</label>
-              <select id="select_run">
-                <!-- opciones dinámicas -->
-              </select>
-            </div>
-
-            <!-- Parámetros -->
-            <div class="control-group">
-              <label>Parámetros</label>
-              <div class="layer-buttons" id="parameter-buttons">
-                <!-- Botones dinámicos se generarán aquí -->
-              </div>
-            </div>
-
-            <!-- Variables -->
-            <div class="control-group" id="variables-container">
-              <label for="select_var">Variables</label>
-              <select id="select_var">
-                <!-- Opciones dinámicas según parámetro seleccionado -->
-              </select>
-            </div>
             <!-- Fecha -->
             <div class="control-group">
               <label for="select_run">Fecha</label>
@@ -332,39 +271,7 @@
                 <input type="range" min="100" max="2000" value="1000" id="speedSlider">
               </div>
             </div>
-            <!-- Pronósticos -->
-            <div class="control-group">
-              <label for="selectHora">Pronósticos a (horas)</label>
-              <select id="selectHora">
-                <option>12</option>
-                <option>24</option>
-                <option>48</option>
-              </select>
-            </div>
 
-            <!-- Animation Controls -->
-            <div class="animation-controls">
-              <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
-                <i class="fa-solid fa-play" id="playIcon"></i>
-              </button>
-              <div class="speed-slider">
-                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
-                <input type="range" min="100" max="2000" value="1000" id="speedSlider">
-              </div>
-            </div>
-
-            <!-- Controls Footer -->
-            <div class="controls-footer">
-              <button class="footer-btn" id="btn_glo">
-                <i class="fa-solid fa-book"></i> Glosario
-              </button>
-              <button class="footer-btn" id="btn_datos">
-                <i class="fa-solid fa-download"></i> Datos
-              </button>
-              <button class="footer-btn" id="btn_recarga">
-                <i class="fa-solid fa-reload"></i> Limpiar Filtro
-              </button>
-            </div>
             <!-- Controls Footer -->
             <div class="controls-footer">
               <button class="footer-btn" id="btn_glo">
@@ -463,9 +370,6 @@
   <script src="./utils.js"></script>
   <script src="./app.js"></script>
   <script src="./menu.js"></script>
-  <link rel="stylesheet" href="./css/estilos.css" />
-  <link rel="stylesheet" href="app.css" />
-
   <link rel="stylesheet" href="./css/estilos.css" />
   <link rel="stylesheet" href="app.css" />
 
