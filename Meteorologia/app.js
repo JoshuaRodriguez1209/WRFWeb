@@ -3,6 +3,7 @@
 //------------------------------------------------------------------------------------------
 function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
   const layer = new ol.layer.Vector({
+  const layer = new ol.layer.Vector({
     opacity: opacidad,
     title: titulo,
     type: tipo,
@@ -11,8 +12,19 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
       url: str_file_kml,
       // Si tu KML trae estilos y quieres ignorarlos, descomenta la línea de abajo:
       // format: new ol.format.KML({ extractStyles: false }),
+      // Si tu KML trae estilos y quieres ignorarlos, descomenta la línea de abajo:
+      // format: new ol.format.KML({ extractStyles: false }),
       format: new ol.format.KML(),
     }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255, 255, 255, 1)', // contorno blanco
+        width: 2                           // grosor del contorno
+      }),
+      fill: new ol.style.Fill({
+        color: 'rgba(255, 255, 255, 0)'    // sin relleno (transparente)
+      })
+    })
     style: new ol.style.Style({
       stroke: new ol.style.Stroke({
         color: 'rgba(255, 255, 255, 1)', // contorno blanco
@@ -27,6 +39,7 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
 }
 
 
+
 //------------------------------------------------------------------------------------------
 function set_layer(map, str_file_image, tipo, data_layer) {
   if (data_layer.layer != null && tipo == "add") {
@@ -34,6 +47,7 @@ function set_layer(map, str_file_image, tipo, data_layer) {
   }
 
   data_layer.layer = new ol.layer.Image({
+    opacity: 1,
     opacity: 1,
     source: new ol.source.ImageStatic({
       url: str_file_image,
@@ -44,11 +58,67 @@ function set_layer(map, str_file_image, tipo, data_layer) {
 
   clipLayer(data_layer.layer); // Aplicar recorte
 
+  clipLayer(data_layer.layer); // Aplicar recorte
+
   data_layer.setParam(str_file_image);
   if (tipo == "add") {
     map.getLayers().insertAt(1, data_layer.layer); // Insertar en el índice 2 para estar sobre la máscara
+    map.getLayers().insertAt(1, data_layer.layer); // Insertar en el índice 2 para estar sobre la máscara
   }
 }
+
+//---------------------------------------------------------------------------
+
+// geometry: ol/geom/Polygon o MultiPolygon en EPSG:3857
+function applyMaskToLayer(layer, geometry) {
+  function drawPolygonPath(ctx, geom, transform) {
+    // Soporta Polygon o MultiPolygon
+    const polys = geom.getType() === 'Polygon' ? [geom.getCoordinates()] : geom.getCoordinates();
+    ctx.beginPath();
+    for (const rings of polys) {
+      for (const ring of rings) {
+        for (let i = 0; i < ring.length; i++) {
+          const c = ring[i];
+          const x = c[0] * transform[0] + c[1] * transform[2] + transform[4];
+          const y = c[0] * transform[1] + c[1] * transform[3] + transform[5];
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+    }
+  }
+
+  const pre = (e) => {
+    // Solo Canvas renderer
+    if (!e.context || !e.frameState) return;
+    const ctx = e.context;
+    const t = e.frameState.coordinateToPixelTransform;
+    ctx.save();
+    drawPolygonPath(ctx, geometry, t);
+    ctx.clip(); // <-- recorta TODO lo que pinte esta capa
+  };
+
+  const post = (e) => {
+    if (!e.context) return;
+    e.context.restore();
+  };
+
+  // Evita duplicar listeners si ya estaban puestos
+  layer.un('prerender', pre);
+  layer.un('postrender', post);
+  layer.on('prerender', pre);
+  layer.on('postrender', post);
+
+  // Que actualice mientras interactúas (suaviza el “parpadeo”)
+  if (typeof layer.setUpdateWhileInteracting === 'function') {
+    layer.setUpdateWhileInteracting(true);
+  }
+  if (layer.getSource() && typeof layer.getSource().setRenderReprojectionEdges === 'function') {
+    // opcional: puede ayudar cuando hay reproyección
+    layer.getSource().setRenderReprojectionEdges(true);
+  }
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -143,6 +213,27 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
   return layer;
 }
 
+function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
+  const layer = new ol.layer.Vector({
+    opacity: opacidad,
+    title: titulo,
+    type: tipo,
+    visible: bvisible,
+    source: new ol.source.Vector({
+      url: str_file_kml,
+      format: new ol.format.KML({ extractStyles: false }) // <- importante
+    }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255,255,255,1)', // contorno blanco
+        width: 2
+      }),
+      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // sin relleno
+    })
+  });
+  return layer;
+}
+
 //------------------------------------------------------------------------------------------
 var mousePositionControl = new ol.control.MousePosition({
   coordinateFormat: ol.coordinate.createStringXY(4),
@@ -177,6 +268,8 @@ var m_view = new ol.View({
   center: [-97.7711, 19.0105],
   zoom: 9,
   minZoom: 9,
+  zoom: 9,
+  minZoom: 9,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -199,6 +292,7 @@ var scaleLineControl = new ol.control.ScaleLine({
 
 var m_map = new ol.Map({
   renderBuffer: 1000, // Aumentar el búfer para un renderizado más suave
+  renderBuffer: 1000, // Aumentar el búfer para un renderizado más suave
   controls: ol.control.defaults({ zoom: false }).extend([
     mousePositionControl,
     m_notification,
@@ -214,6 +308,69 @@ var m_map = new ol.Map({
   view: m_view,
 });
 
+// Variable para almacenar la geometría de recorte de Puebla
+let pueblaClippingGeometry = null;
+
+// Función para aplicar el recorte a una capa
+const clipLayer = (layer) => {
+  if (!pueblaClippingGeometry || !layer) return;
+
+  layer.on('postrender', (e) => {
+    if (!e.context) return;
+    const vectorContext = ol.render.getVectorContext(e);
+    e.context.globalCompositeOperation = 'destination-in';
+    vectorContext.drawFeature(
+      new ol.Feature(pueblaClippingGeometry),
+      new ol.style.Style({
+        fill: new ol.style.Fill({ color: 'black' }),
+      })
+    );
+    e.context.globalCompositeOperation = 'source-over';
+  });
+};
+
+// Cargar la geometría de Puebla una sola vez
+fetch('./puebla_state_boundary.json')
+  .then(response => response.json())
+  .then(pueblaCoords => {
+    pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
+    
+    // Crear una capa de máscara negra para el fondo
+    const extent = [-180, -90, 180, 90];
+    const outerPolygon = ol.geom.Polygon.fromExtent(extent);
+    const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
+    outerPolygon.appendLinearRing(pueblaLinearRing);
+
+    const maskFeature = new ol.Feature({
+      geometry: outerPolygon,
+    });
+
+    const maskLayer = new ol.layer.Vector({
+      renderBuffer: 250,
+      source: new ol.source.Vector({
+        features: [maskFeature],
+      }),
+      style: new ol.style.Style({
+        fill: new ol.style.Fill({
+          color: 'rgba(0, 0, 0, 1)',
+        }),
+      }),
+      title: 'Mascara Puebla',
+      type: 'mask'
+    });
+
+    m_map.getLayers().insertAt(1, maskLayer);
+
+    // Re-renderizar el mapa para asegurar que el clipping se aplique si las capas ya cargaron
+    m_map.render();
+  })
+  .catch(error => console.error('Error loading Puebla boundary:', error));
+
+
+var m_dlayer = new CDataLayer(m_map);
+//-------------------------------------------------------------------------------
+
+const isMobile = window.innerWidth < 768;
 // Variable para almacenar la geometría de recorte de Puebla
 let pueblaClippingGeometry = null;
 
@@ -469,10 +626,65 @@ var createParameterButtons = function(parameterData) {
 };
 
 // Actualizar select de variables según parámetro seleccionado
+var selectedParameter = null;
+var selectedVariable = null;
+
+// Crear botones de parámetros principales
+var createParameterButtons = function(parameterData) {
+  var container = document.getElementById('parameter-buttons');
+  container.innerHTML = '';
+  selectedParameter = null;
+  
+  parameterData.forEach(function(param, index) {
+    var button = document.createElement('button');
+    button.className = 'layer-btn';
+    button.setAttribute('data-parameter', param.value);
+    button.innerHTML = '<i class="' + param.icon + '"></i> ' + param.label;
+    
+    button.addEventListener('click', function() {
+      // Remover active de todos los botones
+      document.querySelectorAll('#parameter-buttons .layer-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      
+      // Activar el botón clickeado
+      this.classList.add('active');
+      selectedParameter = param.value;
+      procesa_dat();
+    });
+    
+    container.appendChild(button);
+    
+    // Activar el primer botón por defecto
+    if (index === 0) {
+      button.classList.add('active');
+      selectedParameter = param.value;
+    }
+  });
+  
+  // Procesar la primera opción automáticamente
+  if (parameterData.length > 0) {
+    procesa_dat();
+  }
+};
+
+// Actualizar select de variables según parámetro seleccionado
 var procesa_dat = function () {
   var variableData = [];
   switch (selectedParameter) {
+  var variableData = [];
+  switch (selectedParameter) {
     case "temp":
+      variableData = [
+        {value: "temmax", label: "Temperatura máxima"},
+        {value: "temmin", label: "Temperatura mínima"},
+        {value: "temp/700", label: "Temperatura 700mb"},
+        {value: "temp/600", label: "Temperatura 600mb"},
+        {value: "temp/500", label: "Temperatura 500mb"},
+        {value: "temp/400", label: "Temperatura 400mb"},
+        {value: "temp/300", label: "Temperatura 300mb"},
+        {value: "temp/200", label: "Temperatura 200mb"}
+      ];
       variableData = [
         {value: "temmax", label: "Temperatura máxima"},
         {value: "temmin", label: "Temperatura mínima"},
@@ -513,8 +725,40 @@ var procesa_dat = function () {
       variableData = [
         {value: "PM10/sfc", label: "PM 10 en superficie"}
       ];
+    case "CO":
+      variableData = [
+        {value: "CO/sfc", label: "Monóxido de Carbono en superficie"}
+      ];
+      break;
+    case "NO2":
+      variableData = [
+        {value: "NO2/sfc", label: "Dióxido de Nitrógeno en superficie"}
+      ];
+      break;
+    case "O3":
+      variableData = [
+        {value: "O3/sfc", label: "Ozono en superficie"}
+      ];
+      break;
+    case "SO2":
+      variableData = [
+        {value: "SO2/sfc", label: "Dióxido de Azufre en superficie"}
+      ];
+      break;
+    case "PM25":
+      variableData = [
+        {value: "PM25/sfc", label: "PM 2.5 en superficie"}
+      ];
+      break;
+    case "PM10":
+      variableData = [
+        {value: "PM10/sfc", label: "PM 10 en superficie"}
+      ];
       break;
     case "hum":
+      variableData = [
+        {value: "hum/sfc", label: "Humedad en superficie"}
+      ];
       variableData = [
         {value: "hum/sfc", label: "Humedad en superficie"}
       ];
@@ -523,8 +767,15 @@ var procesa_dat = function () {
       variableData = [
         {value: "precacum", label: "Precipitación acumulada"}
       ];
+      variableData = [
+        {value: "precacum", label: "Precipitación acumulada"}
+      ];
       break;
     case "rad":
+      variableData = [
+        {value: "radsw/sfc", label: "Radiación onda corta"},
+        {value: "radlw/sfc", label: "Radiación onda larga"}
+      ];
       variableData = [
         {value: "radsw/sfc", label: "Radiación onda corta"},
         {value: "radlw/sfc", label: "Radiación onda larga"}
@@ -540,8 +791,20 @@ var procesa_dat = function () {
         {value: "wnd/300", label: "Viento 300mb"},
         {value: "wnd/200", label: "Viento 200mb"}
       ];
+      variableData = [
+        {value: "wnd/sfc", label: "Viento superficie"},
+        {value: "wnd/700", label: "Viento 700mb"},
+        {value: "wnd/600", label: "Viento 600mb"},
+        {value: "wnd/500", label: "Viento 500mb"},
+        {value: "wnd/400", label: "Viento 400mb"},
+        {value: "wnd/300", label: "Viento 300mb"},
+        {value: "wnd/200", label: "Viento 200mb"}
+      ];
       break;
     case "psfc":
+      variableData = [
+        {value: "psfc", label: "Presión barométrica"}
+      ];
       variableData = [
         {value: "psfc", label: "Presión barométrica"}
       ];
@@ -595,9 +858,66 @@ var set_atmos = function () {
   ];
   
   createParameterButtons(parameterData);
+  updateVariableSelect(variableData);
+};
+
+// Actualizar select de variables
+var updateVariableSelect = function(variableData) {
+  var select = document.getElementById('select_var');
+  var selectContainer = document.getElementById('variables-container');
+  
+  // Si solo hay una variable, ocultar el select y usar directamente
+  if (variableData.length <= 1) {
+    selectContainer.style.display = 'none';
+    selectedVariable = variableData.length > 0 ? variableData[0].value : null;
+  } else {
+    // Múltiples variables: mostrar select
+    selectContainer.style.display = 'block';
+    select.innerHTML = '';
+    
+    variableData.forEach(function(variable, index) {
+      var option = document.createElement('option');
+      option.value = variable.value;
+      option.textContent = variable.label;
+      select.appendChild(option);
+      
+      // Seleccionar la primera opción por defecto
+      if (index === 0) {
+        selectedVariable = variable.value;
+      }
+    });
+  }
+  
+  // Procesar la primera variable automáticamente
+  if (variableData.length > 0) {
+    setTimeout(procesa_var, 100);
+  }
+};
+
+var set_atmos = function () {
+  var parameterData = [
+    {value: "temp", label: "Temperatura", icon: "fa-solid fa-temperature-half"},
+    {value: "hum", label: "Humedad", icon: "fa-solid fa-droplet"},
+    {value: "prec", label: "Precipitación", icon: "fa-solid fa-cloud-rain"},
+    {value: "rad", label: "Radiación", icon: "fa-solid fa-sun"},
+    {value: "wind", label: "Viento", icon: "fa-solid fa-wind"},
+    {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 var set_chem = function () {
+  var parameterData = [
+    {value: "CO", label: "CO", icon: "fa-solid fa-smog"},
+    {value: "NO2", label: "NO₂", icon: "fa-solid fa-smog"},
+    {value: "O3", label: "O₃", icon: "fa-solid fa-smog"},
+    {value: "SO2", label: "SO₂", icon: "fa-solid fa-smog"},
+    {value: "PM25", label: "PM2.5", icon: "fa-solid fa-circle-dot"},
+    {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
+  ];
+  
+  createParameterButtons(parameterData);
   var parameterData = [
     {value: "CO", label: "CO", icon: "fa-solid fa-smog"},
     {value: "NO2", label: "NO₂", icon: "fa-solid fa-smog"},
@@ -686,7 +1006,13 @@ var procesa_var = function () {
     return;
   }
   
+  if (!selectedVariable) {
+    console.log('No hay variable seleccionada');
+    return;
+  }
+  
   var str_run = $("#select_run").val();
+  var str_var = selectedVariable;
   var str_var = selectedVariable;
   m_dir_runs = str_run.substring(1);
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
@@ -707,6 +1033,7 @@ var procesa_var = function () {
 $(function () {
   var isAnimating = false;
   var $btn = $("#btn_toggle_animation");
+  var $icon = $("#playIcon");
   var $icon = $("#playIcon");
 
   // Inicialmente deshabilitado hasta que check_loaded termine
@@ -742,11 +1069,13 @@ $(function () {
       // Iniciar animación
       animate_frames();
       $icon.removeClass("fa-play").addClass("fa-stop");
+      $icon.removeClass("fa-play").addClass("fa-stop");
       $btn.attr("title", "Detener");
       isAnimating = true;
     } else {
       // Detener animación
       cancel_animate();
+      $icon.removeClass("fa-stop").addClass("fa-play");
       $icon.removeClass("fa-stop").addClass("fa-play");
       $btn.attr("title", "Reproducir");
       isAnimating = false;
@@ -777,6 +1106,8 @@ async function animate_frames() {
             if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
             m_map.getLayers().insertAt(1, filteredLayer);
             //m_map.addLayer(filteredLayer);
+            m_map.getLayers().insertAt(1, filteredLayer);
+            //m_map.addLayer(filteredLayer);
             const permanentDateElement = document.querySelector(
               "#filter-info .permanent-date"
             );
@@ -788,9 +1119,13 @@ async function animate_frames() {
           } else {
             //m_map.addLayer(m_dlayer_act.layer);
             m_map.getLayers().insertAt(1, m_dlayer_act.layer);
+            //m_map.addLayer(m_dlayer_act.layer);
+            m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           }
         } else {
           m_map.removeLayer(m_dlayer.layer);
+          //m_map.addLayer(m_dlayer_act.layer);
+          m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           //m_map.addLayer(m_dlayer_act.layer);
           m_map.getLayers().insertAt(1, m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
@@ -841,7 +1176,42 @@ var create_style = function (tipo) {
   const scale = get_scale();
   const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
   
+var create_style = function (tipo) {
+  // Determinar el color basado en el tipo de punto
+  let circleColor = '#c19862'; // Color dorado por defecto
+  let strokeColor = '#ffffff'; // Contorno blanco
+  let strokeWidth = 2;
+  let opacity = 0.8;
+  
+  // Si es una estación (meteogramas)
+  if (tipo === 'estacion') {
+    circleColor = '#5a1b30'; // Color rojo oscuro para estaciones
+    strokeColor = '#c19862'; // Contorno dorado
+    strokeWidth = 3;
+    opacity = 0.9;
+  }
+  // Si es una cabecera
+  else if (tipo === 'cabecera') {
+    circleColor = '#c19862'; // Color dorado para cabeceras
+    strokeColor = '#ffffff'; // Contorno blanco
+    strokeWidth = 2;
+    opacity = 0.8;
+  }
+  
+  const scale = get_scale();
+  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
+  
   return new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: radius,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
     image: new ol.style.Circle({
       radius: radius,
       fill: new ol.style.Fill({
@@ -859,7 +1229,10 @@ var create_style = function (tipo) {
       textAlign: "left",
       font: "18px Calibri,sans-serif",
       fill: new ol.style.Fill({ color: "#fff" }),
+      font: "18px Calibri,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
       stroke: new ol.style.Stroke({
+        color: "#000",
         color: "#000",
         width: 1,
       }),
@@ -968,14 +1341,17 @@ m_map.on("pointermove", function (evt) {
 //------------------------------------------------------------------------
 var list_estaciones = function (datos) {
   add_features(datos, "estacion", "/meteogramas/", "estacion");
+  add_features(datos, "estacion", "/meteogramas/", "estacion");
 };
 
 //------------------------------------------------------------------------
 var list_cabeceras = function (datos) {
   add_features(datos, "cabecera", "/cabeceras/", "cabecera");
+  add_features(datos, "cabecera", "/cabeceras/", "cabecera");
 };
 
 //------------------------------------------------------------------------
+var add_features = function (datos, local, dir, tipo) {
 var add_features = function (datos, local, dir, tipo) {
   var format = new ol.format.GeoJSON();
   var features = format.readFeatures(datos);
@@ -984,6 +1360,7 @@ var add_features = function (datos, local, dir, tipo) {
     var feature = features[i];
     feature.set("local", local);
     feature.set("dir", dir);
+    feature.setStyle(create_style(tipo));
     feature.setStyle(create_style(tipo));
     set_text(feature);
 
@@ -1010,6 +1387,12 @@ m_view.on("propertychange", function (e) {
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
+      
+      // Determinar el tipo de punto por sus propiedades
+      var local = feature.get("local");
+      
+      // Recrear el estilo con el nuevo radio
+      feature.setStyle(create_style(local));
       
       // Determinar el tipo de punto por sus propiedades
       var local = feature.get("local");
@@ -1145,6 +1528,55 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         <i class="glyphicon glyphicon-download"></i>
         Descargar (.CSV)
       </button>
+    </div>
+    <div class="pollutant-summary" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    ">
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ff4757;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌡️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Temperatura</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["t2m"])} °C</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#3742fa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💧</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Humedad</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["rh"])} %</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#2ed573;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌧️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Precipitación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["pre"])} mm</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#ffa502;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">☀️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Radiación</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["sw"])} w/m²</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#747d8c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌬️</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Viento</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["wnd"])} km/h</div>
+        </div>
+      </div>
+      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
+        <div style="background-color:#57606f;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">📉</div>
+        <div style="flex:1;">
+          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Presión</div>
+          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["psl"])} hPa</div>
+        </div>
+      </div>
     </div>
     <div class="pollutant-summary" style="
       display: grid;
@@ -1827,6 +2259,7 @@ function applyFilterToImage(img) {
     }),
   });
   clipLayer(filteredLayer); // Aplicar recorte a la capa con filtro
+  clipLayer(filteredLayer); // Aplicar recorte a la capa con filtro
   return filteredLayer;
 }
 
@@ -1834,6 +2267,8 @@ function put_FilteredImage(filteredLayer) {
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   if (m_dlayer.layer) m_dlayer.layer.setVisible(false);
 
+  //m_map.addLayer(filteredLayer);
+  m_map.getLayers().insertAt(1, filteredLayer);
   //m_map.addLayer(filteredLayer);
   m_map.getLayers().insertAt(1, filteredLayer);
   window.filtered_layer = filteredLayer;
@@ -2035,6 +2470,7 @@ const meteorologicalVariables = {
 const airQualityVariables = {
   CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
   NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-smog' },
   O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-smog' },
   SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: 'fa-solid fa-smog' },
   PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: 'fa-solid fa-circle' },
@@ -2734,6 +3170,9 @@ window.clearHistCombobox = function () {
   const list = document.getElementById('hist-combobox-list');
   if (list) list.style.display = 'none';
 };
+
+// Los botones se inicializan automáticamente desde set_atmos() o set_chem()
+
 
 // Los botones se inicializan automáticamente desde set_atmos() o set_chem()
 
