@@ -1518,64 +1518,54 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
 const resumenHTML = `
   <div class="summary-block">
     <div class="summary-header">
-      <h4>Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" class="download-btn">
-        <i class="glyphicon glyphicon-download"></i>
-        Descargar (.CSV)
-      </button>
+      <h4 class="summary-title">Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar (.CSV)</button>
     </div>
-
     <div class="summary-grid" id="pollutantSummary">
       <div class="summary-card">
-        <div class="summary-icon bg-red">🌡️</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-temperature-half"></i></div>
         <div class="summary-body">
           <div class="summary-name">Temperatura</div>
           <div class="summary-value">${avg(djson["t2m"])} °C</div>
         </div>
       </div>
-
       <div class="summary-card">
-        <div class="summary-icon bg-blue">💧</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-droplet"></i></div>
         <div class="summary-body">
           <div class="summary-name">Humedad</div>
           <div class="summary-value">${avg(djson["rh"])} %</div>
         </div>
       </div>
-
       <div class="summary-card">
-        <div class="summary-icon bg-green">🌧️</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-cloud-rain"></i></div>
         <div class="summary-body">
           <div class="summary-name">Precipitación</div>
           <div class="summary-value">${avg(djson["pre"])} mm</div>
         </div>
       </div>
-
       <div class="summary-card">
-        <div class="summary-icon bg-orange">☀️</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-sun"></i></div>
         <div class="summary-body">
           <div class="summary-name">Radiación</div>
           <div class="summary-value">${avg(djson["sw"])} w/m²</div>
         </div>
       </div>
-
       <div class="summary-card">
-        <div class="summary-icon bg-gray">🌬️</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-wind"></i></div>
         <div class="summary-body">
           <div class="summary-name">Viento</div>
           <div class="summary-value">${avg(djson["wnd"])} km/h</div>
         </div>
       </div>
-
       <div class="summary-card">
-        <div class="summary-icon bg-slate">📉</div>
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-gauge"></i></div>
         <div class="summary-body">
           <div class="summary-name">Presión</div>
           <div class="summary-value">${avg(djson["psl"])} hPa</div>
         </div>
       </div>
     </div>
-  </div>
-`;
+  </div>`;
 
         contenDialog.append(resumenHTML);
         set_canva(
@@ -1655,32 +1645,54 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
       const resumenHTML = `
         <div class="summary-block">
           <div class="summary-header">
-            <h4>Resumen de Promedios</h4>
-            <button onclick="downloadFileCSV()" class="download-btn">
-              <i class="glyphicon glyphicon-download"></i>
-              Descargar (.CSV)
-            </button>
+            <h4 class="summary-title">Resumen de Promedios</h4>
+            <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar (.CSV)</button>
           </div>
-          <div class="table-wrapper">
-            <table class="styled-table stats-table">
-              <thead>
-                <tr>
-                  <th>Contaminante</th>
-                  <th>Promedio</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>🟤 Monóxido de Carbono (ppm)</td><td>${avg(djson["CO"])}</td></tr>
-                <tr><td>🟣 Dióxido de Nitrógeno (ppb)</td><td>${avg(djson["NO2"])}</td></tr>
-                <tr><td>🟢 Ozono (ppb)</td><td>${avg(djson["O3"])}</td></tr>
-                <tr><td>🔵 Dióxido de Azufre (ppb)</td><td>${avg(djson["SO2"])}</td></tr>
-                <tr><td>⚫ PM 10 (µg/m³)</td><td>${avg(djson["PM10"])}</td></tr>
-                <tr><td>⚫ PM 2.5 (µg/m³)</td><td>${avg(djson["PM25"])}</td></tr>
-              </tbody>
-            </table>
+          <div class="summary-grid" id="pollutantSummaryChem">
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Monóxido de Carbono</div>
+                <div class="summary-value">${avg(djson["CO"])} ppm</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Dióxido de Nitrógeno</div>
+                <div class="summary-value">${avg(djson["NO2"])} ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Ozono</div>
+                <div class="summary-value">${avg(djson["O3"])} ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Dióxido de Azufre</div>
+                <div class="summary-value">${avg(djson["SO2"])} ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Partículas PM 10</div>
+                <div class="summary-value">${avg(djson["PM10"])} µg/m³</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle-dot"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Partículas PM 2.5</div>
+                <div class="summary-value">${avg(djson["PM25"])} µg/m³</div>
+              </div>
+            </div>
           </div>
-        </div>
-      `;
+        </div>`;
         contenDialog.append(resumenHTML);
         set_canva(
           contenDialog,
@@ -1689,7 +1701,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Monóxido de Carbono",
           "ppm",
-          "rgb(120, 40, 31)"
+          "#8B4513"
         );
         set_canva(
           contenDialog,
@@ -1698,7 +1710,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Dióxido de Nitrógeno",
           "ppb",
-          "rgb(74, 35, 90)"
+          "#6A5ACD"
         );
         set_canva(
           contenDialog,
@@ -1707,7 +1719,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Ozono",
           "ppb",
-          "rgb(14, 98, 81)"
+          "#32CD32"
         );
         set_canva(
           contenDialog,
@@ -1716,7 +1728,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Dióxido de Azufre",
           "ppb",
-          "rgb(21, 67, 96)"
+          "#4169E1"
         );
         set_canva(
           contenDialog,
@@ -1725,7 +1737,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Partículas PM 10",
           "µg/m³",
-          "rgb(125, 102, 8)"
+          "#FF9F40"
         );
         set_canva(
           contenDialog,
@@ -1734,7 +1746,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           str_file,
           "Partículas PM 2.5",
           "µg/m³",
-          "rgb(77, 86, 86)"
+          "#FFCD56"
         );
       } else {
         downloadFileCSV();
@@ -1895,6 +1907,45 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   }
 
   const card = $('<div class="chart-card"></div>');
+
+  // Mapa de iconos FontAwesome (mismos que en summary-icon)
+  const iconMapFA = {
+    'temperatura': 'fa-temperature-half',
+    'humedad': 'fa-droplet',
+    'precipitación': 'fa-cloud-rain',
+    'precipitacion': 'fa-cloud-rain',
+    'radiación': 'fa-sun',
+    'radiacion': 'fa-sun',
+    'viento': 'fa-wind',
+    'presión': 'fa-gauge',
+    'presion': 'fa-gauge',
+    // Contaminantes (gases) – usar mismo ícono que en summary (fa-smog)
+    'monóxido de carbono': 'fa-smog',
+    'monoxido de carbono': 'fa-smog',
+    'dióxido de nitrógeno': 'fa-smog',
+    'dioxido de nitrogeno': 'fa-smog',
+    'ozono': 'fa-smog',
+    'dióxido de azufre': 'fa-smog',
+    'dioxido de azufre': 'fa-smog',
+    // Partículas
+    'partículas pm 10': 'fa-circle',
+    'particulas pm 10': 'fa-circle',
+    'partículas pm 2.5': 'fa-circle-dot',
+    'particulas pm 2.5': 'fa-circle-dot',
+    'pm10': 'fa-circle',
+    'pm2.5': 'fa-circle-dot'
+  };
+  const normTitle = (title||'').toLowerCase().trim();
+  const iconClass = iconMapFA[normTitle] || 'fa-chart-line';
+
+  const header = $(`
+    <div class="chart-header">
+      <div class="summary-icon"><i class="fa-solid ${iconClass}"></i></div>
+      <div class="chart-title-text">${title} (${unid})</div>
+    </div>
+  `);
+  card.append(header);
+
   const canva = document.createElement('canvas');
   card.append(canva);
 
@@ -1912,54 +1963,179 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
 
 //-------------------------------------------------------------------------------
 function grafico(canva, tipo, labels, dats, title, unid, color) {
+  const baseColor = color || 'rgb(90,27,48)';
+  let rgbaFill;
+
+  // Si es formato rgb(...), reemplazar por rgba(..., alpha)
+  if (/^rgb\s*\(/i.test(baseColor)) {
+    rgbaFill = baseColor.replace(/rgb\(([^)]+)\)/i, 'rgba($1,0.12)');
+  } else if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(baseColor)) {
+    // Convertir HEX a rgba con alpha 0.12 para lograr el mismo efecto tenue
+    const hex = baseColor.substring(1);
+    let r, g, b;
+    if (hex.length === 3) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else {
+      r = parseInt(hex.substring(0, 2), 16);
+      g = parseInt(hex.substring(2, 4), 16);
+      b = parseInt(hex.substring(4, 6), 16);
+    }
+    rgbaFill = `rgba(${r},${g},${b},0.12)`;
+  } else if (/^hsl\s*\(/i.test(baseColor)) {
+    // Intentar convertir HSL a RGB y luego aplicar alpha
+    try {
+      const match = baseColor.match(/hsl\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/i);
+      if (match) {
+        let h = parseInt(match[1], 10) / 360;
+        let s = parseInt(match[2], 10) / 100;
+        let l = parseInt(match[3], 10) / 100;
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        let r, g, b;
+        if (s === 0) {
+          r = g = b = l; // gris
+        } else {
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 1 - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        rgbaFill = `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},0.12)`;
+      } else {
+        rgbaFill = baseColor; // fallback
+      }
+    } catch(e){
+      rgbaFill = baseColor;
+    }
+  } else {
+    // Cualquier otro formato se deja tal cual (sin transparencia)
+    rgbaFill = baseColor;
+  }
+
   const dataset = {
     label: `${title} (${unid})`,
-    axis: 'x',
     data: dats,
-    fill: false,
-    borderColor: color,
-    backgroundColor: color + '33',
-    borderWidth: 2,
-    tension: 0.35,
-    pointRadius: 2,
-    pointHoverRadius: 5
+    borderColor: baseColor,
+  backgroundColor: rgbaFill,
+    borderWidth: 3,
+    fill: true,
+    tension: 0.32,
+    pointRadius: 3,
+    pointHoverRadius: 6,
+    pointBackgroundColor: baseColor,
+    pointBorderColor: '#fff',
+    pointBorderWidth: 1.5,
+    clip: 8
   };
 
-  const data = { labels, datasets: [dataset] };
-
-  new Chart(canva.getContext('2d', { willReadFrequently: true }), {
+  const ctx = canva.getContext('2d', { willReadFrequently: true });
+  const chart = new Chart(ctx, {
     type: tipo,
-    data,
+    data: { labels, datasets: [dataset] },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 600, easing: 'easeInOutQuart' },
+      animation: { duration: 650, easing: 'easeOutQuart' },
+      interaction: { intersect: false, mode: 'index' },
+      layout: { padding: { top: 12, right: 14, bottom: 6, left: 8 } },
       plugins: {
-        legend: { display: true, labels: { usePointStyle: true, font: { family: 'Poppins', size: 12 } } },
-        title: { display: true, text: title, font: { size: 15, weight: 'bold', family: 'Poppins' } },
+        legend: { display: false, onClick: () => {} },
+        title: { display: false },
         tooltip: {
-          mode: 'index', intersect: false,
-            backgroundColor: 'rgba(255,255,255,0.96)',
-            titleColor: '#222', bodyColor: '#333',
-            borderColor: '#e0e0e0', borderWidth: 1, padding: 10,
-            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y).toFixed(2)}` }
+          backgroundColor: 'rgba(255,255,255,0.97)',
+          titleColor: '#222',
+          bodyColor: '#333',
+          borderColor: '#e3e1e1',
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { family: 'Poppins', weight: '600' },
+          bodyFont: { family: 'Poppins', weight: '500' },
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}`
+          }
         }
       },
       scales: {
         y: {
           beginAtZero: false,
-          ticks: { font: { family: 'Poppins' } },
-          title: { display: true, text: unid, font: { family: 'Poppins', weight: '600' } },
-          grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }
+          ticks: {
+            padding: 6,
+            color: '#555',
+            font: { family: 'Poppins', size: 11 },
+            callback: (v) => v.toString()
+          },
+          title: {
+            display: true,
+            text: unid,
+            color: '#5a1b30',
+            font: { family: 'Poppins', size: 12, weight: '600' }
+          },
+          grid: {
+            color: (c) => c.index === 0 ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.05)',
+            drawBorder: false,
+            tickLength: 0
+          }
         },
         x: {
-          ticks: { autoSkip: true, maxRotation: 0, font: { family: 'Poppins' } },
-          grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }
+          title: {
+            display: true,
+            text: 'Fecha',
+            color: '#5a1b30',
+            font: { family: 'Poppins', size: 12, weight: '600' }
+          },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 45,
+            minRotation: 45,
+            autoSkipPadding: 8,
+            color: '#666',
+            font: { family: 'Poppins', size: 11 }
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0,0,0,0.04)',
+            drawBorder: false,
+            tickLength: 4
+          }
         }
       },
-      interaction: { mode: 'index', intersect: false }
+      elements: {
+        line: { borderJoinStyle: 'round', capBezierPoints: true },
+        point: { hoverBorderWidth: 2 }
+      }
     }
   });
+
+  // Insertar botón de descarga PNG dentro de la tarjeta (parentNode = .chart-card)
+  try {
+    const parent = canva.parentNode; // chart-card
+    if (parent && !parent.querySelector('.chart-download-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'chart-download-btn';
+      btn.type = 'button';
+      btn.innerHTML = '<i class="fa-solid fa-download"></i> PNG';
+      btn.addEventListener('click', () => {
+        try {
+          const a = document.createElement('a');
+          const baseName = (title || 'grafica').toString().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+          const dateTag = new Date().toISOString().slice(0,10);
+          a.download = baseName + '_' + dateTag + '.png';
+          a.href = chart.toBase64Image();
+          a.click();
+        } catch(e){ console.warn('No se pudo exportar la gráfica:', e); }
+      });
+      parent.appendChild(btn);
+    }
+  } catch(e) { /* silencioso */ }
 }
 
 function round10(x) {
@@ -2061,6 +2237,31 @@ function show_datos(datos) {
 
   //texthtml.append('<tbody>');
   texthtml.append("<div>");
+  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
+  let modo = 'meteo';
+  try {
+    const sel = document.getElementById('select_dat');
+    if (sel && sel.value) {
+      modo = sel.value === 'quim' ? 'chem' : 'meteo';
+    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
+      modo = 'chem';
+    }
+  } catch(e) {}
+
+  // Bloque de acciones masivas (solo un botón según modo)
+  if (modo === 'meteo') {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadMeteoZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Meteorología)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Met)</span>'
+      + '</button>'
+      + '</div>');
+  } else {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadChemZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Calidad del Aire)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Calidad)</span>'
+      + '</button>'
+      + '</div>');
+  }
   texthtml.append(
     '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Clave</div>'
   );
@@ -2088,10 +2289,10 @@ function show_datos(datos) {
     );
 
     var str_link =
-      '<a href="#" onclick="downladCSV(\'' +
+      '<a href="#" class="row-download-link" onclick="downladCSV(\'' +
       feature.get("clave") +
-      "');\">" +
-      '<i class="glyphicon glyphicon-file"></i>' +
+      "');\" title=\"Descargar datos (CSV)\">" +
+      '<i class="fa-solid fa-download"></i>' +
       "</a>";
     texthtml.append(
       '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff; text-align: center;" >' +
@@ -2514,6 +2715,7 @@ const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
     plugins: {
       legend: {
         position: 'top',
+        onClick: () => {}, // Desactiva toggle de datasets
         labels: { padding: 10, usePointStyle: true, font: { size: 12, family: "'Poppins', sans-serif" } }
       },
       title: {
@@ -2543,7 +2745,19 @@ const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
         grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
       },
       x: {
-        ticks: { autoSkip: true, maxRotation: 0, minRotation: 0, autoSkipPadding: 12 },
+        title: {
+          display: true,
+          text: 'Fecha / Hora',
+          color: '#555',
+          font: { family: "'Poppins', sans-serif", size: 12, weight: '600' }
+        },
+        ticks: { 
+          autoSkip: true,
+          maxRotation: 45,
+          minRotation: 45,
+          autoSkipPadding: 8,
+          font: { family: "'Poppins', sans-serif" }
+        },
         grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
       }
     },
@@ -2567,14 +2781,36 @@ function renderIndividualChartsFromSelectedVariables(tipo) {
   selectedVariables.forEach(key => {
     if (variables[key] && Array.isArray(currentHistData[key])) {
       const config = variables[key];
+      // Convertir color hex a rgba con alpha 0.12 para relleno suave
+      const colorHex = config.color;
+      let fillColor = colorHex;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(colorHex)) {
+        const hex = colorHex.substring(1);
+        let r, g, b;
+        if (hex.length === 3) {
+          r = parseInt(hex[0] + hex[0], 16);
+          g = parseInt(hex[1] + hex[1], 16);
+          b = parseInt(hex[2] + hex[2], 16);
+        } else {
+          r = parseInt(hex.substring(0, 2), 16);
+          g = parseInt(hex.substring(2, 4), 16);
+          b = parseInt(hex.substring(4, 6), 16);
+        }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
       datasets.push({
         label: `${config.label} (${config.unit})`,
         data: currentHistData[key],
-        borderColor: config.color,
-        backgroundColor: `${config.color}20`,
-        borderWidth: 2,
+        borderColor: colorHex,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
         tension: 0.35,
-        fill: false,
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: colorHex,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2,
         variableKey: key,
         config: config
       });
@@ -2638,6 +2874,7 @@ function renderIndividualCharts(datasets, labels, type) {
           legend: { 
             display: true,
             position: 'top',
+            onClick: () => {}, // Desactiva toggle
             labels: { 
               padding: 10, 
               usePointStyle: true, 
@@ -2687,15 +2924,15 @@ function renderIndividualCharts(datasets, labels, type) {
           x: {
             title: {
               display: true,
-              text: 'Hora del día',
-              color: '#666',
-              font: { family: "'Poppins', sans-serif" }
+              text: 'Fecha / Hora',
+              color: '#555',
+              font: { family: "'Poppins', sans-serif", size: 12, weight: '600' }
             },
             ticks: { 
-              autoSkip: true, 
-              maxRotation: 0, 
-              minRotation: 0, 
-              autoSkipPadding: 12,
+              autoSkip: true,
+              maxRotation: 45,
+              minRotation: 45,
+              autoSkipPadding: 8,
               font: { family: "'Poppins', sans-serif" }
             },
             grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
@@ -2811,14 +3048,29 @@ function createMeteoHistoricalChart(data) {
   const datasets = [];
   Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      // Convertir color a rgba para relleno suave
+      let fillColor = cfg.color;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) {
+        const hex = cfg.color.slice(1);
+        const parse = (h) => parseInt(h,16);
+        let r,g,b;
+        if (hex.length === 3){ r=parse(hex[0]+hex[0]); g=parse(hex[1]+hex[1]); b=parse(hex[2]+hex[2]); }
+        else { r=parse(hex.substring(0,2)); g=parse(hex.substring(2,4)); b=parse(hex.substring(4,6)); }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
       datasets.push({
         label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
-        backgroundColor: `${cfg.color}20`,
-        borderWidth: 2,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
         tension: 0.35,
-        fill: false
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: cfg.color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2
       });
     }
   });
@@ -2855,14 +3107,28 @@ function createChemHistoricalChart(data) {
   const datasets = [];
   Object.entries(airQualityVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      let fillColor = cfg.color;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) {
+        const hex = cfg.color.slice(1);
+        const parse = (h) => parseInt(h,16);
+        let r,g,b;
+        if (hex.length === 3){ r=parse(hex[0]+hex[0]); g=parse(hex[1]+hex[1]); b=parse(hex[2]+hex[2]); }
+        else { r=parse(hex.substring(0,2)); g=parse(hex.substring(2,4)); b=parse(hex.substring(4,6)); }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
       datasets.push({
         label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
-        backgroundColor: `${cfg.color}20`,
-        borderWidth: 2,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
         tension: 0.35,
-        fill: false
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: cfg.color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2
       });
     }
   });
@@ -3575,42 +3841,240 @@ if (document.readyState === 'loading') {
   loadMapSearchMunicipios();
 }
 
+// ---------------------------------------------------------------
+// Descarga masiva de datos (todas las cabeceras) en un solo CSV
+// ---------------------------------------------------------------
+async function downloadAllMeteoCSV(btn){
+  await downloadAllGeneric(btn, 'meteo', 'meteorologicos');
+}
+async function downloadAllChemCSV(btn){
+  await downloadAllGeneric(btn, 'chem', 'contaminantes');
+}
+
+async function downloadMeteoZIP(btn){
+  await downloadZIPPerMunicipio(btn, 'meteo', 'meteorologia');
+}
+async function downloadChemZIP(btn){
+  await downloadZIPPerMunicipio(btn, 'chem', 'calidad_aire');
+}
+
+async function downloadAllGeneric(btn, tipo, sufijo){
+  if (!m_dir_runs){ alert('No hay ejecución seleccionada.'); return; }
+  if (btn){ btn.disabled = true; btn.textContent = 'Preparando...'; }
+  try {
+    // Obtener listado de features (cabeceras)
+    const feats = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+    const cabeceras = feats.filter(f => f.get && f.get('local') === 'cabecera');
+    if (!cabeceras.length){ alert('No se encontraron cabeceras.'); return; }
+
+    // Construir encabezado según tipo
+    let header;
+    if (tipo === 'meteo'){
+      header = 'Municipio,Clave,Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    } else {
+      header = 'Municipio,Clave,Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+    }
+    const lines = [header];
+
+    // Determinar fecha-hora de la corrida actual (m_dir_runs: runs/AAAAMMDDHH/ )
+    // Se asume nombre JSON igual a lógica de show_feature
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+
+    // Prefijo dir_dat
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+
+    // Fetch secuencial (podría paralelizarse pero evitamos saturar)
+    for (const f of cabeceras){
+      const clave = f.get('clave');
+      const nombre = (f.get('nombre')||'').replace(/[,\r\n]+/g,' ');
+      const jsonUrl = m_dir_runs + f.get('dir') + dir_dat + clave + '_' + fech + '_' + hor + 'z.json';
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) { console.warn('No se pudo leer', jsonUrl); continue; }
+        const data = await resp.json();
+        // Suponemos arrays alineados; usamos longitud de la primera clave
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        const len = (Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0);
+        let hs = 0;
+        for (let i=0;i<len;i++){
+          hs += 3;
+            const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g,' ');
+            if (tipo === 'meteo'){
+              // Orden: t2m, rh, pre, sw, wnd, psl (según CSV individual existente)
+              const row = [nombre, clave, fechaLabel,
+                safeVal(data.t2m, i), safeVal(data.rh, i), safeVal(data.pre, i),
+                safeVal(data.sw, i), safeVal(data.wnd, i), safeVal(data.psl, i)
+              ].join(',');
+              lines.push(row);
+            } else {
+              // Orden química: CO, NO2, O3, SO2, PM10, PM25
+              const row = [nombre, clave, fechaLabel,
+                safeVal(data.CO, i), safeVal(data.NO2, i), safeVal(data.O3, i), safeVal(data.SO2, i),
+                safeVal(data.PM10, i), safeVal(data.PM25, i)
+              ].join(',');
+              lines.push(row);
+            }
+        }
+      } catch(e){ console.warn('Error procesando', jsonUrl, e); }
+    }
+
+    if (lines.length <= 1){ alert('No se generaron datos.'); return; }
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\r\n') + '\r\n'], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    const fechaNom = fech + '_' + hor + 'z';
+    a.download = 'Datos_' + sufijo + '_' + fechaNom + '.csv';
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = btn.textContent.replace('Preparando...','Listo'); setTimeout(()=>{ btn.textContent = btn.textContent.replace('Listo','Descargar'); }, 1800); }
+  }
+}
+
+function safeVal(arr, idx){
+  if (!Array.isArray(arr)) return '';
+  const v = arr[idx];
+  if (v === null || v === undefined || isNaN(v)) return '';
+  return Number.parseFloat(v).toFixed(2);
+}
+
+// ---------------------------------------------------------------
+// ZIP por municipio (cada CSV separado) usando JSZip dinámico
+// ---------------------------------------------------------------
+async function ensureJSZip(){
+  if (window.JSZip) return window.JSZip;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res();
+    s.onerror = (e) => rej(e);
+    document.head.appendChild(s);
+  });
+  return window.JSZip;
+}
+
+async function downloadZIPPerMunicipio(btn, tipo, sufijo){
+  if (!m_dir_runs){ alert('No hay ejecución seleccionada.'); return; }
+  if (btn){ btn.disabled = true; var original = btn.textContent; btn.textContent = 'Preparando ZIP...'; }
+  try {
+    const JSZipLib = await ensureJSZip();
+    const zip = new JSZipLib();
+    const feats = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+    const cabeceras = feats.filter(f => f.get && f.get('local') === 'cabecera');
+    if (!cabeceras.length){ alert('No se encontraron cabeceras.'); return; }
+
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+
+    // Encabezados según tipo
+    const headerM = 'Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    const headerC = 'Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+
+    for (const f of cabeceras){
+      const clave = f.get('clave');
+      const nombre = (f.get('nombre')||'').replace(/[\r\n]+/g,' ').trim();
+      const safeName = nombre.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+      const jsonUrl = m_dir_runs + f.get('dir') + dir_dat + clave + '_' + fech + '_' + hor + 'z.json';
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) { console.warn('No se pudo leer', jsonUrl); continue; }
+        const data = await resp.json();
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        const len = Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0;
+        let hs = 0;
+        const lines = [ tipo === 'meteo' ? headerM : headerC ];
+        for (let i=0;i<len;i++){
+          hs += 3;
+          const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g,' ');
+          if (tipo === 'meteo'){
+            lines.push([
+              fechaLabel,
+              safeVal(data.t2m,i), safeVal(data.rh,i), safeVal(data.pre,i),
+              safeVal(data.sw,i), safeVal(data.wnd,i), safeVal(data.psl,i)
+            ].join(','));
+          } else {
+            lines.push([
+              fechaLabel,
+              safeVal(data.CO,i), safeVal(data.NO2,i), safeVal(data.O3,i), safeVal(data.SO2,i),
+              safeVal(data.PM10,i), safeVal(data.PM25,i)
+            ].join(','));
+          }
+        }
+        const csvContent = '\uFEFF' + lines.join('\r\n') + '\r\n';
+        const fileName = `${clave}_${safeName}_${fech}_${hor}z.csv`;
+        zip.file(fileName, csvContent);
+      } catch(e){ console.warn('Error procesando', jsonUrl, e); }
+    }
+
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.download = `todos_${sufijo}_${fech}_${hor}z.zip`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch(err){
+    alert('No se pudo generar el ZIP: ' + err);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = original; }
+  }
+}
+
 // Nueva función para manejar la leyenda horizontal
 function setupLegendClickFilter() {
-    const legendGradient = document.getElementById('legend-gradient');
-    const filterIndicator = document.getElementById('filter-indicator');
+  // Preferencia: div tradicional de leyenda; fallback: canvas dinámico
+  const legendGradient = document.getElementById('legend-gradient') || document.getElementById('dynamic-gradient-canvas');
+  let filterIndicator = document.getElementById('filter-indicator');
+  const gradientContainer = document.getElementById('gradient-container');
     
-    if (!legendGradient) return;
+  if (!legendGradient) return;
     
     let isSelecting = false;
     let startX = 0;
+
+  // Crear indicador si no existe para evitar null
+  if (!filterIndicator && gradientContainer) {
+    filterIndicator = document.createElement('div');
+    filterIndicator.id = 'filter-indicator';
+    filterIndicator.className = 'filter-indicator';
+    filterIndicator.style.display = 'none';
+    gradientContainer.appendChild(filterIndicator);
+  }
     
-    legendGradient.addEventListener('mousedown', (e) => {
+  legendGradient.addEventListener('mousedown', (e) => {
         isSelecting = true;
-        startX = e.offsetX;
-        filterIndicator.style.left = startX + 'px';
-        filterIndicator.style.width = '2px';
-        filterIndicator.classList.add('active');
+    // offsetX puede ser 0 en algunos navegadores si hay scaling; usar bounding rect
+    const rect = legendGradient.getBoundingClientRect();
+    startX = (e.clientX - rect.left);
+        if (filterIndicator) {
+          filterIndicator.style.display = 'block';
+          filterIndicator.style.left = startX + 'px';
+          filterIndicator.style.width = '2px';
+        }
         e.preventDefault();
     });
     
-    legendGradient.addEventListener('mousemove', (e) => {
+  legendGradient.addEventListener('mousemove', (e) => {
         if (!isSelecting) return;
-        
-        const currentX = e.offsetX;
+    const rect = legendGradient.getBoundingClientRect();
+    const currentX = (e.clientX - rect.left);
         const width = Math.abs(currentX - startX);
         const left = Math.min(startX, currentX);
-        
-        filterIndicator.style.left = left + 'px';
-        filterIndicator.style.width = width + 'px';
+        if (filterIndicator) {
+          filterIndicator.style.left = left + 'px';
+          filterIndicator.style.width = width + 'px';
+        }
     });
     
-    legendGradient.addEventListener('mouseup', (e) => {
+  legendGradient.addEventListener('mouseup', (e) => {
         if (!isSelecting) return;
         isSelecting = false;
         
-        const endX = e.offsetX;
-        const gradientWidth = legendGradient.offsetWidth;
+    const rect = legendGradient.getBoundingClientRect();
+    const endX = (e.clientX - rect.left);
+    const gradientWidth = rect.width || legendGradient.offsetWidth;
         
         const minPercent = Math.min(startX, endX) / gradientWidth;
         const maxPercent = Math.max(startX, endX) / gradientWidth;
@@ -3626,11 +4090,40 @@ function setupLegendClickFilter() {
     });
     
     // Doble click en la leyenda para limpiar filtro
-    legendGradient.addEventListener('dblclick', (e) => {
-        clearLegendFilter();
+  legendGradient.addEventListener('dblclick', (e) => {
+    const btn = document.getElementById('btn_recarga');
+    if (btn) {
+      btn.click();
+    } else {
+      // fallback si el botón no existe todavía
+      clearLegendFilter();
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+    // Añadir soporte a barras alternativas (gradiente vertical / horizontal incrustado)
+    const extraSelectors = ['.gradient-bar-horizontal', '.gradient-bar'];
+    extraSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.addEventListener('dblclick', (e) => {
+          const btn = document.getElementById('btn_recarga');
+          if (btn) { btn.click(); } else { clearLegendFilter(); }
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    });
+
+    // Doble clic en cualquier zona interna del contenedor para limpiar (máxima tolerancia)
+    if (gradientContainer) {
+      gradientContainer.addEventListener('dblclick', (e) => {
+        const btn = document.getElementById('btn_recarga');
+        if (btn) { btn.click(); } else { clearLegendFilter(); }
         e.preventDefault();
         e.stopPropagation();
-    });
+      });
+    }
 }
 
 function applyLegendFilter(minPercent, maxPercent) {
@@ -3667,10 +4160,20 @@ function clearLegendFilter() {
     if (filterIndicator) {
         filterIndicator.classList.remove('active');
     }
-    filter_color = null;
+    filter_color = null;          // filtro raster (canvas)
+    colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
     hideInfo();
-    m_map.removeLayer(window.filtered_layer);
-    if (m_dlayer.layer) m_dlayer.layer.setVisible(true);
+    if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
+      try { m_map.removeLayer(window.filtered_layer); } catch(e) {}
+      window.filtered_layer = null;
+    }
+    if (m_dlayer && m_dlayer.layer) {
+      try { m_dlayer.layer.setVisible(true); } catch(e) {}
+    }
+    // Si hay una capa activa de heatmap regenerarla sin filtro
+    if (typeof activeLayer === 'string' && activeLayer && typeof addEnhancedWeatherLayer === 'function') {
+      try { addEnhancedWeatherLayer(activeLayer); } catch(e) {}
+    }
 }
 
 // Función para actualizar la leyenda con nueva variable
