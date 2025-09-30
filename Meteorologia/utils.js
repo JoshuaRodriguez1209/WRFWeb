@@ -87,8 +87,11 @@ CDataLayer.prototype.setBar = function (str_file) {
   // Obtener el texto de la variable seleccionada en el select
   const getActiveVariableText = () => {
     const selectVar = document.getElementById('select_var');
-    return selectVar && selectVar.selectedIndex >= 0 ? 
-           selectVar.options[selectVar.selectedIndex].text : 'Variable';
+    const txt = (selectVar && selectVar.selectedIndex >= 0) ? selectVar.options[selectVar.selectedIndex].text : '';
+    if (!txt || txt.trim().toLowerCase() === 'variable') {
+      return window.currentVariableLabel || txt || 'Variable';
+    }
+    return txt;
   };
   if (str_file.indexOf("temmax") > 0 || str_file.indexOf("temmin") > 0) {
     this.tipo_barra = TEMP;
@@ -320,29 +323,70 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
   value: values_re[i],
   }));
 
-  const grd = ctx.createLinearGradient(0, 0, 0, canvas.height); // vertical
-
-  for (let i = 0; i < colors.length; i++) {
-    grd.addColorStop(stops[i] / 100, colors[i]);
+  // Ajustar el canvas si estamos en modo horizontal (clase gradient-bar-horizontal)
+  if (canvas.classList.contains('gradient-bar-horizontal')) {
+    // Aseguramos un ancho adecuado si aún no se ha definido dinámicamente
+    if (canvas.width < 200) {
+      canvas.width = 240; // ancho base
+    }
+    canvas.height = 22; // altura fija para barra horizontal
+    // Gradiente horizontal de derecha a izquierda (x inicia en canvas.width -> 0)
+    const grd = ctx.createLinearGradient(canvas.width, 0, 0, 0);
+    for (let i = 0; i < colors.length; i++) {
+      grd.addColorStop(stops[i] / 100, colors[i]);
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  } else {
+    // Modo vertical (fallback)
+    const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    for (let i = 0; i < colors.length; i++) {
+      grd.addColorStop(stops[i] / 100, colors[i]);
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = grd;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  document.getElementById("gradient-title").textContent = title;
-  document.getElementById("gradient-units").textContent = units || "";
+  const varLabel = document.getElementById("gradient-variable-label") || document.getElementById("gradient-title");
+  const unitEl = document.getElementById("gradient-units");
+  if (varLabel) {
+    // Mantener estructura: Nombre (unidad) - usar fallback global si no viene título
+    const safeTitle = title || window.currentVariableLabel || '';
+    const safeUnit = (units && units.trim()) ? ` (${units.trim()})` : '';
+    varLabel.innerHTML = `${safeTitle}<span id="gradient-units" class="gradient-inline-unit">${safeUnit}</span>`;
+  } else if (unitEl) {
+    unitEl.textContent = units || '';
+  }
 
   const gradientValues = document.getElementById("gradient-values");
   gradientValues.innerHTML = "";
 
+  // Para el modo horizontal mostramos los valores en orden izquierda (max) -> derecha (min) si el gradiente es derecha->izquierda
   const steps = 10;
   const range = max - min;
   const stepSize = range / steps;
 
-  for (let i = steps; i >= 0; i--) {
-    const value = min + i * stepSize;
-    const label = document.createElement("div");
-    label.textContent = value.toFixed(1);
-    gradientValues.appendChild(label);
+  if (canvas.classList.contains('gradient-bar-horizontal')) {
+    // Usar el contenedor embebido existente si está disponible
+    const inlineValues = document.getElementById('gradient-values');
+    if (inlineValues) {
+      inlineValues.innerHTML = '';
+      // Queremos min a la izquierda y max a la derecha (orden ascendente)
+      for (let i = 0; i <= steps; i++) {
+        const value = min + i * stepSize;
+        const span = document.createElement('span');
+        span.textContent = value.toFixed(1);
+        inlineValues.appendChild(span);
+      }
+    }
+  } else {
+    // Vertical (como antes, de arriba (max) a abajo (min))
+    for (let i = steps; i >= 0; i--) {
+      const value = min + i * stepSize;
+      const label = document.createElement("div");
+      label.textContent = value.toFixed(1);
+      gradientValues.appendChild(label);
+    }
   }
 }

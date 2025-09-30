@@ -498,34 +498,137 @@
   }
 }
 .ol-scale-line {
-  background: rgba(0, 123, 255, 0.85);
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-family: "Poppins", sans-serif !important;
-  font-size: 18px !important;
-  font-weight: bold;
-  color: whitesmoke !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   position: fixed !important;
-  bottom: 70px !important;
-  left: auto !important;
-  right: 20px !important;
-  z-index: 2000 !important;
-  line-height: 1.2;
+  bottom: 72px !important; /* deja espacio sobre la leyenda de colores */
+  right: 24px !important;
+  padding: 4px 8px 6px 8px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-family: "Poppins", sans-serif !important;
+  z-index: 1600 !important;
+  pointer-events: none;
+  left: auto !important; /* anula left inline de OL (evita que se estire) */
+  width: auto !important; /* tamaño según contenido */
+  max-width: 33vw; /* tope si la escala realmente crece demasiado */
+  overflow: visible; /* permitir pintar la barra completa (el escalado JS la ajusta) */
 }
 
+/* Contenedor interno renderizado por OL cuando bar:true */
 .ol-scale-line-inner {
-  font-size: 18px !important;
+  position: relative;
   background: none !important;
   border: none !important;
-  color: inherit !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: .5px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* Cuerpo (barra) personalizado de la escala: lo generamos vía JS si OL sólo muestra texto */
+.ol-scale-line-body {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 8px;
+  border: 1px solid #ffffff;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px; /* deja el texto debajo */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  background: #fff; /* fondo base para el primer segmento */
+}
+.ol-scale-line-segment {
+  flex: 1 1 auto;
+  height: 100%;
+}
+.ol-scale-line-segment.alt {
+  background: #333;
+}
+.ol-scale-line-segment:first-child {
+  background: #fff;
+}
+.ol-scale-line-segment:not(:first-child):not(.alt) {
+  background: #fff;
+}
+
+/* Forzar que OL no deje un ancho enorme cuando hay texto medido internamente */
+.ol-scale-line.ol-unselectable {
+  width: auto !important;
+}
+
+
+/* Barra base blanca */
+.ol-scale-line-inner canvas, .ol-scale-line-inner div { /* OL genera elementos para bar */
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+/* Etiquetas encima de la barra (valores 0, 100, etc.) */
+.ol-scale-line-inner span { /* si OL genera spans/textos (según versión) */
+  position: relative;
+  top: -4px;
+}
+
+/* Ticks y etiquetas personalizadas para la barra segmentada */
+.ol-scale-line-ticks {
+  position: relative;
+  width: 100%;
+  height: 24px; /* espacio arriba de la barra */
+  margin-bottom: 2px; /* luego va la barra */
+  font-size: 11px;
+  font-family: "Poppins", sans-serif;
+  pointer-events: none;
+}
+.ol-scale-line-ticks .scale-tick {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  height: 100%;
+}
+.ol-scale-line-ticks .scale-tick::before {
+  content: "";
+  position: absolute;
+  bottom: 0; /* arranca justo sobre la barra */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  background: #ffffff;
+  box-shadow: 0 0 2px rgba(0,0,0,.5);
+  border-radius: 1px;
+}
+.ol-scale-line-ticks .scale-tick-label {
+  position: absolute;
+  bottom: 12px; /* encima del tick */
+  left: 50%;
+  transform: translate(-50%, -100%);
+  white-space: nowrap;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.65);
+  font-weight: 500;
+  padding: 0 2px;
+}
+.ol-scale-line-ticks .scale-unit { display: none; }
+
+/* Línea adicional para mostrar escala absoluta (ej: Escala 1:1000) */
+.ol-scale-ratio {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #e8e8e8;
 }
 @media (max-width: 768px) {
   .ol-scale-line {
     font-size: 12px !important;
     padding: 8px 8px;
-    bottom: 50px !important;
-    right: 12px !important;
+    bottom: 20px !important;
+    right: 20px !important;
   }
 
   .ol-scale-line-inner {
@@ -562,7 +665,7 @@
   padding: 10px;
   color: white;
   font-size: 20px;
-  background: none;
+  background: transparent; /* transparent so active gradient is clearly visible */
   border: none;
   cursor: pointer;
   gap: 12px;
@@ -584,6 +687,50 @@
   border-radius: 5px;
 }
 
+/* Estilos para botón activo - máxima especificidad */
+ .side-menu .menu-btn.active,
+ #side-menu .menu-btn.active,
+ .menu-btn.active {
+  /* Estilo activo rojo intenso */
+  background: linear-gradient(135deg, #5a1b30, #5a1b30) !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 0 2px #5a1b30, 0 6px 18px #5a1b30 !important;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle animated sheen */
+.side-menu .menu-btn.active::after,
+#side-menu .menu-btn.active::after,
+.menu-btn.active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -130%;
+  width: 130%;
+  height: 100%;
+  transform: skewX(-20deg);
+  animation: sheen 2.8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sheen {
+  0% { left: -120%; }
+  70% { left: -120%; }
+  100% { left: 120%; }
+}
+
+ .side-menu .menu-btn.active:hover,
+ #side-menu .menu-btn.active:hover,
+ .menu-btn.active:hover {
+  background: linear-gradient(135deg, #c19862be, #c19862be) !important;
+  color: #ffffff !important;
+  transform: none !important;
+}
+
 @media (max-width: 769px) {
   .side-menu {
     display: none !important;
@@ -602,6 +749,145 @@
   align-items: center;
   pointer-events: none;
   font-family: "Poppins", sans-serif;
+}
+
+/* Modo combinado: escala vertical + barra horizontal debajo */
+/* Escala incrustada dentro del panel */
+#gradient-container.horizontal-mode.embedded {
+  position: relative;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: auto;
+  padding: 12px 14px 16px 14px;
+  margin-top: 10px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid #ddd;
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4), 0 2px 6px rgba(0,0,0,0.15);
+  pointer-events: auto;
+}
+
+/* Variante flotante al fondo ocupando 1/3 del ancho */
+#gradient-container.horizontal-mode.embedded.bottom-floating {
+  position: absolute;
+  top: 87%; /* más pegado a la parte inferior */
+  left: 5%; /* un poco más a la esquina */
+  transform: none;
+  width: 400px; /* ligeramente más compacto */
+  max-width: 440px;
+  min-width: 300px;
+  margin-top: 0;
+  padding: 10px 14px 12px 14px; /* menos alto */
+  backdrop-filter: blur(5px);
+  z-index: 3005; /* por encima del mapa */
+  display: flex;
+  flex-direction: column;
+  background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+}
+
+@media (max-width: 992px) {
+  #gradient-container.horizontal-mode.embedded.bottom-floating {
+    width: 340px;
+    right: 14px;
+  }
+}
+@media (max-width: 600px) {
+  #gradient-container.horizontal-mode.embedded.bottom-floating {
+    width: calc(100% - 24px);
+    right: 12px;
+    left: 12px;
+    bottom: 10px;
+  }
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* menos separación vertical */
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-variable {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  letter-spacing: .3px;
+  text-transform: capitalize;
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-bar-horizontal {
+  width: 100%;
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-meta-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 2px;
+  gap: 8px;
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-horizontal-values {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 600;
+  color: #333;
+  user-select: none;
+  pointer-events: none;
+}
+
+#gradient-container.horizontal-mode.embedded .gradient-inline-unit {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: #555;
+  margin-left: 4px;
+}
+
+@media (max-width: 768px) {
+  #gradient-container.horizontal-mode.embedded {
+    padding: 10px 12px 14px 12px;
+  }
+  #gradient-container.horizontal-mode.embedded .gradient-variable { font-size: 14px; }
+  #gradient-container.horizontal-mode.embedded .gradient-horizontal-values { font-size: 10px; }
+  #gradient-container.horizontal-mode.embedded .gradient-inline-unit { font-size: 0.85em; }
+}
+
+.gradient-horizontal-wrapper {
+  width: 100%;
+  margin-top: 14px;
+  padding: 6px 10px 10px 10px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.gradient-bar-horizontal {
+  width: 100%;
+  height: 22px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #888, #ccc); /* placeholder antes de pintar dinámico */
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: crosshair;
+  pointer-events: auto;
+}
+
+/* Etiquetas bajo la barra horizontal (min / max) */
+.gradient-horizontal-wrapper .horizontal-values {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #333;
+  font-weight: 600;
+  margin-top: 2px;
+  pointer-events: none;
 }
 
 .gradient-title {
@@ -1159,7 +1445,7 @@
 
 /* Activo con gradiente tipo tarjeta seleccionada */
 .variable-toggle.active{
-  background:#5a1b30
+  background:#5a1b30;
   color:#fff;
   border-color:transparent;
   box-shadow:0 8px 22px rgba(97, 44, 59, .25);
@@ -1612,6 +1898,27 @@
 /* Zebra */
 .data-table--zebra tbody tr:nth-child(odd){ background:#fcfcfc; }
 .data-table--zebra tbody tr:nth-child(even){ background:#f0f8ff; }
+
+/* ==== Ajuste fino de posición de la escala (override final) ==== */
+:root {
+  /* Ajusta estos valores para mover la escala */
+  --scale-offset-bottom: 20px; /* movida más abajo (antes 60px) */
+  --scale-offset-right: 20px;  /* alineada al margen derecho (antes 16px) */
+}
+
+#app .ol-scale-line,
+.ol-scale-line.override-position,
+.ol-scale-line {
+  bottom: var(--scale-offset-bottom) !important;
+  right: var(--scale-offset-right) !important;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --scale-offset-bottom: 24px; /* versión móvil ligeramente más alta para no tapar controles */
+    --scale-offset-right: 16px;
+  }
+}
 
 /* Responsive en modales estrechos */
 @media (max-width:768px){

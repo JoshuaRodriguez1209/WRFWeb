@@ -1,3 +1,7 @@
+// Reenviar clicks de las versiones móviles (IDs nuevos) a los botones laterales reales
+$(document).on('click', '#btn_atmos_mobile', function(e){ e.preventDefault(); $('#btn_atmos').trigger('click'); });
+$(document).on('click', '#btn_aire_mobile', function(e){ e.preventDefault(); $('#btn_aire').trigger('click'); });
+$(document).on('click', '#btn_hist_mobile', function(e){ e.preventDefault(); $('#btn_hist').trigger('click'); });
 "use strict"
 
 //------------------------------------------------------------------------------------------
@@ -230,11 +234,30 @@ $(document).on("click", "#btn_atmos", function () {
   $("#hist").hide();
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
-  $("#panel-header-text").text("Pronóstico meteorológico para el Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico Meteorológico del Estado de Puebla");
+  const t = $("#panel-header-text").text();
+  $("#controls-header-title").text(t);
   m_glosario = "gatmos.html";
   
   // Limpiar estado del historial
   resetHistorialState();
+
+  // Actualizar estado activo de los botones del menú
+  try {
+    document.querySelectorAll('.menu-btn').forEach(b => {
+      b.classList.remove('active');
+      // Limpiar estilos inline
+      b.style.background = '';
+      b.style.backgroundColor = '';
+      b.style.color = '';
+      b.style.border = '';
+      b.style.boxShadow = '';
+    });
+    const atmosBtn = document.getElementById('btn_atmos');
+    if (atmosBtn) atmosBtn.classList.add('active');
+  } catch (error) {
+    console.error('Error actualizando estado del menú:', error);
+  }
   
   m_map.updateSize();
   set_atmos();
@@ -246,11 +269,30 @@ $(document).on("click", "#btn_aire", function () {
   $("#hist").hide();
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
-  $("#panel-header-text").text("Calidad del aire para el Estado de Puebla");
+  $("#panel-header-text").text("Calidad del Aire del Estado de Puebla");
+  const t = $("#panel-header-text").text();
+  $("#controls-header-title").text(t);
   m_glosario = "gchem.html";
   
   // Limpiar estado del historial
   resetHistorialState();
+
+  // Actualizar estado activo de los botones del menú
+  try {
+    document.querySelectorAll('.menu-btn').forEach(b => {
+      b.classList.remove('active');
+      // Limpiar estilos inline
+      b.style.background = '';
+      b.style.backgroundColor = '';
+      b.style.color = '';
+      b.style.border = '';
+      b.style.boxShadow = '';
+    });
+    const aireBtn = document.getElementById('btn_aire');
+    if (aireBtn) aireBtn.classList.add('active');
+  } catch (error) {
+    console.error('Error actualizando estado del menú:', error);
+  }
   
   m_map.updateSize();
   set_chem();
@@ -264,6 +306,25 @@ $(document).on("click", "#btn_hist", function () {
   $("#hist").show();
   $("#historial-dashboard").show();
   $("#panel-header-text").text("Historial de Datos");
+  const t = $("#panel-header-text").text();
+  $("#controls-header-title").text(t);
+
+  // Actualizar estado activo de los botones del menú
+  try {
+    document.querySelectorAll('.menu-btn').forEach(b => {
+      b.classList.remove('active');
+      // Limpiar estilos inline
+      b.style.background = '';
+      b.style.backgroundColor = '';
+      b.style.color = '';
+      b.style.border = '';
+      b.style.boxShadow = '';
+    });
+    const histBtn = document.getElementById('btn_hist');
+    if (histBtn) histBtn.classList.add('active');
+  } catch (error) {
+    console.error('Error actualizando estado del menú:', error);
+  }
   
   // Cargar cabeceras en el selector
   loadHistoricalCabeceras();
@@ -303,6 +364,14 @@ async function loadHistoricalCabeceras() {
 let updateHistoricalViewTimeout = null;
 let lastCabeceraId = null;
 let lastTipo = null;
+
+// Sincronizar título del header de controles al iniciar
+$(function(){
+  const initText = $("#panel-header-text").text();
+  if (initText) {
+    $("#controls-header-title").text(initText);
+  }
+});
 
 // Función para actualizar la vista histórica
 function updateHistoricalView() {
@@ -472,3 +541,34 @@ function resetHistorialState() {
     console.error('Error reseteando estado del historial:', error);
   }
 }
+
+// Función para verificar y corregir el estado visual del menú
+function updateMenuVisualState() {
+  try {
+    // Verificar si algún botón tiene la clase active
+    const activeButtons = document.querySelectorAll('.menu-btn.active');
+    
+    if (activeButtons.length === 0) {
+      // Si no hay botón activo, activar meteorología por defecto
+      const atmosBtn = document.getElementById('btn_atmos');
+      if (atmosBtn) {
+        atmosBtn.classList.add('active');
+        console.log('Activando botón meteorología por defecto');
+      }
+    }
+    
+    console.log('Estado actual del menú:', {
+      atmos: document.getElementById('btn_atmos')?.classList.contains('active'),
+      aire: document.getElementById('btn_aire')?.classList.contains('active'),
+      hist: document.getElementById('btn_hist')?.classList.contains('active')
+    });
+  } catch (error) {
+    console.error('Error verificando estado del menú:', error);
+  }
+}
+
+// Ejecutar cuando el DOM esté listo
+$(document).ready(function() {
+  // Pequeño delay para asegurar que todos los elementos estén cargados
+  setTimeout(updateMenuVisualState, 100);
+});

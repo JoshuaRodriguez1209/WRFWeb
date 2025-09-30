@@ -75,14 +75,18 @@ body.map-active #main-content {
 
 /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
 .map-controls {
-    position: absolute;
-    top: 160px;
-    top: 160px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 999;
+        position: absolute;
+        top: 50px; /* antes 160px */
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 999;
+        transition: top .25s ease;
+}
+
+@media (max-width: 768px) {
+    .map-controls { top: 130px; } /* un poco más abajo en móviles para no chocar con navbar */
 }
 
 .control-btn {
@@ -135,12 +139,12 @@ body.map-active #main-content {
 
 .weather-controls {
     position: absolute;
-    top: 180px;
+    top: 100px; /* antes 180px */
     right: 0;
-    width: 380px;
-    height: calc(100% - 340px);
+    width: 400px; /* un poco más ancho */
+    height: calc(100% - 250px); /* más alto (antes restaba 340px) */
     background: white;
-    border-radius: 8px;
+    border-radius: 10px;
     box-shadow: -5px 0 25px var(--shadow-color);
     z-index: 1002;
     display: flex;
@@ -158,7 +162,7 @@ body.map-active #main-content {
     border-bottom: 2px solid var(--secondary-brand-color);
 }
 .controls-header h3 { color: var(--primary-brand-color); font-size: 1.2rem; margin: 0; }
-.controls-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; flex-grow: 1; }
+.controls-body { padding: 22px 22px 18px 22px; overflow-y: auto; display: flex; flex-direction: column; flex-grow: 1; }
 .close-btn { background: none; border: none; font-size: 2rem; color: var(--dark-gray); cursor: pointer; line-height: 1; padding: 0 5px; transition: color 0.3s ease; }
 .close-btn:hover { color: var(--primary-brand-color); }
 .control-group { margin-bottom: 20px; }
@@ -353,9 +357,16 @@ body.map-active #main-content {
 }
 
 .menu-btn.active {
-    background: linear-gradient(135deg, var(--primary-brand-color));
-    color: white;
-    border-color: transparent;
+    background: linear-gradient(135deg, var(--primary-brand-color)) !important;
+    color: white !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 0 2px rgba(90, 27, 48, 0.3), 0 5px 15px rgba(90, 27, 48, 0.4) !important;
+}
+
+.menu-btn.active:hover {
+    background: linear-gradient(135deg, var(--primary-brand-color)) !important;
+    color: white !important;
+    transform: none !important;
 }
 
 .menu-label {
@@ -382,8 +393,9 @@ body.map-active #main-content {
     border-radius: 15px;
     padding: 25px;
     width: 90%; /* Add this for flexibility */
-    max-width: 900px; /* Increase this value */
-    max-height: 80vh;
+    height: 90%;
+    /*max-width: 900px;*/ /* Increase this value */
+    max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     position: relative;
@@ -602,3 +614,446 @@ body.map-active #main-content {
     
 }
 
+/* ===== Tablas “pro” para modales y paneles ===== */
+.table-wrapper,
+.stats-table-wrapper {               /* ya tienes .stats-table-wrapper */
+  max-height: 380px;
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+}
+
+/* Aplica a cualquier tabla que marques como .styled-table
+   y a la que ya existe (.stats-table) del dashboard */
+.styled-table,
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+/* Encabezado pegajoso con el color de tu paleta */
+.styled-table thead th,
+.stats-table thead th {
+  position: sticky;
+  top: 0;
+  background: #5a1b30;   /* vino */
+  color: #fff;
+  text-transform: none;
+  letter-spacing: .2px;
+  font-weight: 600;
+  padding: 12px 14px;
+  z-index: 1;
+}
+
+/* Celdas */
+.styled-table tbody td,
+.stats-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+/* Rayado suave + hover */
+.styled-table tbody tr:nth-child(even),
+.stats-table tbody tr:nth-child(even) { background: #fcfcfc; }
+
+.styled-table tbody tr:hover,
+.stats-table tbody tr:hover { background: #faf6f7; }
+
+/* Columna “Unidades” o valores numéricos alineados a la derecha */
+.styled-table td:last-child,
+.stats-table td:last-child { text-align: right; }
+
+/* Badges de estado (opcional) */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.badge.good      { background:#e8f5ec; color:#1b8a4b; border:1px solid #cfead8; }
+.badge.moderate  { background:#fff7e6; color:#a86b00; border:1px solid #ffe9bf; }
+.badge.bad       { background:#fdecec; color:#b3261e; border:1px solid #f8caca; }
+
+/* Responsive tip */
+@media (max-width: 520px){
+  .styled-table, .stats-table { font-size: 13px; }
+}
+
+/* ---- Encabezado del bloque resumen ---- */
+.summary-block { margin-bottom: 20px; }
+.summary-header {
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;
+}
+.summary-header h4 { font-size:1.4em; font-weight:700; margin:0; }
+
+/* Botón descargar, compatible con lo que ya usas */
+.download-btn{
+  background:#007bff; color:#fff; border:none; padding:8px 16px; font-size:1em;
+  border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:6px;
+}
+
+/* ---- Grid de tarjetas de resumen (meteo) ---- */
+.summary-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap:15px;
+  margin-bottom:25px;
+}
+.summary-card{
+  display:flex; align-items:center; gap:10px;
+  padding:12px; background:#f8f9fa; border-radius:8px;
+}
+.summary-icon{
+  width:24px; height:24px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:12px;
+}
+.summary-body{ flex:1; }
+.summary-name{ font-size:12px; color:#666; margin-bottom:2px; }
+.summary-value{ font-weight:600; color:#333; }
+
+/* Modificadores de color para el circulito */
+.bg-red{ background:#ff4757; }
+.bg-blue{ background:#3742fa; }
+.bg-green{ background:#2ed573; }
+.bg-orange{ background:#ffa502; }
+.bg-gray{ background:#747d8c; }
+.bg-slate{ background:#57606f; }
+
+
+/* ===== Estilo moderno para modal-content ===== */
+/* Hacer el modal mucho más ancho */
+.modal-dialog {
+  width: 85% !important;
+  max-width: 1400px !important;
+  margin: 30px auto !important;
+}
+
+.modal-content {
+  border: none !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+  overflow: visible !important; /* Cambiar de hidden a visible para que se vean las gráficas */
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  max-height: 90vh !important; /* Altura máxima para permitir scroll */
+  width: 100% !important;
+}
+
+/* Header del modal con gradiente y estilo moderno */
+.modal-header {
+  background: linear-gradient(135deg, #5a1b30 0%, #7d2545 100%);
+  color: white;
+  border-bottom: none !important;
+  padding: 20px 25px;
+  position: relative;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #c19862, #d4af7a, #c19862);
+}
+
+.modal-title {
+  font-family: 'Poppins', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 1.8rem !important;
+  margin: 0 !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Botón cerrar moderno */
+.modal-header .close,
+.modal-header .btn-close {
+  color: white !important;
+  opacity: 0.8 !important;
+  font-size: 28px !important;
+  font-weight: 300 !important;
+  text-shadow: none !important;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.modal-header .close:hover,
+.modal-header .btn-close:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(90deg);
+}
+
+/* Body del modal con padding mejorado */
+.modal-body {
+  padding: 25px !important;
+  background: white;
+  color: #333;
+  max-height: 70vh !important; /* Altura máxima para el contenido */
+  overflow-y: auto !important; /* Scroll vertical cuando sea necesario */
+}
+
+/* Mejorar el aspecto de la información dentro del modal */
+.modal-content .summary-block {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+.modal-content .table-wrapper,
+.modal-content .stats-table-wrapper{
+  max-height: 380px;
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.08);
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.modal-content .styled-table,
+.modal-content .stats-table{
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.modal-content .styled-table thead th,
+.modal-content .stats-table thead th{
+  position: sticky; 
+  top: 0;
+  background: #5a1b30;   /* mismo color vino del historial */
+  color: #fff;
+  text-transform: none;
+  letter-spacing: .2px;
+  font-weight: 600;
+  padding: 12px 14px;
+  z-index: 1;
+}
+
+.modal-content .styled-table tbody td,
+.modal-content .stats-table tbody td{
+  padding: 10px 14px;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+.modal-content .styled-table tbody tr:nth-child(even),
+.modal-content .stats-table tbody tr:nth-child(even){ 
+  background: #fcfcfc; 
+}
+
+.modal-content .styled-table tbody tr:hover,
+.modal-content .stats-table tbody tr:hover{ 
+  background: #faf6f7; 
+}
+
+.modal-content .styled-table td:last-child,
+.modal-content .stats-table td:last-child{ 
+  text-align: right; 
+}
+
+/* Botón descargar del modal mejorado */
+.modal-content .download-btn{
+  background: linear-gradient(135deg, #c19862be 0%, #8b6e47be 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-content .download-btn:hover{
+  background: linear-gradient(135deg, #5a1b30 0%, #7c2542 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+/* Estructura summary del modal mejorada */
+.modal-content .summary-block { 
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+}
+
+.modal-content .summary-header {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  margin-bottom: 15px;
+}
+
+.modal-content .summary-header h4 { 
+  color: #2c3e50;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1.3rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-content .summary-header h4::before {
+  content: '📊';
+  font-size: 1.2em;
+}
+
+/* Tabla con estilo mejorado */
+.modal-content .table-wrapper {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e9ecef;
+  margin-bottom: 0;
+}
+
+.modal-content .styled-table thead th {
+  background: linear-gradient(135deg, #5a1b30 0%, #7d2545 100%) !important;
+  color: white !important;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.85rem;
+  padding: 15px;
+}
+
+/* ===== Gráficas del modal con estilo moderno ===== */
+.modal-content .charts-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Una sola columna en modales para más espacio */
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.modal-content .chart-card {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: visible !important; /* Asegurar que el contenido sea visible */
+  animation: fadeInUp .35s ease both;
+  margin-bottom: 20px; /* Espacio entre gráficas */
+}
+
+.modal-content .chart-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #c19862, #d4af7a, #c19862);
+}
+
+.modal-content .chart-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.modal-content .chart-card canvas {
+  height: 280px !important; /* Altura reducida para que quepa mejor */
+  max-height: 280px !important;
+  width: 100% !important;
+  display: block !important; /* Asegurar que el canvas se muestre */
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive para el modal moderno */
+@media (max-width: 768px) {
+  .modal-dialog {
+    width: 95% !important;
+    margin: 10px auto !important;
+  }
+  
+  .modal-content {
+    margin: 10px;
+    border-radius: 12px !important;
+  }
+  
+  .modal-header {
+    padding: 15px 20px;
+  }
+  
+  .modal-title {
+    font-size: 1.4rem !important;
+  }
+  
+  .modal-body {
+    padding: 20px !important;
+  }
+  
+  .modal-content .chart-card {
+    padding: 15px;
+  }
+  
+  .modal-content .chart-card canvas {
+    height: 250px !important;
+    max-height: 250px;
+  }
+  
+  .modal-content .charts-grid {
+    gap: 16px;
+  }
+}
+
+/* Para pantallas grandes, hacer el modal aún más ancho */
+@media (min-width: 1200px) {
+  .modal-dialog {
+    width: 90% !important;
+    max-width: 1600px !important;
+  }
+}
+
+/* Responsive para modales en móvil */
+@media (max-width: 768px) {
+  .modal-content .chart-card {
+    padding: 10px;
+  }
+  
+  .modal-content .chart-card canvas {
+    height: 250px !important;
+    max-height: 250px;
+  }
+  
+  .modal-content .charts-grid {
+    gap: 16px;
+  }
+}

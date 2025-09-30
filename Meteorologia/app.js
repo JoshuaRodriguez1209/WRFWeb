@@ -1,5 +1,21 @@
 "use strict";
 
+// Interceptor global para optimizar canvas 2D con willReadFrequently
+(function() {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
+    if (contextType === '2d') {
+      // Asegurar que willReadFrequently esté en true para contextos 2D
+      const attrs = contextAttributes || {};
+      if (!attrs.hasOwnProperty('willReadFrequently')) {
+        attrs.willReadFrequently = true;
+      }
+      return originalGetContext.call(this, contextType, attrs);
+    }
+    return originalGetContext.call(this, contextType, contextAttributes);
+  };
+})();
+
 //------------------------------------------------------------------------------------------
 function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
   const layer = new ol.layer.Vector({
@@ -188,12 +204,15 @@ var m_view = new ol.View({
 
 var scaleLineControl = new ol.control.ScaleLine({
   units: "metric",
-  bar: false,
-  steps: 4,
-  minWidth: 140,
+  bar: true,          // activar barra graduada
+  steps: 4,           // número de segmentos visibles
+  text: true,         // mostrar texto con unidad en cada actualización
+  minWidth: 200,      // un poco más ancha para legibilidad
   className: "ol-scale-line",
   target: null,
 });
+// Guardar pasos en una propiedad estable para uso externo (evita depender de internals de OL)
+scaleLineControl._customSteps = 4;
 
 //-------------------------------------------------------------------------------
 
@@ -205,7 +224,6 @@ var m_map = new ol.Map({
     m_control,
     scaleLineControl,
     new ol.control.LayerSwitcher({
-      //Control de capas
       tipLabel: "Capas",
     }),
   ]),
@@ -213,6 +231,135 @@ var m_map = new ol.Map({
   layers: [m_lyr_tile, m_layer_municipios],
   view: m_view,
 });
+// Construir barra segmentada manual si la implementación bar:true de OL sólo deja el texto
+function ensureCustomScaleBar() {
+  const container = document.querySelector('.ol-scale-line-inner');
+  if (!container) return;
+  // Si OL ya generó un canvas con la barra, no hacemos nada
+  const existingCanvas = container.querySelector('canvas');
+  if (existingCanvas) return;
+  let body = container.querySelector('.ol-scale-line-body');
+  if (!body) {
+    body = document.createElement('div');
+    body.className = 'ol-scale-line-body';
+    container.prepend(body); // barra arriba, texto abajo
+  }
+  // Número de pasos definido en el control
+  const steps = scaleLineControl._customSteps || 4;
+  // Asegurar cantidad de segmentos
+  const needed = steps;
+  const current = body.querySelectorAll('.ol-scale-line-segment').length;
+  if (current !== needed) {
+    body.innerHTML = '';
+    for (let i = 0; i < needed; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'ol-scale-line-segment' + (i % 2 === 1 ? ' alt' : '');
+      body.appendChild(seg);
+    }
+  }
+  // Añadir contenedor de ticks (arriba) si no existe
+  let ticksLayer = container.querySelector('.ol-scale-line-ticks');
+  if (!ticksLayer) {
+    ticksLayer = document.createElement('div');
+    ticksLayer.className = 'ol-scale-line-ticks';
+    container.insertBefore(ticksLayer, body); // arriba de la barra
+  }
+  ticksLayer.innerHTML = '';
+
+  // Calcular distancia real cubierta por la barra
+  const view = m_map.getView();
+  const resolution = view.getResolution(); // grados/pixel (EPSG:4326)
+  const center = view.getCenter();
+  const lat = center ? center[1] : 0;
+  const latRad = lat * Math.PI / 180;
+  const earthRadius = 6378137; // WGS84
+  const metersPerDegree = (Math.PI / 180) * earthRadius * Math.cos(latRad);
+  const widthPx = body.getBoundingClientRect().width;
+  // Longitud en metros representada por la barra
+  const lengthMeters = widthPx * resolution * metersPerDegree;
+  let lengthKm = lengthMeters / 1000;
+  if (!isFinite(lengthKm) || lengthKm <= 0) return;
+
+  // Función para obtener un número "bonito" similar a OL (1,2,5 * 10^n)
+  function niceNumber(x) {
+    const exp = Math.floor(Math.log10(x));
+    const f = x / Math.pow(10, exp);
+    let nf;
+    if (f < 1.5) nf = 1;
+    else if (f < 3) nf = 2;
+    else if (f < 7) nf = 5;
+    else nf = 10;
+    return nf * Math.pow(10, exp);
+  }
+  const niceTotal = niceNumber(lengthKm);
+  const intervalKm = niceTotal / (steps - 1);
+
+  for (let i = 0; i < steps; i++) {
+    // Se generaban ticks para cada segmento; ahora sólo mostraremos 3 (0, mitad, final)
+  }
+  // Limpiar cualquier resto (ya está vacío arriba) y construir solo 3 ticks
+  ticksLayer.innerHTML = '';
+  const q1 = niceTotal / 4;
+  const niceMid = niceTotal / 2;
+  const q3 = (niceTotal * 3) / 4;
+  const tickDefs = [
+    { pct: 0,   val: 0 },
+    { pct: 25,  val: q1 },
+    { pct: 50,  val: niceMid },
+    { pct: 75,  val: q3 },
+    { pct: 100, val: niceTotal }
+  ];
+  // Formateador adaptativo: 3 decimales si la escala total es grande (>=100 km), si no 2.
+  function formatKm(v, isLast) {
+    // Si el total de la escala es menor a 1 km (zoom muy cercano) mostramos 3 decimales para más precisión.
+    // En caso contrario 2 decimales.
+    const decimals = niceTotal < 1 ? 3 : 2;
+    let str = v.toFixed(decimals);
+    // Quitar .00 o ceros finales innecesarios
+    str = str.replace(/\.0+$/, '');               // 10.00 -> 10
+    str = str.replace(/\.(\d*[1-9])0+$/, '.$1'); // 2.50 -> 2.5, 3.230 -> 3.23
+    if (isLast) str += ' km';
+    return str;
+  }
+  tickDefs.forEach((t, idx) => {
+    const tick = document.createElement('div');
+    tick.className = 'scale-tick';
+    tick.style.left = t.pct + '%';
+    const lbl = document.createElement('div');
+    lbl.className = 'scale-tick-label';
+    lbl.textContent = formatKm(t.val, idx === tickDefs.length - 1);
+    tick.appendChild(lbl);
+    ticksLayer.appendChild(tick);
+  });
+  // Ocultar texto original de OL si existe para evitar superposición
+  container.querySelectorAll('span').forEach(sp => sp.style.display = 'none');
+}
+
+// Hook en eventos de mapa para asegurar que la barra exista tras cada render
+m_map.on('postrender', () => ensureCustomScaleBar());
+setTimeout(ensureCustomScaleBar, 500);
+setTimeout(ensureCustomScaleBar, 1200);
+// Ajuste dinámico del ancho visible de la escala (máx 1/3 viewport)
+function constrainScaleLine() {
+  const el = document.querySelector('.ol-scale-line');
+  if (!el) return;
+  const inner = el.querySelector('.ol-scale-line-inner');
+  if (!inner) return;
+  // Reset transform para medir tamaño real
+  inner.style.transform = 'none';
+  const maxPx = window.innerWidth / 3;
+  const actual = inner.getBoundingClientRect().width;
+  if (actual > maxPx) {
+    const ratio = maxPx / actual;
+    inner.style.transformOrigin = 'right center';
+    inner.style.transform = `scale(${ratio})`;
+  }
+}
+
+window.addEventListener('resize', constrainScaleLine);
+// Llamar después de un pequeño delay para asegurar render de OL
+setTimeout(constrainScaleLine, 800);
+m_map.on('moveend', () => setTimeout(constrainScaleLine, 50));
 
 // Variable para almacenar la geometría de recorte de Puebla
 let pueblaClippingGeometry = null;
@@ -558,8 +705,22 @@ var updateVariableSelect = function(variableData) {
   
   // Si solo hay una variable, ocultar el select y usar directamente
   if (variableData.length <= 1) {
+    // Aun cuando lo ocultemos, creamos la opción para que otras funciones puedan leer su label
+    select.innerHTML = '';
+    if (variableData.length === 1) {
+      const single = variableData[0];
+      const option = document.createElement('option');
+      option.value = single.value;
+      option.textContent = single.label;
+      select.appendChild(option);
+      select.selectedIndex = 0;
+      selectedVariable = single.value;
+      window.currentVariableLabel = single.label; // almacenar etiqueta actual
+    } else {
+      selectedVariable = null;
+      window.currentVariableLabel = null;
+    }
     selectContainer.style.display = 'none';
-    selectedVariable = variableData.length > 0 ? variableData[0].value : null;
   } else {
     // Múltiples variables: mostrar select
     selectContainer.style.display = 'block';
@@ -574,6 +735,7 @@ var updateVariableSelect = function(variableData) {
       // Seleccionar la primera opción por defecto
       if (index === 0) {
         selectedVariable = variable.value;
+        window.currentVariableLabel = variable.label;
       }
     });
   }
@@ -618,23 +780,33 @@ var list_var = async function (datos) {
   //	for (var i = list_files.length - 1; i >= 0; i--){					//Reversa
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
+    if(!str_file) continue;
+    str_file = str_file.substring(1); // quitar ../ inicial
+    if (str_file === "") continue;
 
-    str_file = str_file.substring(1); //Recorrer el string para quitar el ../
+    var pos = str_file.lastIndexOf("/");
+    var fileName = str_file.substring(pos + 1); // ejemplo: something_wind_012.png o temp_24.png
+    var dotPos = fileName.lastIndexOf(".");
+    if (dotPos < 0) continue;
+    var baseName = fileName.substring(0, dotPos); // sin extensión
 
-    if (str_file != "") {
-      var pos = str_file.lastIndexOf("/");
-      var str_name = str_file.substring(pos + 1);
+    // Extraer los últimos dígitos (horas) ignorando prefijos
+    var match = baseName.match(/(\d{1,3})$/); // captura 1-3 dígitos al final
+    var hourStr = match ? match[1] : baseName; // fallback si no encuentra
 
-      var pos_pt = str_name.lastIndexOf(".");
-      var resta = 2;
-
-      var indice = str_name.indexOf("wind");
-      if (indice > 0) resta = 3;
-
-      str_name = str_name.substring(pos_pt - resta, pos_pt);
-
-      dir_var += "<option  value='" + str_file + "'>" + str_name + "</option>";
+    // Convertir a número y normalizar a 2 dígitos (00, 06, 12, etc.)
+    var hourNum = parseInt(hourStr, 10);
+    if (!isNaN(hourNum)) {
+      // Si viene 3 dígitos (por ejemplo 120) lo reducimos a horas reales o dejamos 2 digitos?
+      // Asumiendo que el problema reportado es que aparece 120 en vez de 12 o 24.
+      // regla: si tiene 3 dígitos y termina en 0, dividir entre 10 (120 ->12, 060->6)
+      if (hourStr.length === 3 && hourStr.endsWith('0')) {
+        hourNum = hourNum / 10;
+      }
+      hourStr = hourNum.toString().padStart(2, '0');
     }
+
+    dir_var += "<option value='" + str_file + "'>" + hourStr + "</option>";
   }
   $("#selectHora").html(dir_var);
 
@@ -684,6 +856,11 @@ var procesa_var = function () {
   if (!selectedVariable) {
     console.log('No hay variable seleccionada');
     return;
+  }
+  // Asegurar etiqueta actual (leyenda gradiente) antes de cargar
+  const selectVar = document.getElementById('select_var');
+  if (selectVar && selectVar.selectedIndex >= 0) {
+    window.currentVariableLabel = selectVar.options[selectVar.selectedIndex].text;
   }
   
   var str_run = $("#select_run").val();
@@ -915,7 +1092,11 @@ m_map.on("click", function (evt) {
   m_feature = get_Feature(evt);
 
   if (m_feature != undefined) {
-    if ($("#select_dat").val() == "quim") {
+    // Verificar si el botón de calidad del aire está activo
+    const aireBtn = document.getElementById('btn_aire');
+    const isAireActive = aireBtn && aireBtn.classList.contains('active');
+    
+    if (isAireActive) {
       show_chem(true);
     } else {
       show_meteo(true);
@@ -1126,77 +1307,68 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
       set_csv_atmos(djson, str_file);
 
       if (show_dialog) {
-        const resumenHTML = `
-  <div style="margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" style="
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 1em;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
+const resumenHTML = `
+  <div class="summary-block">
+    <div class="summary-header">
+      <h4>Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" class="download-btn">
         <i class="glyphicon glyphicon-download"></i>
         Descargar (.CSV)
       </button>
     </div>
-    <div class="pollutant-summary" style="
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
-    ">
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#ff4757;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌡️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Temperatura</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["t2m"])} °C</div>
+
+    <div class="summary-grid" id="pollutantSummary">
+      <div class="summary-card">
+        <div class="summary-icon bg-red">🌡️</div>
+        <div class="summary-body">
+          <div class="summary-name">Temperatura</div>
+          <div class="summary-value">${avg(djson["t2m"])} °C</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#3742fa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💧</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Humedad</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["rh"])} %</div>
+
+      <div class="summary-card">
+        <div class="summary-icon bg-blue">💧</div>
+        <div class="summary-body">
+          <div class="summary-name">Humedad</div>
+          <div class="summary-value">${avg(djson["rh"])} %</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#2ed573;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌧️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Precipitación</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["pre"])} mm</div>
+
+      <div class="summary-card">
+        <div class="summary-icon bg-green">🌧️</div>
+        <div class="summary-body">
+          <div class="summary-name">Precipitación</div>
+          <div class="summary-value">${avg(djson["pre"])} mm</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#ffa502;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">☀️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Radiación</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["sw"])} w/m²</div>
+
+      <div class="summary-card">
+        <div class="summary-icon bg-orange">☀️</div>
+        <div class="summary-body">
+          <div class="summary-name">Radiación</div>
+          <div class="summary-value">${avg(djson["sw"])} w/m²</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#747d8c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌬️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Viento</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["wnd"])} km/h</div>
+
+      <div class="summary-card">
+        <div class="summary-icon bg-gray">🌬️</div>
+        <div class="summary-body">
+          <div class="summary-name">Viento</div>
+          <div class="summary-value">${avg(djson["wnd"])} km/h</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#57606f;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">📉</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Presión</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["psl"])} hPa</div>
+
+      <div class="summary-card">
+        <div class="summary-icon bg-slate">📉</div>
+        <div class="summary-body">
+          <div class="summary-name">Presión</div>
+          <div class="summary-value">${avg(djson["psl"])} hPa</div>
         </div>
       </div>
     </div>
   </div>
 `;
+
         contenDialog.append(resumenHTML);
         set_canva(
           contenDialog,
@@ -1272,54 +1444,35 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
       set_csv_chem(djson, str_file);
 
       if (show_dialog) {
-        const resumenHTML = `<div style="margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" style="
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 1em;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
-        <i class="glyphicon glyphicon-download"></i>
-        Descargar (.CSV)
-      </button>
-    </div>
-    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em; background-color: #fff; border: none;">
-      <thead style="background-color: #f5f5f5;">
-        <tr>
-          <th style="padding: 10px; text-align: left;">Contaminante</th>
-          <th style="padding: 10px; text-align: left;">Promedio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟤 Monóxido de Carbono (ppm)</td><td style="padding: 10px;">${avg(
-          djson["CO"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🟣 Dióxido de Nitrógeno (ppb)</td><td style="padding: 10px;">${avg(
-          djson["NO2"]
-        )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟢 Ozono (ppb)</td><td style="padding: 10px;">${avg(
-          djson["O3"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🔵 Dióxido de Azufre (ppb)</td><td style="padding: 10px;">${avg(
-          djson["SO2"]
-        )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">⚫ PM 10 (µg/m³)</td><td style="padding: 10px;">${avg(
-          djson["PM10"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">⚫ PM 2.5 (µg/m³)</td><td style="padding: 10px;">${avg(
-          djson["PM25"]
-        )}</td></tr>
-      </tbody>
-    </table>
-  </div>`;
+      const resumenHTML = `
+        <div class="summary-block">
+          <div class="summary-header">
+            <h4>Resumen de Promedios</h4>
+            <button onclick="downloadFileCSV()" class="download-btn">
+              <i class="glyphicon glyphicon-download"></i>
+              Descargar (.CSV)
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="styled-table stats-table">
+              <thead>
+                <tr>
+                  <th>Contaminante</th>
+                  <th>Promedio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>🟤 Monóxido de Carbono (ppm)</td><td>${avg(djson["CO"])}</td></tr>
+                <tr><td>🟣 Dióxido de Nitrógeno (ppb)</td><td>${avg(djson["NO2"])}</td></tr>
+                <tr><td>🟢 Ozono (ppb)</td><td>${avg(djson["O3"])}</td></tr>
+                <tr><td>🔵 Dióxido de Azufre (ppb)</td><td>${avg(djson["SO2"])}</td></tr>
+                <tr><td>⚫ PM 10 (µg/m³)</td><td>${avg(djson["PM10"])}</td></tr>
+                <tr><td>⚫ PM 2.5 (µg/m³)</td><td>${avg(djson["PM25"])}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
         contenDialog.append(resumenHTML);
         set_canva(
           contenDialog,
@@ -1526,61 +1679,78 @@ $("#hist-tipo-select").on('change', function() {
 
 //-------------------------------------------------------------------------------
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
-  var canva = document.createElement("canvas");
-  var conten = $("<div></div>").append(canva);
+  // Buscar o crear el contenedor de gráficas
+  let chartsContainer = contenDialog.find('.charts-grid');
+  if (chartsContainer.length === 0) {
+    chartsContainer = $('<div class="charts-grid"></div>');
+    contenDialog.append(chartsContainer);
+  }
 
-  var labs = [];
-  var dats = [];
-  var hs = 0;
+  const card = $('<div class="chart-card"></div>');
+  const canva = document.createElement('canvas');
+  card.append(canva);
 
-  for (var dat in dataset) {
+  const labs = [];
+  const dats = [];
+  let hs = 0;
+  for (const dat in dataset) {
     labs.push(setLabel(str_file, (hs += 3)));
     dats.push(round10(dataset[dat]));
   }
 
   grafico(canva, tipo, labs, dats, title, unid, color);
-  contenDialog.append(conten);
+  chartsContainer.append(card); // Añadir al contenedor de gráficas, no al dialog principal
 }
 
 //-------------------------------------------------------------------------------
 function grafico(canva, tipo, labels, dats, title, unid, color) {
-  const data = {
-    labels: labels,
-    datasets: [
-      {
-        label: title,
-        axis: "x",
-        data: dats,
-        fill: false,
-        borderColor: color,
-        backgroundColor: color,
-      },
-    ],
+  const dataset = {
+    label: `${title} (${unid})`,
+    axis: 'x',
+    data: dats,
+    fill: false,
+    borderColor: color,
+    backgroundColor: color + '33',
+    borderWidth: 2,
+    tension: 0.35,
+    pointRadius: 2,
+    pointHoverRadius: 5
   };
 
-  new Chart(canva, {
+  const data = { labels, datasets: [dataset] };
+
+  new Chart(canva.getContext('2d', { willReadFrequently: true }), {
     type: tipo,
-    data: data,
+    data,
     options: {
-      locale: "en-US",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeInOutQuart' },
       plugins: {
-        title: {
-          display: false,
-          text: "",
-        },
+        legend: { display: true, labels: { usePointStyle: true, font: { family: 'Poppins', size: 12 } } },
+        title: { display: true, text: title, font: { size: 15, weight: 'bold', family: 'Poppins' } },
+        tooltip: {
+          mode: 'index', intersect: false,
+            backgroundColor: 'rgba(255,255,255,0.96)',
+            titleColor: '#222', bodyColor: '#333',
+            borderColor: '#e0e0e0', borderWidth: 1, padding: 10,
+            callbacks: { label: ctx => ` ${ctx.dataset.label}: ${(ctx.parsed.y).toFixed(2)}` }
+        }
       },
-      indexAxis: "x",
       scales: {
         y: {
-          //					beginAtZero: true,
-          display: true,
-          title: {
-            display: true,
-            text: unid,
-          },
+          beginAtZero: false,
+          ticks: { font: { family: 'Poppins' } },
+          title: { display: true, text: unid, font: { family: 'Poppins', weight: '600' } },
+          grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }
         },
+        x: {
+          ticks: { autoSkip: true, maxRotation: 0, font: { family: 'Poppins' } },
+          grid: { color: 'rgba(0,0,0,0.06)', drawBorder: false }
+        }
       },
-    },
+      interaction: { mode: 'index', intersect: false }
+    }
   });
 }
 
@@ -1640,7 +1810,7 @@ $("#meteo").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Pronóstico meteorológico para el Estado de Puebla";
+  h1.textContent = "Pronóstico Meteorológico del Estado de Puebla";
 });
 
 $("#cali").click(function () {
@@ -1654,13 +1824,15 @@ $("#cali").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Calidad del aire para el Estado de Puebla";
-  const h3 = document.getElementById("select_dat");
-
-  h3.style.display = "none";
-
-  const h4 = document.getElementById("variable2");
-  h4.textContent = "Contaminantes:";
+  h1.textContent = "Calidad del Aire del Estado de Puebla";
+  // Activar botón lateral de calidad del aire y sincronizar título del header
+  try {
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    const aireBtn = document.getElementById('btn_aire');
+    if (aireBtn) aireBtn.classList.add('active');
+    const headerTitle = document.getElementById('controls-header-title');
+    if (headerTitle) headerTitle.textContent = h1.textContent;
+  } catch (e) { console.warn('No se pudo actualizar estado activo para btn_aire:', e); }
 });
 
 var m_cabecaras;
@@ -1769,8 +1941,12 @@ canvas.addEventListener("click", function (event) {
 
   filter_color = [pixel[0], pixel[1], pixel[2]];
   const value = getClosestValueFromRGB(pixel[0], pixel[1], pixel[2]);
-  const range = `${value - 2} - ${value + 2}`;
-  showInfo(range);
+  // Calcular rango ±2 (ajustable) y formatear a 2 decimales
+  let low = value - 2;
+  let high = value + 2;
+  if (typeof low === 'number' && isFinite(low)) low = parseFloat(low.toFixed(2));
+  if (typeof high === 'number' && isFinite(high)) high = parseFloat(high.toFixed(2));
+  showInfo(`${low} - ${high}`);
   const filteredLayer = applyFilterToImage(m_lienzo.img);
   put_FilteredImage(filteredLayer);
 });
@@ -1905,9 +2081,28 @@ function showInfo(value) {
   const existingRange = info.querySelector(".dynamic-range");
   const rangeElement = document.createElement("div");
   rangeElement.className = "dynamic-range";
-  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${
-    units || ""
-  }</strong>`;
+  // Limitar a 2 decimales si es numérico
+  let displayVal = value;
+  const clean = (num) => {
+    if (typeof num !== 'number' || !isFinite(num)) return num;
+    return parseFloat(num.toFixed(2))
+      .toString()
+      .replace(/\.0+$/, '')
+      .replace(/\.(\d*[1-9])0+$/, '.$1');
+  };
+  if (typeof value === 'number' && isFinite(value)) {
+    displayVal = clean(value);
+  } else if (typeof value === 'string' && value.includes(' - ')) {
+    const parts = value.split(' - ').map(p => p.trim());
+    if (parts.length === 2) {
+      const a = parseFloat(parts[0]);
+      const b = parseFloat(parts[1]);
+      if (isFinite(a) && isFinite(b)) {
+        displayVal = `${clean(a)} - ${clean(b)}`;
+      }
+    }
+  }
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${displayVal} ${units || ""}</strong>`;
   info.appendChild(rangeElement);
 }
 
@@ -1955,7 +2150,7 @@ async function createHistoricalView(jsonPath, container, tipo) {
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="styled-table stats-table">
                   <thead>
                     <tr>
                       <th>Variable</th>
@@ -2080,7 +2275,7 @@ const niceStep = (() => {
   return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
 })();
 
-const chart = new Chart(cv.getContext('2d'), {
+const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
   type: 'line',
   data: { labels, datasets: grp },
   options: {
@@ -2200,7 +2395,7 @@ function renderIndividualCharts(datasets, labels, type) {
     })();
 
     // Crear la gráfica individual
-    const chart = new Chart(cv.getContext('2d'), {
+    const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
       type: 'line',
       data: { 
         labels, 
