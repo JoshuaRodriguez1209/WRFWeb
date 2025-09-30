@@ -1337,130 +1337,79 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         const resumenHTML = `
   <div style="margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" style="
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 1em;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
-        <i class="glyphicon glyphicon-download"></i>
+      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0; color: #5a1b30; font-family: 'Poppins', sans-serif;">Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" class="download-btn">
+        <i class="fa-solid fa-download"></i>
         Descargar (.CSV)
       </button>
     </div>
-    <div class="pollutant-summary" style="
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 25px;
-    ">
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#ff4757;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌡️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Temperatura</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["t2m"])} °C</div>
+    <div class="pollutant-summary">
+      <div class="pollutant-item">
+        <i class="fa-solid fa-temperature-half" style="color: #5a1b30; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Temperatura
+          </div>
+          <div class="pollutant-value">${avg(djson["t2m"])} °C</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#3742fa;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">💧</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Humedad</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["rh"])} %</div>
+      <div class="pollutant-item">
+        <i class="fa-solid fa-droplet" style="color: #c19862; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Humedad
+          </div>
+          <div class="pollutant-value">${avg(djson["rh"])} %</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#2ed573;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌧️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Precipitación</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["pre"])} mm</div>
+      <div class="pollutant-item">
+        <i class="fa-solid fa-cloud-rain" style="color: #5a1b30; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Precipitación
+          </div>
+          <div class="pollutant-value">${avg(djson["pre"])} mm</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#ffa502;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">☀️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Radiación</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["sw"])} w/m²</div>
+      <div class="pollutant-item">
+        <i class="fa-solid fa-sun" style="color: #c19862; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Radiación
+          </div>
+          <div class="pollutant-value">${avg(djson["sw"])} w/m²</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#747d8c;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">🌬️</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Viento</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["wnd"])} km/h</div>
+      <div class="pollutant-item">
+        <i class="fa-solid fa-wind" style="color: #5a1b30; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Viento
+          </div>
+          <div class="pollutant-value">${avg(djson["wnd"])} km/h</div>
         </div>
       </div>
-      <div class="pollutant-item" style="display:flex;align-items:center;gap:10px;padding:12px;background:#f8f9fa;border-radius:8px;">
-        <div style="background-color:#57606f;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;">📉</div>
-        <div style="flex:1;">
-          <div class="pollutant-name" style="font-size:12px;color:#666;margin-bottom:2px;">Presión</div>
-          <div class="pollutant-value" style="font-weight:600;color:#333;">${avg(djson["psl"])} hPa</div>
+      <div class="pollutant-item">
+        <i class="fa-solid fa-gauge" style="color: #c19862; font-size: 18px; margin-right: 12px;"></i>
+        <div class="pollutant-info">
+          <div class="pollutant-name">
+            Presión
+          </div>
+          <div class="pollutant-value">${avg(djson["psl"])} hPa</div>
         </div>
       </div>
     </div>
   </div>
 `;
         contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["t2m"],
-          "line",
-          str_file,
-          "Temperatura",
-          "°C",
-          "rgb(255, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["rh"],
-          "line",
-          str_file,
-          "Humedad ",
-          "%",
-          "rgb(0, 0, 255)"
-        );
-        set_canva(
-          contenDialog,
-          djson["pre"],
-          "bar",
-          str_file,
-          "Precipitación",
-          "mm",
-          "rgb(0, 128, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["sw"],
-          "line",
-          str_file,
-          "Radiación",
-          "w/m2",
-          "rgb(255, 255, 0)"
-        );
-        /*set_canva(contenDialog, djson['dir'], 'bar', str_file, 'Direccion del Viento', '0-360 grados', 'rgb(243, 156, 18)');*/
-        set_canva(
-          contenDialog,
-          djson["wnd"],
-          "line",
-          str_file,
-          "Viento",
-          "km/h",
-          "rgb(128, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["psl"],
-          "line",
-          str_file,
-          "Presión ",
-          "hPa",
-          "rgb(0, 128, 128)"
-        );
+        
+        // Crear gráficas con el nuevo estilo
+        createStyledChart(contenDialog, djson, "t2m", "Temperatura", "°C", "#FF6384", "fa-solid fa-temperature-half", str_file);
+        createStyledChart(contenDialog, djson, "rh", "Humedad", "%", "#36A2EB", "fa-solid fa-droplet", str_file);
+        createStyledChart(contenDialog, djson, "pre", "Precipitación", "mm", "#4BC0C0", "fa-solid fa-cloud-rain", str_file);
+        createStyledChart(contenDialog, djson, "sw", "Radiación", "w/m²", "#FFCD56", "fa-solid fa-sun", str_file);
+        createStyledChart(contenDialog, djson, "wnd", "Viento", "km/h", "#9966FF", "fa-solid fa-wind", str_file);
+        createStyledChart(contenDialog, djson, "psl", "Presión", "hPa", "#4BC0C0", "fa-solid fa-gauge", str_file);
       } else {
         downloadFileCSV();
       }
@@ -1482,7 +1431,7 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
       if (show_dialog) {
         const resumenHTML = `<div style="margin-bottom: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
+      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0; color: #5a1b30; font-family: 'Poppins', sans-serif;">Resumen de Promedios</h4>
       <button onclick="downloadFileCSV()" style="
         background-color: #007bff;
         color: white;
@@ -1507,82 +1456,36 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
         </tr>
       </thead>
       <tbody>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟤 Monóxido de Carbono (ppm)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;"><i class="fa-solid fa-smog" style="color: rgb(120, 40, 31); margin-right: 8px;"></i>Monóxido de Carbono (ppm)</td><td style="padding: 10px;">${avg(
           djson["CO"]
         )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🟣 Dióxido de Nitrógeno (ppb)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;"><i class="fa-solid fa-industry" style="color: rgb(74, 35, 90); margin-right: 8px;"></i>Dióxido de Nitrógeno (ppb)</td><td style="padding: 10px;">${avg(
           djson["NO2"]
         )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟢 Ozono (ppb)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;"><i class="fa-solid fa-sun" style="color: rgb(14, 98, 81); margin-right: 8px;"></i>Ozono (ppb)</td><td style="padding: 10px;">${avg(
           djson["O3"]
         )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🔵 Dióxido de Azufre (ppb)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;"><i class="fa-solid fa-fire" style="color: rgb(21, 67, 96); margin-right: 8px;"></i>Dióxido de Azufre (ppb)</td><td style="padding: 10px;">${avg(
           djson["SO2"]
         )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">⚫ PM 10 (µg/m³)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;"><i class="fa-solid fa-microscope" style="color: rgb(125, 102, 8); margin-right: 8px;"></i>PM 10 (µg/m³)</td><td style="padding: 10px;">${avg(
           djson["PM10"]
         )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">⚫ PM 2.5 (µg/m³)</td><td style="padding: 10px;">${avg(
+        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;"><i class="fa-solid fa-lungs" style="color: rgb(77, 86, 86); margin-right: 8px;"></i>PM 2.5 (µg/m³)</td><td style="padding: 10px;">${avg(
           djson["PM25"]
         )}</td></tr>
       </tbody>
     </table>
   </div>`;
         contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["CO"],
-          "line",
-          str_file,
-          "Monóxido de Carbono",
-          "ppm",
-          "rgb(120, 40, 31)"
-        );
-        set_canva(
-          contenDialog,
-          djson["NO2"],
-          "line",
-          str_file,
-          "Dióxido de Nitrógeno",
-          "ppb",
-          "rgb(74, 35, 90)"
-        );
-        set_canva(
-          contenDialog,
-          djson["O3"],
-          "line",
-          str_file,
-          "Ozono",
-          "ppb",
-          "rgb(14, 98, 81)"
-        );
-        set_canva(
-          contenDialog,
-          djson["SO2"],
-          "line",
-          str_file,
-          "Dióxido de Azufre",
-          "ppb",
-          "rgb(21, 67, 96)"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM10"],
-          "line",
-          str_file,
-          "Partículas PM 10",
-          "µg/m³",
-          "rgb(125, 102, 8)"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM25"],
-          "line",
-          str_file,
-          "Partículas PM 2.5",
-          "µg/m³",
-          "rgb(77, 86, 86)"
-        );
+        
+        // Crear gráficas con el nuevo estilo
+        createStyledChart(contenDialog, djson, "CO", "Monóxido de Carbono", "ppm", "rgb(120, 40, 31)", "fa-solid fa-smog", str_file);
+        createStyledChart(contenDialog, djson, "NO2", "Dióxido de Nitrógeno", "ppb", "rgb(74, 35, 90)", "fa-solid fa-industry", str_file);
+        createStyledChart(contenDialog, djson, "O3", "Ozono", "ppb", "rgb(14, 98, 81)", "fa-solid fa-sun", str_file);
+        createStyledChart(contenDialog, djson, "SO2", "Dióxido de Azufre", "ppb", "rgb(21, 67, 96)", "fa-solid fa-fire", str_file);
+        createStyledChart(contenDialog, djson, "PM10", "Partículas PM 10", "µg/m³", "rgb(125, 102, 8)", "fa-solid fa-microscope", str_file);
+        createStyledChart(contenDialog, djson, "PM25", "Partículas PM 2.5", "µg/m³", "rgb(77, 86, 86)", "fa-solid fa-lungs", str_file);
       } else {
         downloadFileCSV();
       }
@@ -1636,6 +1539,21 @@ function downloadFileCSV() {
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
+}
+
+// Función para descargar imagen de gráfica
+function downloadChartImage(button) {
+    const chartCard = button.closest('.chart-card');
+    const canvas = chartCard.querySelector('canvas');
+    const titleElement = chartCard.querySelector('.chart-title');
+    const title = titleElement.textContent.trim().replace(/\s+/g, '_');
+    
+    if (canvas) {
+        const link = document.createElement('a');
+        link.download = `grafica_${title}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
 }
 
 // Function to update the historical chart based on selected variables
@@ -1733,6 +1651,147 @@ $("#hist-tipo-select").on('change', function() {
 });
 
 //-------------------------------------------------------------------------------
+// Nueva función para crear gráficas con estilo MeteorologiaGit
+function createStyledChart(container, data, dataKey, title, unit, color, icon, str_file) {
+  if (!data[dataKey] || data[dataKey].length === 0) return;
+  
+  // Crear estructura de la tarjeta de gráfica
+  const chartCard = document.createElement('div');
+  chartCard.className = 'chart-card';
+  
+  // Crear header con título centrado
+  const header = document.createElement('div');
+  header.className = 'chart-header';
+  header.innerHTML = `
+    <div class="chart-title">
+      <i class="${icon}"></i>
+      ${title} (${unit})
+    </div>
+    <button class="download-btn" onclick="downloadChartImage(this)">
+      <i class="fa-solid fa-download"></i>
+      PNG
+    </button>
+  `;
+  chartCard.appendChild(header);
+  
+  // Crear canvas para la gráfica
+  const canvas = document.createElement('canvas');
+  canvas.style.height = '300px';
+  canvas.style.maxHeight = '300px';
+  chartCard.appendChild(canvas);
+  
+  // Generar labels y datos
+  const labels = [];
+  const chartData = [];
+  let hours = 0;
+  
+  for (const value of data[dataKey]) {
+    labels.push(setLabel(str_file, (hours += 3)));
+    chartData.push(round10(value));
+  }
+  
+  // Función para convertir hex a rgba
+  function hexToRgba(hex, alpha) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return hex;
+    
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  
+  // Crear gráfica con Chart.js
+  new Chart(canvas.getContext('2d'), {
+    type: dataKey === 'pre' ? 'bar' : 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: `${title} (${unit})`,
+        data: chartData,
+        borderColor: color,
+        backgroundColor: hexToRgba(color, 0.1),
+        borderWidth: 3,
+        pointRadius: 4,
+        pointBackgroundColor: color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 2,
+        fill: true,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        title: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: dataKey === 'pre',
+          grid: { 
+            color: '#f0f0f0',
+            drawBorder: false
+          },
+          ticks: { 
+            color: '#666',
+            font: { 
+              size: 12,
+              family: 'Poppins'
+            }
+          },
+          title: { 
+            display: true, 
+            text: unit, 
+            color: '#5a1b30',
+            font: { 
+              weight: 'bold',
+              size: 13,
+              family: 'Poppins'
+            }
+          }
+        },
+        x: {
+          grid: { 
+            color: '#f8f8f8',
+            drawBorder: false
+          },
+          ticks: { 
+            color: '#888',
+            font: { 
+              size: 11,
+              family: 'Poppins'
+            },
+            maxTicksLimit: 8
+          },
+          title: { 
+            display: true, 
+            text: 'Hora del día', 
+            color: '#888',
+            font: { 
+              weight: 'bold',
+              size: 12,
+              family: 'Poppins'
+            }
+          }
+        }
+      },
+      elements: {
+        line: { tension: 0.4 },
+        point: { hoverRadius: 6 }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      }
+    }
+  });
+  
+  container.append(chartCard);
+}
+
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   var canva = document.createElement("canvas");
   var conten = $("<div></div>").append(canva);
