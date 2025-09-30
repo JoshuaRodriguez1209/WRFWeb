@@ -397,9 +397,6 @@ window.addEventListener('resize', constrainScaleLine);
 setTimeout(constrainScaleLine, 800);
 m_map.on('moveend', () => setTimeout(constrainScaleLine, 50));
 
-// Variable para almacenar la geometría de recorte de Puebla
-let pueblaClippingGeometry = null;
-
 // Función para aplicar el recorte a una capa
 const clipLayer = (layer) => {
   if (!pueblaClippingGeometry || !layer) return;
