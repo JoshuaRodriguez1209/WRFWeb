@@ -51,6 +51,8 @@ function set_layer(map, str_file_image, tipo, data_layer) {
 
   data_layer.layer = new ol.layer.Image({
     opacity: 1,
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
     source: new ol.source.ImageStatic({
       url: str_file_image,
       crossOrigin: "anonymous",
@@ -62,7 +64,36 @@ function set_layer(map, str_file_image, tipo, data_layer) {
 
   data_layer.setParam(str_file_image);
   if (tipo == "add") {
-    map.getLayers().insertAt(1, data_layer.layer); // Insertar en el índice 2 para estar sobre la máscara
+    // Insertar las capas de datos debajo de las capas overlay (municipios, estaciones)
+    const layers = map.getLayers();
+    const layersArray = layers.getArray();
+    
+    // Encontrar la posición correcta: después del tile base pero antes de overlays
+    let insertPosition = 1; // Por defecto después del tile base
+    
+    // Buscar capas overlay desde abajo hacia arriba
+    for (let i = layersArray.length - 1; i >= 0; i--) {
+      const layer = layersArray[i];
+      const layerType = layer.get('type');
+      
+      // Si encontramos una capa que NO es overlay ni mask, insertar después de ella
+      if (layerType !== 'overlay' && layerType !== 'mask' && layerType !== 'base') {
+        insertPosition = i + 1;
+        break;
+      }
+      // Si es una capa base, insertar después de ella
+      else if (layerType === 'base') {
+        insertPosition = i + 1;
+        break;
+      }
+    }
+    
+    layers.insertAt(insertPosition, data_layer.layer);
+    
+    // Asegurar que las capas overlay sigan arriba
+    setTimeout(() => {
+      ensureMaskOnTop();
+    }, 10);
   }
 }
 
@@ -109,9 +140,7 @@ function applyMaskToLayer(layer, geometry) {
   layer.on('postrender', post);
 
   // Que actualice mientras interactúas (suaviza el “parpadeo”)
-  if (typeof layer.setUpdateWhileInteracting === 'function') {
-    layer.setUpdateWhileInteracting(true);
-  }
+  // Configuración de renderizado optimizada (las propiedades se configuran en la creación de la capa)
   if (layer.getSource() && typeof layer.getSource().setRenderReprojectionEdges === 'function') {
     // opcional: puede ayudar cuando hay reproyección
     layer.getSource().setRenderReprojectionEdges(true);
@@ -132,7 +161,7 @@ var m_lyr_tile = new ol.layer.Tile({
 //-------------------------------------------------------------------------------
 var m_layer_municipios = create_layer_kml_base(
   "Municipios",
-  "",
+  "overlay",
   "./kml/puebla.kml",
   0.7,
   true
@@ -144,6 +173,9 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
     title: titulo,
     type: tipo,
     visible: bvisible,
+    zIndex: 1000, // Asegurar que esté siempre arriba
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
     source: new ol.source.Vector({
       url: str_file_kml,
       format: new ol.format.KML({ extractStyles: false }) // <- importante
@@ -153,7 +185,7 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
         color: 'rgba(255,255,255,1)', // contorno blanco
         width: 2
       }),
-      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // sin relleno
+      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // relleno muy transparente
     })
   });
   return layer;
@@ -216,8 +248,12 @@ scaleLineControl._customSteps = 4;
 
 //-------------------------------------------------------------------------------
 
+// Variable para almacenar la geometría de recorte de Puebla
+let pueblaClippingGeometry = null;
+let maskLayer = null;
+
 var m_map = new ol.Map({
-  renderBuffer: 1000, // Aumentar el búfer para un renderizado más suave
+  renderBuffer: 2000, // Aumentar el búfer para un renderizado más suave
   controls: ol.control.defaults({ zoom: false }).extend([
     mousePositionControl,
     m_notification,
@@ -368,7 +404,7 @@ let pueblaClippingGeometry = null;
 const clipLayer = (layer) => {
   if (!pueblaClippingGeometry || !layer) return;
 
-  layer.on('postrender', (e) => {
+  const preRenderHandler = (e) => {
     if (!e.context) return;
     const vectorContext = ol.render.getVectorContext(e);
     e.context.globalCompositeOperation = 'destination-in';
@@ -379,48 +415,113 @@ const clipLayer = (layer) => {
       })
     );
     e.context.globalCompositeOperation = 'source-over';
-  });
+  };
+
+  // Remover listeners previos para evitar duplicados
+  layer.un('postrender', preRenderHandler);
+  layer.on('postrender', preRenderHandler);
 };
 
-// Cargar la geometría de Puebla una sola vez
+// Función para crear la máscara con configuraciones optimizadas
+const createMaskLayer = (pueblaCoords) => {
+  pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
+  
+  // Crear geometría de máscara más eficiente
+  const extent = [-180, -90, 180, 90];
+  const outerPolygon = ol.geom.Polygon.fromExtent(extent);
+  const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
+  outerPolygon.appendLinearRing(pueblaLinearRing);
+
+  const maskFeature = new ol.Feature({
+    geometry: outerPolygon,
+  });
+
+  maskLayer = new ol.layer.Vector({
+    renderBuffer: 500, // Buffer más grande para evitar fallos en movimientos rápidos
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
+    source: new ol.source.Vector({
+      features: [maskFeature],
+    }),
+    style: new ol.style.Style({
+      fill: new ol.style.Fill({
+        color: 'rgba(0, 0, 0, 1)',
+      }),
+    }),
+    title: 'Mascara Puebla',
+    type: 'mask',
+    zIndex: 999 // Asegurar que siempre esté arriba
+  });
+  
+  return maskLayer;
+};
+
+// Cargar la geometría de Puebla una sola vez con manejo mejorado
 fetch('./puebla_state_boundary.json')
   .then(response => response.json())
   .then(pueblaCoords => {
-    pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
+    const mask = createMaskLayer(pueblaCoords);
     
-    // Crear una capa de máscara negra para el fondo
-    const extent = [-180, -90, 180, 90];
-    const outerPolygon = ol.geom.Polygon.fromExtent(extent);
-    const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
-    outerPolygon.appendLinearRing(pueblaLinearRing);
-
-    const maskFeature = new ol.Feature({
-      geometry: outerPolygon,
-    });
-
-    const maskLayer = new ol.layer.Vector({
-      renderBuffer: 250,
-      source: new ol.source.Vector({
-        features: [maskFeature],
-      }),
-      style: new ol.style.Style({
-        fill: new ol.style.Fill({
-          color: 'rgba(0, 0, 0, 1)',
-        }),
-      }),
-      title: 'Mascara Puebla',
-      type: 'mask'
-    });
-
-    m_map.getLayers().insertAt(1, maskLayer);
-
-    // Re-renderizar el mapa para asegurar que el clipping se aplique si las capas ya cargaron
+    // Insertar la máscara en el índice correcto
+    m_map.getLayers().insertAt(1, mask);
+    
+    // Forzar renderizado inmediato y continuo
     m_map.render();
+    
+    // Asegurar que la máscara se re-renderice en cada frame durante animaciones
+    m_map.on('movestart', () => {
+      if (maskLayer) {
+        maskLayer.setVisible(true);
+        m_map.render();
+      }
+    });
+    
+    m_map.on('moveend', () => {
+      if (maskLayer) {
+        m_map.render();
+      }
+    });
+    
+    // Re-renderizar durante zoom
+    m_view.on('change:resolution', () => {
+      if (maskLayer) {
+        setTimeout(() => {
+          m_map.render();
+        }, 10);
+      }
+    });
   })
   .catch(error => console.error('Error loading Puebla boundary:', error));
 
 
 var m_dlayer = new CDataLayer(m_map);
+
+// Agregar manejadores adicionales para asegurar que la máscara siempre funcione
+m_map.on('precompose', function(event) {
+  // Asegurar que la máscara esté en la posición correcta antes de cada renderizado
+  ensureMaskOnTop();
+});
+
+m_map.on('rendercomplete', function(event) {
+  // Verificar después de cada renderizado completo
+  if (maskLayer && !maskLayer.getVisible()) {
+    maskLayer.setVisible(true);
+  }
+});
+
+// Manejador para interacciones del usuario (arrastrar, zoom, etc.)
+m_map.getView().on('change', function(event) {
+  if (maskLayer) {
+    // Forzar re-renderizado de la máscara durante cambios de vista
+    maskLayer.getSource().changed();
+  }
+  
+  // Asegurar orden de capas durante interacciones
+  setTimeout(() => {
+    ensureMaskOnTop();
+  }, 5);
+});
+
 //-------------------------------------------------------------------------------
 
 const isMobile = window.innerWidth < 768;
@@ -938,6 +1039,88 @@ var m_rango = 250;
 var m_animate = false;
 var m_id_animation = 0;
 
+// Función para asegurar que la máscara esté siempre arriba
+function ensureMaskOnTop() {
+  if (!maskLayer) return;
+  
+  const layers = m_map.getLayers();
+  const layersArray = layers.getArray();
+  
+  // Función para reorganizar capas en el orden correcto
+  const reorganizeLayers = () => {
+    // Encontrar las capas importantes
+    const maskIndex = layersArray.indexOf(maskLayer);
+    const municipiosIndex = layersArray.indexOf(m_layer_municipios);
+    const vectorIndex = layersArray.indexOf(m_vectorLayer);
+    
+    // Remover las capas que necesitamos reordenar
+    const layersToReorder = [];
+    
+    if (vectorIndex !== -1) {
+      layersToReorder.push({ layer: m_vectorLayer, index: vectorIndex });
+    }
+    if (municipiosIndex !== -1) {
+      layersToReorder.push({ layer: m_layer_municipios, index: municipiosIndex });
+    }
+    if (maskIndex !== -1) {
+      layersToReorder.push({ layer: maskLayer, index: maskIndex });
+    }
+    
+    // Ordenar por índice descendente para remover correctamente
+    layersToReorder.sort((a, b) => b.index - a.index);
+    
+    // Remover las capas
+    layersToReorder.forEach(item => {
+      layers.removeAt(item.index);
+    });
+    
+    // Agregar en el orden correcto: municipios, vectores, máscara
+    if (municipiosIndex !== -1) {
+      layers.push(m_layer_municipios);
+    }
+    if (vectorIndex !== -1) {
+      layers.push(m_vectorLayer);
+    }
+    if (maskIndex !== -1) {
+      layers.push(maskLayer);
+    }
+  };
+  
+  // Verificar si necesitamos reorganizar
+  const municipiosIndex = layersArray.indexOf(m_layer_municipios);
+  const vectorIndex = layersArray.indexOf(m_vectorLayer);
+  const maskIndex = layersArray.indexOf(maskLayer);
+  
+  // Si alguna capa overlay no está en la posición correcta, reorganizar
+  const needsReorganization = 
+    (municipiosIndex !== -1 && municipiosIndex < layersArray.length - 3) ||
+    (vectorIndex !== -1 && vectorIndex < layersArray.length - 2) ||
+    (maskIndex !== -1 && maskIndex < layersArray.length - 1);
+  
+  if (needsReorganization) {
+    reorganizeLayers();
+    
+    // Forzar actualización
+    setTimeout(() => {
+      m_map.render();
+    }, 1);
+  }
+}
+
+// Interceptar cualquier adición de capas para mantener la máscara arriba
+const originalInsertAt = ol.Collection.prototype.insertAt;
+m_map.getLayers().insertAt = function(index, layer) {
+  // Llamar al método original
+  const result = originalInsertAt.call(this, index, layer);
+  
+  // Después de agregar cualquier capa, asegurar que la máscara esté arriba
+  setTimeout(() => {
+    ensureMaskOnTop();
+  }, 1);
+  
+  return result;
+};
+
 async function animate_frames() {
   var pos_frame = 0;
   var time_to_draw = performance.now();
@@ -948,12 +1131,36 @@ async function animate_frames() {
     if (dif_time > m_rango) {
       if (pos_frame < m_frames.length) {
         var m_dlayer_act = m_frames[pos_frame];
+        
+        // Función auxiliar para insertar capa correctamente (debajo de overlays)
+        const insertLayerCorrectly = (layer) => {
+          const layers = m_map.getLayers();
+          const layersArray = layers.getArray();
+          
+          // Encontrar la posición correcta: después del tile base pero antes de overlays
+          let insertPosition = 1;
+          
+          for (let i = layersArray.length - 1; i >= 0; i--) {
+            const existingLayer = layersArray[i];
+            const layerType = existingLayer.get('type');
+            
+            if (layerType !== 'overlay' && layerType !== 'mask' && layerType !== 'base') {
+              insertPosition = i + 1;
+              break;
+            } else if (layerType === 'base') {
+              insertPosition = i + 1;
+              break;
+            }
+          }
+          
+          layers.insertAt(insertPosition, layer);
+        };
+        
         if (filter_color && m_dlayer_act.img && m_dlayer_act.img.complete) {
           const filteredLayer = applyFilterToImage(m_dlayer_act.img);
           if (filteredLayer) {
             if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
-            m_map.getLayers().insertAt(1, filteredLayer);
-            //m_map.addLayer(filteredLayer);
+            insertLayerCorrectly(filteredLayer);
             const permanentDateElement = document.querySelector(
               "#filter-info .permanent-date"
             );
@@ -963,18 +1170,19 @@ async function animate_frames() {
             window.filtered_layer = filteredLayer;
             m_dlayer = m_dlayer_act;
           } else {
-            //m_map.addLayer(m_dlayer_act.layer);
-            m_map.getLayers().insertAt(1, m_dlayer_act.layer);
+            insertLayerCorrectly(m_dlayer_act.layer);
           }
         } else {
           m_map.removeLayer(m_dlayer.layer);
-          //m_map.addLayer(m_dlayer_act.layer);
-          m_map.getLayers().insertAt(1, m_dlayer_act.layer);
+          insertLayerCorrectly(m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
         }
+        
+        // Asegurar que la máscara esté siempre arriba
+        ensureMaskOnTop();
+        
         pos_frame = pos_frame + 1;
       } else {
-        //				console.log('inicializado');
         pos_frame = 0;
       }
       time_to_draw = time;
@@ -1031,14 +1239,14 @@ var create_style = function (tipo) {
       opacity: opacity,
     }),
     text: new ol.style.Text({
-      offsetX: 8,
-      offsetY: 16,
-      textAlign: "left",
-      font: "18px Calibri,sans-serif",
+      offsetX: 0,
+      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
       fill: new ol.style.Fill({ color: "#fff" }),
       stroke: new ol.style.Stroke({
-        color: "#000",
-        width: 1,
+        color: "#333",
+        width: 2,
       }),
       text: "",
     }),
@@ -1051,8 +1259,11 @@ var m_vectorSource = new ol.source.Vector({});
 //------------------------------------------------------------------------
 var m_vectorLayer = new ol.layer.Vector({
   title: "Meteogramas",
-  type: "",
+  type: "overlay",
   visible: "true",
+  zIndex: 1001, // Más alto que municipios para estar encima
+  updateWhileAnimating: true,
+  updateWhileInteracting: true,
   source: m_vectorSource,
 });
 
@@ -2077,7 +2288,20 @@ function getClosestValueFromRGB(r, g, b) {
 function showInfo(value) {
   hideInfo();
   const info = document.getElementById("filter-info");
-  const units = document.getElementById("gradient-units").textContent;
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
   const existingRange = info.querySelector(".dynamic-range");
   const rangeElement = document.createElement("div");
   rangeElement.className = "dynamic-range";
@@ -2104,6 +2328,14 @@ function showInfo(value) {
   }
   rangeElement.innerHTML = `<strong>Rango aproximado: ${displayVal} ${units || ""}</strong>`;
   info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
 }
 
 function hideInfo() {
@@ -3344,4 +3576,164 @@ if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', loadMapSearchMunicipios);
 } else {
   loadMapSearchMunicipios();
+}
+
+// Nueva función para manejar la leyenda horizontal
+function setupLegendClickFilter() {
+    const legendGradient = document.getElementById('legend-gradient');
+    const filterIndicator = document.getElementById('filter-indicator');
+    
+    if (!legendGradient) return;
+    
+    let isSelecting = false;
+    let startX = 0;
+    
+    legendGradient.addEventListener('mousedown', (e) => {
+        isSelecting = true;
+        startX = e.offsetX;
+        filterIndicator.style.left = startX + 'px';
+        filterIndicator.style.width = '2px';
+        filterIndicator.classList.add('active');
+        e.preventDefault();
+    });
+    
+    legendGradient.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+        
+        const currentX = e.offsetX;
+        const width = Math.abs(currentX - startX);
+        const left = Math.min(startX, currentX);
+        
+        filterIndicator.style.left = left + 'px';
+        filterIndicator.style.width = width + 'px';
+    });
+    
+    legendGradient.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
+        isSelecting = false;
+        
+        const endX = e.offsetX;
+        const gradientWidth = legendGradient.offsetWidth;
+        
+        const minPercent = Math.min(startX, endX) / gradientWidth;
+        const maxPercent = Math.max(startX, endX) / gradientWidth;
+        
+        if (Math.abs(endX - startX) > 5) {
+            // Aplicar filtro basado en el rango seleccionado
+            applyLegendFilter(minPercent, maxPercent);
+        } else {
+            // Click simple - obtener valor puntual
+            const percent = startX / gradientWidth;
+            applyLegendFilter(percent - 0.05, percent + 0.05);
+        }
+    });
+    
+    // Doble click en la leyenda para limpiar filtro
+    legendGradient.addEventListener('dblclick', (e) => {
+        clearLegendFilter();
+        e.preventDefault();
+        e.stopPropagation();
+    });
+}
+
+function applyLegendFilter(minPercent, maxPercent) {
+    if (!window.gradientLookup || !window.gradientLookup.length) return;
+    
+    const totalSteps = window.gradientLookup.length;
+    const minIndex = Math.floor(minPercent * totalSteps);
+    const maxIndex = Math.ceil(maxPercent * totalSteps);
+    
+    if (minIndex >= 0 && maxIndex < totalSteps) {
+        const minValue = window.gradientLookup[minIndex].value;
+        const maxValue = window.gradientLookup[maxIndex].value;
+        const avgValue = (minValue + maxValue) / 2;
+        
+        // Simular el color para el filtrado
+        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
+        if (colorEntry && colorEntry.hex) {
+            const hex = colorEntry.hex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            filter_color = [r, g, b];
+            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+            showInfo(range);
+            const filteredLayer = applyFilterToImage(m_lienzo.img);
+            put_FilteredImage(filteredLayer);
+        }
+    }
+}
+
+function clearLegendFilter() {
+    const filterIndicator = document.getElementById('filter-indicator');
+    if (filterIndicator) {
+        filterIndicator.classList.remove('active');
+    }
+    filter_color = null;
+    hideInfo();
+    m_map.removeLayer(window.filtered_layer);
+    if (m_dlayer.layer) m_dlayer.layer.setVisible(true);
+}
+
+// Función para actualizar la leyenda con nueva variable
+function updateLegend(title, gradient, minValue, maxValue, unit) {
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legend-title');
+    const legendGradient = document.getElementById('legend-gradient');
+    const legendLabels = document.getElementById('legend-labels');
+    
+    if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
+    
+    legend.style.display = 'block';
+    legendTitle.textContent = title;
+    legendGradient.style.background = gradient;
+    
+    // Crear etiquetas - CORREGIDAS: de mayor a menor (invertido)
+    legendLabels.innerHTML = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        // Invertir los valores: empezar por el máximo y bajar al mínimo
+        const value = maxValue - (maxValue - minValue) * (i / steps);
+        const span = document.createElement('span');
+        span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
+        legendLabels.appendChild(span);
+    }
+}
+
+// Inicializar la leyenda cuando se carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    setupLegendClickFilter();
+});
+
+function showInfo(value) {
+  hideInfo();
+  const info = document.getElementById("filter-info");
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
+  const existingRange = info.querySelector(".dynamic-range");
+  const rangeElement = document.createElement("div");
+  rangeElement.className = "dynamic-range";
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${units}</strong>`;
+  info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
 }
