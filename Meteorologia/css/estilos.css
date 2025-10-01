@@ -753,23 +753,21 @@
 /* Variante flotante al fondo ocupando 1/3 del ancho */
 /* Variante flotante fija en esquina inferior izquierda */
 #gradient-container.horizontal-mode.embedded.bottom-floating {
-  position: fixed; /* fija al viewport */
-  top: 920px;   /* distancia desde borde inferior */
-  left: 90px;     /* distancia desde borde izquierdo */
+  position: fixed; /* Asegura que no se mueva */
+  top: 80%; /* más pegado a la parte inferior */
+  left: 5.8%;         /* 👈 Esto es crucial */
   transform: none;
-  width: 400px; /* tamaño base escritorio */
+  width: 400px; /* ligeramente más compacto */
   max-width: 440px;
   min-width: 300px;
-  margin: 0;
-  padding: 10px 14px 12px 14px;
+  margin-top: 0;
+  padding: 10px 14px 12px 14px; /* menos alto */
   backdrop-filter: blur(5px);
-  z-index: 3005; /* sobre el mapa */
+  z-index: 3005; /* por encima del mapa */
   display: flex;
   flex-direction: column;
   background: rgba(255,255,255,0.9);
   border-radius: 12px;
-  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
-  pointer-events: auto;
 }
 
 @media (max-width: 1200px) {
