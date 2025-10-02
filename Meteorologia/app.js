@@ -381,8 +381,17 @@ function constrainScaleLine() {
   if (!el) return;
   const inner = el.querySelector('.ol-scale-line-inner');
   if (!inner) return;
-  // Reset transform para medir tamaño real
+  // En móvil NO reducimos la escala; permitimos que use su tamaño natural
+  const isMobileViewport = window.innerWidth < 768;
   inner.style.transform = 'none';
+  if (isMobileViewport) {
+    // Asegurar ancho mínimo para legibilidad
+    if (inner.getBoundingClientRect().width < 200) {
+      inner.style.minWidth = '220px';
+    }
+    return; // no aplicar reducción
+  }
+  // Desktop: limitar a 1/3 del viewport si excede
   const maxPx = window.innerWidth / 3;
   const actual = inner.getBoundingClientRect().width;
   if (actual > maxPx) {
@@ -2232,86 +2241,98 @@ function show_datos(datos) {
       : 0;
   });
 
-  var texthtml = $("<div>");
-  //texthtml.append('<table width="100%">');
-
-  //texthtml.append('<tbody>');
-  texthtml.append("<div>");
-  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
-  let modo = 'meteo';
-  try {
-    const sel = document.getElementById('select_dat');
-    if (sel && sel.value) {
-      modo = sel.value === 'quim' ? 'chem' : 'meteo';
-    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
-      modo = 'chem';
-    }
-  } catch(e) {}
-
-  // Bloque de acciones masivas (solo un botón según modo)
-  if (modo === 'meteo') {
-    texthtml.append('<div class="bulk-download-bar">'
-      + '<button onclick="downloadMeteoZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Meteorología)">'
-      + '<i class="fa-solid fa-download"></i><span> Todos (Met)</span>'
-      + '</button>'
-      + '</div>');
-  } else {
-    texthtml.append('<div class="bulk-download-bar">'
-      + '<button onclick="downloadChemZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Calidad del Aire)">'
-      + '<i class="fa-solid fa-download"></i><span> Todos (Calidad)</span>'
-      + '</button>'
-      + '</div>');
-  }
-  texthtml.append(
-    '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Clave</div>'
-  );
-  texthtml.append(
-    '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Municipio</div>'
-  );
-  texthtml.append(
-    '<div style="display: inline-block; width: 20%;  vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Opciones</div>'
-  );
+  var texthtml = $("<div class='datos-modal-wrapper'>");
+  // Barra de descarga masiva (TOP)
+  texthtml.append(`
+    <div class="bulk-download-bar" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin: 4px 0 8px 0;">
+      <button id="btn-download-all-cabeceras" class="mini-download-btn" type="button" title="Descargar todo (CSV)">
+        <i class="fa fa-download"></i> Todo
+      </button>
+    </div>
+  `);
+  // Encabezados
+  const descargaLabel = (window.innerWidth && window.innerWidth < 640) ? 'Des.' : 'Descarga';
+  texthtml.append("<div class='datos-header-row'>");
+  texthtml.append('<div class="datos-cell datos-head" style="width:20%">Clave</div>');
+  texthtml.append('<div class="datos-cell datos-head" style="width:60%">Municipio</div>');
+  texthtml.append(`<div class="datos-cell datos-head" style="width:20%" title="Descarga">${descargaLabel}</div>`);
   texthtml.append("</div>");
 
   for (var i = 0; i < features.length; i++) {
     var feature = features[i];
-
-    //texthtml.append('<tr>');
-    texthtml.append(
-      '<div <div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
-        feature.get("clave") +
-        "</div>"
-    );
-    texthtml.append(
-      '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
-        feature.get("nombre") +
-        "</div>"
-    );
-
-    var str_link =
-      '<a href="#" class="row-download-link" onclick="downladCSV(\'' +
-      feature.get("clave") +
-      "');\" title=\"Descargar datos (CSV)\">" +
-      '<i class="fa-solid fa-download"></i>' +
-      "</a>";
-    texthtml.append(
-      '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff; text-align: center;" >' +
-        str_link +
-        "</div>"
-    );
-    //texthtml.append('</tr>');
+    const clave = feature.get("clave");
+    const nombre = feature.get("nombre") || "";
+    const row = $(`
+      <div class="datos-row" style="display:flex; width:100%;">
+        <div class="datos-cell" style="width:20%">${clave}</div>
+        <div class="datos-cell" style="width:60%">${nombre}</div>
+        <div class="datos-cell" style="width:20%; text-align:center;">
+          <a href="#" class="row-download-link" title="Descargar CSV" data-clave="${clave}">
+            <i class="fa fa-download"></i>
+          </a>
+        </div>
+      </div>`);
+    texthtml.append(row);
   }
 
-  //texthtml.append('</tbody>');
-  //texthtml.append('</table>');
-  texthtml.append("</div>");
+  // Estilos rápidos inline para asegurar compatibilidad móvil
+  texthtml.append(`<style>
+    .datos-modal-wrapper{font-family:'Poppins',sans-serif; font-size:13px;}
+    .datos-head{font-weight:600; background:#f2f2f2;}
+    .datos-row:nth-child(even){background:#fcfcfc;}
+    .datos-cell{padding:6px 4px; box-sizing:border-box; display:inline-block; vertical-align:middle; word-break:break-word;}
+    @media (max-width:600px){
+      .datos-cell{font-size:12px; padding:6px 3px;}
+      .bulk-download-bar{position:sticky; top:0; background:#fff; padding:6px 4px; z-index:10;}
+    }
+  </style>`);
 
   BootstrapDialog.show({
     title: "Datos",
     closable: true,
     message: texthtml,
+    onshown: function(){
+      // Handler descarga individual
+      texthtml.on('click', 'a.row-download-link', function(e){
+        e.preventDefault();
+        const clave = this.getAttribute('data-clave');
+        if (clave) downladCSV(clave);
+      });
+      // Descarga masiva
+      const btnAll = document.getElementById('btn-download-all-cabeceras');
+      if (btnAll){
+        btnAll.addEventListener('click', function(){
+          try { bulkDownloadCabeceras(features); } catch(err){ console.error('Bulk download error', err);} 
+        });
+      }
+    }
   });
 }
+
+// Generar un CSV con todas las cabeceras (clave, nombre)
+function bulkDownloadCabeceras(features){
+  if (!features || !features.length) return;
+  const header = 'clave,municipio';
+  const lines = features.map(f => {
+    const c = (f.get && f.get('clave')) || '';
+    let n = (f.get && f.get('nombre')) || '';
+    // Escapar comas y comillas
+    if (/[,"\n]/.test(n)) n = '"' + n.replace(/"/g,'""') + '"';
+    return `${c},${n}`;
+  });
+  const csv = [header].concat(lines).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0,10);
+  a.download = `cabeceras_${ts}.csv`;
+  a.href = URL.createObjectURL(blob);
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+
+
 
 function downladCSV(clave) {
   var features = m_vectorSource.getFeatures();

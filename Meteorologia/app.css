@@ -21,6 +21,7 @@ body {
     font-family: 'Poppins', sans-serif;
     overflow-x: hidden;
     background-color: var(--light-gray);
+    max-width: 100vw;
 }
 
 /* Hide landing page when map is active */
@@ -75,18 +76,18 @@ body.map-active #main-content {
 
 /* Enhanced Map Controls - Fixed positioning to avoid navbar overlap */
 .map-controls {
-        position: absolute;
-        top: 50px; /* antes 160px */
-        right: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        z-index: 999;
-        transition: top .25s ease;
+  position: absolute;
+  top: 160px; /* raised 20px (antes 50px) */
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 999;
+  transition: top .25s ease;
 }
 
 @media (max-width: 768px) {
-    .map-controls { top: 130px; } /* un poco más abajo en móviles para no chocar con navbar */
+  .map-controls { top: 60px; } /* raised 10px vs previous 130px */
 }
 
 .control-btn {
@@ -567,9 +568,9 @@ body.map-active #main-content {
     
     .weather-controls {
         position: absolute;
-        top: 15px;
+        top: 20px;
         right: 0px;
-        width: calc(100% - 40px);
+        width: 85%;
         max-width: 380px;
         height: calc(100% - 40px);
         background: white;
@@ -644,7 +645,51 @@ body.map-active #main-content {
         font-weight: 900;
     } 
 
+    #historial-dashboard {
+        top: 150px;
+        left: 0;
+        width: 100%;
+        padding: 15px;
+    }
     
+    /* Ensure gradient scale is visible and properly positioned */
+    #gradient-container.horizontal-mode.embedded.bottom-floating {
+        bottom: 40px !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translateX(-50%) !important;
+        width: calc(100% - 40px) !important;
+        max-width: 400px !important;
+        z-index: 1500;
+    }
+    
+    /* Ensure map and app containers don't exceed viewport */
+    #app, #map {
+        max-width: 100vw;
+        overflow-x: hidden;
+    }
+    
+    /* Ensure filter info is visible in mobile */
+    #filter-info {
+        top: 250px !important;
+        right: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100% - 20px) !important;
+        z-index: 1500;
+    }
+}
+
+#historial-dashboard .variable-toggle,
+#historial-dashboard .variable-toggle .label {
+  font-size: 12px;          /* tamaño del texto */
+  line-height: 1.1;         /* altura de línea compacta */
+  text-align: center;       /* centra el texto */
+  white-space: normal;      /* permite varias líneas */
+  text-overflow: ellipsis;
+  overflow: hidden; 
+  display: -webkit-box;        /* comportamiento tipo caja flexible */
+    -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
 }
 
 /* ===== Tablas “pro” para modales y paneles ===== */
@@ -940,7 +985,7 @@ body.map-active #main-content {
 /* Botón cerrar moderno */
 .modal-header .close,
 .modal-header .btn-close {
-  color: white !important;
+  color: #f7c17a !important;
   opacity: 0.8 !important;
   font-size: 28px !important;
   font-weight: 300 !important;
@@ -1200,7 +1245,7 @@ body.map-active #main-content {
 }
 
 /* Para pantallas grandes, hacer el modal aún más ancho */
-@media (min-width: 1200px) {
+@media (min-width: 1450px) {
   .modal-dialog {
     width: 90% !important;
     max-width: 1600px !important;
@@ -1222,3 +1267,189 @@ body.map-active #main-content {
     gap: 16px;
   }
 }
+
+/* ===== Layout responsive especial para toggles de variables (móvil) ===== */
+@media (max-width: 768px) {
+  #variable-toggles {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px 12px;
+    align-items: stretch;
+    margin-bottom: 14px;
+  }
+  #variable-toggles .variable-toggle {
+    padding: 12px 10px;
+    min-height: 64px;
+    font-size: 13px;
+    line-height: 1.15;
+  }
+  #variable-toggles .variable-toggle .icon { font-size: 20px; }
+  #variable-toggles .variable-toggle .label { font-size: 12px; }
+}
+
+/* === Mobile map optimization overrides === */
+@media (max-width:768px){
+  /* Navbar assumed 150px in desktop; enforce a smaller effective offset for map */
+  body.map-active #app { margin-top:150px; height:calc(100vh - 150px); }
+  #map { top:0; height:100% !important; }
+  /* Off-canvas style: keep panel hidden translating full width */
+  .weather-controls { width:85%; max-width:420px; height:100%; top:0 !important; right:0; border-radius:0 0 0 12px; }
+  /* Legacy rule kept but overridden later by refined block */
+  .weather-controls:not(.is-open){ transform:translateX(100%) !important; }
+  .weather-controls.is-open { box-shadow:-4px 0 18px rgba(0,0,0,.25); }
+  /* Floating toggle already exists (#toggle-controls-btn). Ensure it floats above gradient */
+  .map-controls { top:40px !important; } /* raised 20px vs previous 160px */
+  /* Search bar reposition to sit inside map with slight offset */
+  #map-top-bar{ top:155px !important; left:8px !important; width:260px !important; }
+  #map-top-bar #municipio-map-control{ box-shadow:0 4px 14px rgba(0,0,0,.18); }
+  /* Gradient scale adapt spacing */
+  #gradient-container.horizontal-mode.embedded.bottom-floating{ top: auto; bottom:8px; left:8px; width:calc(100% - 16px); z-index: 4000;}
+}
+
+/* ===== Refined MOBILE weather-controls overlay (final override) ===== */
+@media (max-width:768px){
+  .weather-controls {
+    position: fixed !important;
+    top: 160px !important; /* debajo de navbar / search */
+    right: 8px !important;
+    left: auto !important;
+    width: min(420px, 92%);
+    height: auto;               /* alto dinámico */
+    max-height: calc(100vh - 190px); /* ventana menos header y margen inferior */
+    border-radius: 16px;        /* apariencia de tarjeta flotante */
+    box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
+    background: #ffffff !important; /* asegurar fondo sólido durante animación */
+    z-index: 6000;              /* por encima de gradiente y escala */
+    transform: translateX(calc(100% + 64px)); /* estado cerrado totalmente fuera + margen para pseudo-overlay */
+    transition: transform .35s cubic-bezier(.4,.0,.2,1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;           /* bordes redondeados limpios */
+    will-change: transform;     /* optimización GPU */
+    backface-visibility: hidden;
+    contain: layout paint style;
+  }
+  /* Banda de extensión para cubrir controles mientras se desliza */
+  .weather-controls::after {
+    content:"";
+    position:absolute;
+    top:0; right:-64px; height:100%; width:64px;
+    background:#ffffff; /* misma tarjeta */
+    pointer-events:none;
+  }
+  /* Evitar que los botones internos se vean "volar" durante la animación */
+  .weather-controls .controls-header,
+  .weather-controls .controls-body,
+  .weather-controls .animation-controls,
+  .weather-controls .controls-footer {
+    opacity:0;
+    transition: opacity .18s ease;
+  }
+  /* Al estar abierta se muestran tras un breve retardo para que primero termine el desplazamiento */
+  .weather-controls.is-open .controls-header,
+  .weather-controls.is-open .controls-body,
+  .weather-controls.is-open .animation-controls,
+  .weather-controls.is-open .controls-footer {
+    opacity:1;
+    transition-delay:.07s; /* leve retardo para evitar parpadeo durante el slide */
+  }
+  /* Mientras está cerrándose (cuando pierde .is-open) desaparecen de inmediato */
+  .weather-controls:not(.is-open) .controls-header,
+  .weather-controls:not(.is-open) .controls-body,
+  .weather-controls:not(.is-open) .animation-controls,
+  .weather-controls:not(.is-open) .controls-footer { opacity:0; transition-delay:0s; }
+  /* Estado abierto */
+  .weather-controls.is-open { 
+    transform: translateX(0) !important; /* visible */
+    box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
+    pointer-events: auto;
+    visibility: visible;
+  }
+  /* Estado cerrado (override definitivo) */
+  .weather-controls:not(.is-open){
+    transform: translateX(calc(100% + 64px)) !important; /* fuera de pantalla + banda de cobertura */
+    box-shadow: none !important;
+    pointer-events: none;
+    visibility: hidden; /* evita foco / tab */
+  }
+
+  /* Header compacto en móvil */
+  .weather-controls .controls-header { padding:14px 16px 10px 16px; }
+  .weather-controls .controls-header h3 { font-size:1rem; }
+  .weather-controls .controls-body {
+    padding:16px 16px 12px 16px;
+    overflow-y:auto;
+    flex:1 1 auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .weather-controls .control-group { margin-bottom:14px; }
+  .weather-controls .control-group label { font-size:13px; margin-bottom:6px; }
+  .weather-controls select,
+  .weather-controls input[type="text"],
+  .weather-controls input[type="number"],
+  .weather-controls input[type="range"] { font-size:13px; padding:8px 10px; }
+  .weather-controls .layer-buttons { gap:8px; }
+  .weather-controls .layer-btn { min-height:84px; font-size:12px; padding:10px 6px; }
+  .weather-controls .layer-btn i { font-size:22px; margin-bottom:4px; }
+
+  .weather-controls .animation-controls { padding-top:12px; gap:10px; }
+  .weather-controls .play-btn { width:44px; height:44px; font-size:18px; }
+  .weather-controls .controls-footer { padding:10px 0 12px 0; gap:8px; }
+  .weather-controls .footer-btn { font-size:11px; padding:6px 8px; }
+
+  /* Scrollbar más discreto dentro del panel */
+  .weather-controls .controls-body::-webkit-scrollbar { width:8px; }
+  .weather-controls .controls-body::-webkit-scrollbar-track { background:transparent; }
+  .weather-controls .controls-body::-webkit-scrollbar-thumb { background:#c7c7c7; border-radius:4px; }
+
+  /* Backdrop opcional (sólo visible cuando panel abierto) */
+  body.map-active .wc-backdrop { display:none; }
+  body.map-active .weather-controls.is-open + .wc-backdrop { display:block; }
+  .wc-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:5990; backdrop-filter:blur(2px); }
+}
+
+/* === Mobile: colocar los botones del mapa debajo del panel de controles === */
+@media (max-width:768px){
+  /* El bloque legacy ponía .map-controls muy arriba; lo forzamos debajo del panel (panel top=160px) */
+  .map-controls { top: 160px !important; }
+}
+
+  /* ====== OpenLayers Attribution (hacerlo más pequeño) ====== */
+  .ol-attribution.ol-unselectable.ol-control {
+    font: 10px/1.2 "Poppins", Arial, sans-serif !important; /* texto reducido */
+    padding: 2px 4px !important;
+    bottom: 4px !important; /* acercar al borde si se desea */
+    right: 4px !important;
+    background: rgba(255,255,255,0.65) !important;
+    backdrop-filter: blur(4px);
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+  }
+  .ol-attribution.ol-unselectable.ol-control button {
+    font-size: 11px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 16px !important;
+    padding: 0 !important;
+    border-radius: 4px !important;
+  }
+  .ol-attribution.ol-unselectable.ol-control ul {
+    margin: 0 !important;
+    padding: 0 2px !important;
+    gap: 2px !important;
+  }
+  .ol-attribution.ol-unselectable.ol-control li { margin:0 2px 0 0 !important; }
+  .ol-attribution.ol-unselectable.ol-control a, 
+  .ol-attribution.ol-unselectable.ol-control span { 
+    font-size: 10px !important; 
+    text-decoration:none !important;
+    color:#444 !important;
+  }
+  /* Estado colapsado: botón aún más compacto */
+  .ol-attribution.ol-collapsed { padding:0 !important; background:rgba(255,255,255,0.5) !important; }
+  .ol-attribution.ol-collapsed button { width:18px !important; height:18px !important; }
+
+  @media (max-width:768px){
+    .ol-attribution.ol-unselectable.ol-control { font-size:9px !important; bottom:6px !important; right:6px !important; }
+    .ol-attribution.ol-unselectable.ol-control button { font-size:10px !important; }
+  }
