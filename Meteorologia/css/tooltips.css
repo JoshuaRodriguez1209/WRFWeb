@@ -3,13 +3,17 @@
 .tooltip-top, .tooltip-bottom, .tooltip-left, .tooltip-right, 
 .tooltip-top-right, .tooltip-bottom-right, .tooltip-top-left, .tooltip-bottom-left{
 	position: relative;
-	max-width: 450px;
-  color: #000000;
-  background: #2780e3;
+	max-width: 550px; /* más largo */
+	min-width: 120px; /* ancho mínimo */
+  color: #ffffff; /* texto blanco */
+  background: #5a1b30; /* color de marca */
   border: 1px solid #FFFFFF;
-  border-radius: 4px;
-	padding: 4px 8px;
-	font-size: 12px;
+  border-radius: 6px;
+	padding: 6px 12px; /* más padding */
+	font-size: 13px; /* ligeramente más grande */
+	font-weight: 500;
+	text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* borde negro del texto */
+	box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* sombra suave */
 }
 
 /*--------------------------------------------------------------------*/
@@ -32,7 +36,7 @@
   left: 50%;
   margin-left: -7px;
   width: 0; height: 0;
-  border-top: 10px rgba(39, 128, 227, 0.7);
+  border-top: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
@@ -57,7 +61,7 @@
   left: 50%;
   margin-left: -7px;
   width: 0; height: 0;
-  border-bottom: 10px rgba(39, 128, 227, 0.7);
+  border-bottom: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
@@ -82,7 +86,7 @@
   left: 100%;
   margin-top: -7px;
   width: 0; height: 0;
-  border-left: 10px rgba(39, 128, 227, 0.7);
+  border-left: 10px solid #5a1b30; /* color de marca */
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
 }
@@ -107,7 +111,7 @@
   right: 100%;
   margin-top: -7px;
   width: 0; height: 0;
-  border-right: 10px rgba(39, 128, 227, 0.7);
+  border-right: 10px solid #5a1b30; /* color de marca */
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
 }
@@ -132,7 +136,7 @@
   left: 0%;
   margin-left: 2px;
   width: 0; height: 0;
-  border-top: 10px rgba(39, 128, 227, 0.7);
+  border-top: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
@@ -158,7 +162,7 @@
   left: 0%;
   margin-left: 2px;
   width: 0; height: 0;
-  border-bottom: 10px rgba(39, 128, 227, 0.7);
+  border-bottom: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
@@ -183,7 +187,7 @@
   right: 0%;
   margin-right: 2px;
   width: 0; height: 0;
-  border-top: 10px rgba(39, 128, 227, 0.7);
+  border-top: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
@@ -208,7 +212,7 @@
   right: 0%;
   margin-right: 2px;
   width: 0; height: 0;
-  border-bottom: 10px rgba(39, 128, 227, 0.7);
+  border-bottom: 10px solid #5a1b30; /* color de marca */
   border-right: 7px solid transparent;
   border-left: 7px solid transparent;
 }
