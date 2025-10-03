@@ -1,19 +1,34 @@
 /*--------------------------------------------------------------------*/
-/*---------------------------top-right--------------------------------*/
+/*---------------------------tooltip clean style---------------------*/
 .tooltip-top, .tooltip-bottom, .tooltip-left, .tooltip-right, 
 .tooltip-top-right, .tooltip-bottom-right, .tooltip-top-left, .tooltip-bottom-left{
 	position: relative;
-	max-width: 550px; /* más largo */
-	min-width: 120px; /* ancho mínimo */
-  color: #ffffff; /* texto blanco */
-  background: #5a1b30; /* color de marca */
-  border: 1px solid #FFFFFF;
-  border-radius: 6px;
-	padding: 6px 12px; /* más padding */
-	font-size: 13px; /* ligeramente más grande */
-	font-weight: 500;
-	text-shadow: 1px 1px 2px rgba(0,0,0,0.8); /* borde negro del texto */
-	box-shadow: 0 2px 8px rgba(0,0,0,0.3); /* sombra suave */
+	max-width: 200px; /* tamaño como en el ejemplo */
+	min-width: 80px; 
+  color: #000000; /* texto negro como en la imagen */
+  background: #ffffff; /* fondo blanco como en la imagen */
+  border: 1px solid #cccccc; /* borde gris suave */
+  border-radius: 4px; /* esquinas redondeadas como en la imagen */
+	padding: 4px 8px; /* padding compacto */
+	font-size: 12px; /* tamaño normal */
+	font-weight: 400; /* peso normal */
+	text-shadow: none; /* sin sombra de texto */
+	box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* sombra suave */
+	font-family: "Poppins", sans-serif;
+	line-height: 1.3;
+	white-space: nowrap;
+}
+
+/* Ocultar todas las flechas para un look limpio como en el ejemplo */
+.tooltip-top:before, .tooltip-top:after,
+.tooltip-bottom:before, .tooltip-bottom:after,
+.tooltip-left:before, .tooltip-left:after,
+.tooltip-right:before, .tooltip-right:after,
+.tooltip-top-right:before, .tooltip-top-right:after,
+.tooltip-bottom-right:before, .tooltip-bottom-right:after,
+.tooltip-top-left:before, .tooltip-top-left:after,
+.tooltip-bottom-left:before, .tooltip-bottom-left:after {
+	display: none !important;
 }
 
 /*--------------------------------------------------------------------*/
