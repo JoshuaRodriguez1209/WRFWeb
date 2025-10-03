@@ -234,6 +234,10 @@ $(document).on("click", "#btn_atmos", function () {
   $("#hist").hide();
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   $("#panel-header-text").text("Pronóstico Meteorológico del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
@@ -261,6 +265,11 @@ $(document).on("click", "#btn_atmos", function () {
   
   m_map.updateSize();
   set_atmos();
+  
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
 });
 
 $(document).on("click", "#btn_aire", function () {
@@ -269,6 +278,10 @@ $(document).on("click", "#btn_aire", function () {
   $("#hist").hide();
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   $("#panel-header-text").text("Calidad del Aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
@@ -296,6 +309,11 @@ $(document).on("click", "#btn_aire", function () {
   
   m_map.updateSize();
   set_chem();
+  
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
 });
 
 // Función para manejar la vista de historial

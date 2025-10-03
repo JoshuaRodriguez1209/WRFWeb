@@ -183,7 +183,7 @@ function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
     style: new ol.style.Style({
       stroke: new ol.style.Stroke({
         color: 'rgba(255,255,255,1)', // contorno blanco
-        width: 2
+        width: 2.5
       }),
       fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // relleno muy transparente
     })
@@ -451,7 +451,7 @@ const createMaskLayer = (pueblaCoords) => {
     }),
     style: new ol.style.Style({
       fill: new ol.style.Fill({
-        color: 'rgba(0, 0, 0, 1)',
+        color: 'rgba(151, 151, 151, 1)',
       }),
     }),
     title: 'Mascara Puebla',
@@ -1239,10 +1239,38 @@ var create_style = function (tipo) {
   
   const scale = get_scale();
   const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
-  
+  if (tipo === 'cabecera') {
   return new ol.style.Style({
+    image: new ol.style.RegularShape({
+      radius: radius,
+      points: 3,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
+    }),
+    text: new ol.style.Text({
+      offsetX: 0,
+      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
+      stroke: new ol.style.Stroke({
+        color: "#333",
+        width: 2,
+      }),
+      text: "",
+    }),
+  });
+  } else {
+      return new ol.style.Style({
     image: new ol.style.Circle({
       radius: radius,
+
       fill: new ol.style.Fill({
         color: circleColor,
       }),
@@ -1266,7 +1294,7 @@ var create_style = function (tipo) {
     }),
   });
 };
-
+}
 //------------------------------------------------------------------------
 var m_vectorSource = new ol.source.Vector({});
 
@@ -2205,9 +2233,18 @@ $("#meteo").click(function () {
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   m_glosario = "gatmos.html";
   m_map.updateSize();
   set_atmos();
+  
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
@@ -2219,9 +2256,18 @@ $("#cali").click(function () {
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   m_glosario = "gchem.html";
   m_map.updateSize();
   set_chem();
+
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1

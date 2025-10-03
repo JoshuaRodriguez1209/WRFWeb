@@ -81,24 +81,8 @@
         <ul class="nav-links" id="nav-links">
           <li><a onclick="location.reload()">Inicio</a></li>
           <li>
-            <a href="https://smadsot.puebla.gob.mx/quienes-somos-1"
+            <a href="https://smadsot.puebla.gob.mx/quienes-somos"
               >Quienes Somos</a
-            >
-          </li>
-          <li>
-            <a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad"
-              >Avisos de Privacidad</a
-            >
-          </li>
-          <li>
-            <a href="https://ventanilladigital.puebla.gob.mx/">Trámites</a>
-          </li>
-          <li>
-            <a href="http://transparencia.puebla.gob.mx/">Transparencia</a>
-          </li>
-          <li>
-            <a href="https://smadsot.puebla.gob.mx/verificacion"
-              >Verificación</a
             >
           </li>
           <!-- Versiones móviles con IDs únicos para evitar duplicados con los botones laterales -->
@@ -130,15 +114,29 @@
           Puebla
         </h1>
         <p class="banner-subtitle">
-          En esta página encontrarás datos sobre la calidad del aire y el
-          pronóstico del clima obtneidos a tráves del modelo WRF.
+          Aqui encontrarás pronósticos meteorológicos y de calidad del aire.
         </p>
       </div>
     </section>
 
     <!-- Tarjetas -->
-
     <div class="row" style="margin: 50px" id="botones1">
+      <div class="col-12 col-md-6 mb-4" id="cali">
+        <div class="card">
+          <a href="#" class="card-link">
+            <div
+              class="card-img"
+              style="
+                background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');
+              "
+            >
+              <div class="card-text">
+                <h3>Calidad del aire</h3>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
       <div class="col-12 col-md-6 mb-4" id="meteo">
         <div class="card">
           <a href="#" class="card-link">
@@ -156,22 +154,7 @@
         </div>
       </div>
 
-      <div class="col-12 col-md-6 mb-4" id="cali">
-        <div class="card">
-          <a href="#" class="card-link">
-            <div
-              class="card-img"
-              style="
-                background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');
-              "
-            >
-              <div class="card-text">
-                <h3>Calidad del aire</h3>
-              </div>
-            </div>
-          </a>
-        </div>
-      </div>
+
     </div>
 
     <!-- Mapa y controles -->
@@ -251,7 +234,7 @@
               </select>
             </div>
 
-            <!-- Pronósticos -->
+            <!-- Pronósticos 
             <div class="control-group">
               <label for="selectHora">Pronósticos a (horas)</label>
               <select id="selectHora">
@@ -259,7 +242,7 @@
                 <option>24</option>
                 <option>48</option>
               </select>
-            </div>
+            </div>-->
 
             <!-- Animation Controls -->
             <div class="animation-controls">
