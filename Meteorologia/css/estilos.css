@@ -1007,7 +1007,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 
 #filter-info {
   position: absolute;
-  top: 50px;
+  top: 160px;
   left: 50%; 
   /*transform: translateX(-50%); */
   z-index: 3001; 

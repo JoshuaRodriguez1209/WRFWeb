@@ -638,6 +638,7 @@ var make_animation = function (datos) {
   var list_files = datos.split("|");
 
   m_frames = [];
+  
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
 
@@ -645,9 +646,17 @@ var make_animation = function (datos) {
       str_file = str_file.substring(1); //Recorrer el string para quitar el ../
 
       var frame_kms = new CDataLayer(m_map, "create", str_file);
+      
+      // Cargar imagen para filtros si es necesario
+      frame_kms.img = new Image();
+      frame_kms.img.crossOrigin = "anonymous";
+      frame_kms.img.src = str_file;
+      
       m_frames.push(frame_kms);
     }
   }
+  
+  console.log('Frames creados:', m_frames.length);
   check_loaded();
 };
 
@@ -1133,54 +1142,53 @@ async function animate_frames() {
 
   m_id_animation = await requestAnimationFrame(function animate(time) {
     var dif_time = time - time_to_draw;
-
     if (dif_time > m_rango) {
       if (pos_frame < m_frames.length) {
         var m_dlayer_act = m_frames[pos_frame];
         
-        // Función auxiliar para insertar capa correctamente (debajo de overlays)
-        const insertLayerCorrectly = (layer) => {
-          const layers = m_map.getLayers();
-          const layersArray = layers.getArray();
-          
-          // Encontrar la posición correcta: después del tile base pero antes de overlays
-          let insertPosition = 1;
-          
-          for (let i = layersArray.length - 1; i >= 0; i--) {
-            const existingLayer = layersArray[i];
-            const layerType = existingLayer.get('type');
-            
-            if (layerType !== 'overlay' && layerType !== 'mask' && layerType !== 'base') {
-              insertPosition = i + 1;
-              break;
-            } else if (layerType === 'base') {
-              insertPosition = i + 1;
-              break;
-            }
-          }
-          
-          layers.insertAt(insertPosition, layer);
-        };
+        const layers = m_map.getLayers();
         
-        if (filter_color && m_dlayer_act.img && m_dlayer_act.img.complete) {
-          const filteredLayer = applyFilterToImage(m_dlayer_act.img);
-          if (filteredLayer) {
-            if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
-            insertLayerCorrectly(filteredLayer);
-            const permanentDateElement = document.querySelector(
-              "#filter-info .permanent-date"
-            );
-            if (permanentDateElement) {
-              permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+        if (filter_color) {
+          // Con filtro aplicado
+          if (m_dlayer_act.img && m_dlayer_act.img.complete) {
+            try {
+              const filteredLayer = applyFilterToImage(m_dlayer_act.img);
+              if (filteredLayer) {
+                // Remover capa anterior (filtrada o normal)
+                if (window.filtered_layer) {
+                  m_map.removeLayer(window.filtered_layer);
+                  window.filtered_layer = null;
+                }
+                if (m_dlayer && m_dlayer.layer) {
+                  m_map.removeLayer(m_dlayer.layer);
+                }
+                
+                // Agregar nueva capa filtrada
+                layers.insertAt(1, filteredLayer);
+                window.filtered_layer = filteredLayer;
+                
+                // Actualizar fecha
+                const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+                if (permanentDateElement) {
+                  permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+                }
+                
+                m_dlayer = m_dlayer_act;
+              }
+            } catch (error) {
+              console.error('Error aplicando filtro:', error);
             }
-            window.filtered_layer = filteredLayer;
-            m_dlayer = m_dlayer_act;
-          } else {
-            insertLayerCorrectly(m_dlayer_act.layer);
           }
         } else {
-          m_map.removeLayer(m_dlayer.layer);
-          insertLayerCorrectly(m_dlayer_act.layer);
+          // Sin filtro - animación normal
+          if (window.filtered_layer) {
+            m_map.removeLayer(window.filtered_layer);
+            window.filtered_layer = null;
+          }
+          if (m_dlayer && m_dlayer.layer) {
+            m_map.removeLayer(m_dlayer.layer);
+          }
+          layers.insertAt(1, m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
         }
         
@@ -1189,7 +1197,7 @@ async function animate_frames() {
         
         pos_frame = pos_frame + 1;
       } else {
-        pos_frame = 0;
+        pos_frame = 0; // Reiniciar la animación
       }
       time_to_draw = time;
     }
@@ -2392,48 +2400,59 @@ function colorDist(c1, c2) {
 }
 
 function applyFilterToImage(img) {
-  if (!img || !img.complete || !filter_color) return;
-
-  const canvas = document.getElementById("filter-canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const maxDist = 180 * Math.sqrt(3);
-  const tolerancePercent = 0.08;
-  const tolerance = maxDist * tolerancePercent;
-
-  let min = 9999,
-    max = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i],
-      g = data[i + 1],
-      b = data[i + 2];
-    const d = deltaE([r, g, b], filter_color);
-    min = Math.min(min, d);
-    max = Math.max(max, d);
-
-    if (d <= tolerance) {
-    } else {
-      data[i + 3] = 0;
-    }
+  if (!img || !filter_color) {
+    return null;
   }
 
-  ctx.putImageData(imageData, 0, 0);
-  const extent = m_dlayer.imageExtent;
-  const filteredLayer = new ol.layer.Image({
-    opacity: 0.7,
-    source: new ol.source.ImageStatic({
-      url: canvas.toDataURL(),
-      imageExtent: extent,
-    }),
-  });
-  clipLayer(filteredLayer); // Aplicar recorte a la capa con filtro
-  return filteredLayer;
+  try {
+    const canvas = document.getElementById("filter-canvas");
+    if (!canvas) {
+      console.error('Canvas de filtro no encontrado');
+      return null;
+    }
+    
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const maxDist = 180 * Math.sqrt(3);
+    const tolerancePercent = 0.08;
+    const tolerance = maxDist * tolerancePercent;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const d = deltaE([r, g, b], filter_color);
+
+      if (d > tolerance) {
+        data[i + 3] = 0; // Hacer transparente
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    
+    // Usar la extensión de la capa actual
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    
+    const filteredLayer = new ol.layer.Image({
+      opacity: 0.7,
+      source: new ol.source.ImageStatic({
+        url: canvas.toDataURL(),
+        imageExtent: extent,
+      }),
+    });
+    
+    clipLayer(filteredLayer);
+    return filteredLayer;
+    
+  } catch (error) {
+    console.error('Error en applyFilterToImage:', error);
+    return null;
+  }
 }
 
 function put_FilteredImage(filteredLayer) {
