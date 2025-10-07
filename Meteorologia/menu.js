@@ -1,3 +1,15 @@
+// Al inicio del archivo menu.js, agregar:
+$(document).ready(function() {
+  // Abrir automáticamente el panel de control cuando se accede al mapa
+  setTimeout(function() {
+    const weatherControls = document.getElementById('weather-controls');
+    if (weatherControls && document.body.classList.contains('map-active')) {
+      weatherControls.classList.add('is-open');
+    }
+  }, 300);
+});
+
+
 // Reenviar clicks de las versiones móviles (IDs nuevos) a los botones laterales reales
 $(document).on('click', '#btn_atmos_mobile', function(e){ e.preventDefault(); $('#btn_atmos').trigger('click'); });
 $(document).on('click', '#btn_aire_mobile', function(e){ e.preventDefault(); $('#btn_aire').trigger('click'); });
@@ -652,4 +664,16 @@ function updateMenuVisualState() {
 $(document).ready(function() {
   // Pequeño delay para asegurar que todos los elementos estén cargados
   setTimeout(updateMenuVisualState, 100);
+});
+
+$(document).ready(function() {
+  $('#read-more-btn').on('click', function(e) {
+    e.preventDefault();
+    $('body').toggleClass('show-more');
+    if ($('body').hasClass('show-more')) {
+      $(this).text('Ver menos...');
+    } else {
+      $(this).text('Ver más...');
+    }
+  });
 });

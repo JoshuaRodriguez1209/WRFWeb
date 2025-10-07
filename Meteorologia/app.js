@@ -713,6 +713,16 @@ var createParameterButtons = function(parameterData) {
       // Activar el botón clickeado
       this.classList.add('active');
       selectedParameter = param.value;
+      
+      // Mostrar indicador visual de que se procesará
+      const applyIndicator = document.getElementById('apply-indicator');
+      if (applyIndicator) {
+        applyIndicator.style.display = 'block';
+        setTimeout(() => {
+          applyIndicator.style.display = 'none';
+        }, 500);
+      }
+      
       procesa_dat();
     });
     
@@ -724,6 +734,15 @@ var createParameterButtons = function(parameterData) {
       selectedParameter = param.value;
     }
   });
+  
+  // Agregar indicador de aplicación
+  if (!document.getElementById('apply-indicator')) {
+    const indicator = document.createElement('div');
+    indicator.id = 'apply-indicator';
+    indicator.className = 'apply-indicator';
+    indicator.innerHTML = '<i class="fa-solid fa-check"></i> Aplicado';
+    container.parentElement.appendChild(indicator);
+  }
   
   // Procesar la primera opción automáticamente
   if (parameterData.length > 0) {
@@ -872,6 +891,12 @@ var set_atmos = function () {
     {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
   ];
   
+  // Cambiar título del panel
+  const headerTitle = document.getElementById('controls-header-title');
+  if (headerTitle) {
+    headerTitle.textContent = "Pronóstico Meteorológico del Estado de Puebla";
+  }
+  
   createParameterButtons(parameterData);
 };
 
@@ -885,9 +910,14 @@ var set_chem = function () {
     {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
   ];
   
+  // Cambiar título del panel
+  const headerTitle = document.getElementById('controls-header-title');
+  if (headerTitle) {
+    headerTitle.textContent = "Calidad del Aire del Estado de Puebla";
+  }
+  
   createParameterButtons(parameterData);
 };
-
 //-------------------------------------------------------------------------------
 var list_var = async function (datos) {
   var dir_var = "";
@@ -1249,6 +1279,7 @@ function cancel_animate() {
 var m_show = false;
 var m_zoom = m_view.getZoom();
 
+//------------------------------------------------------------------------
 var create_style = function (tipo) {
   // Determinar el color basado en el tipo de punto
   let circleColor = '#c19862'; // Color dorado por defecto
@@ -1272,62 +1303,65 @@ var create_style = function (tipo) {
   }
   
   const scale = get_scale();
-  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
+  const radius = tipo === 'estacion' ? Math.max(10, 14 * scale) : Math.max(8, 10 * scale);
+  
+  // CABECERAS = TRIÁNGULOS
   if (tipo === 'cabecera') {
-  return new ol.style.Style({
-    image: new ol.style.RegularShape({
-      radius: radius,
-      points: 3,
-      fill: new ol.style.Fill({
-        color: circleColor,
+    return new ol.style.Style({
+      image: new ol.style.RegularShape({
+        radius: radius,
+        points: 3, // Triángulo
+        fill: new ol.style.Fill({
+          color: circleColor,
+        }),
+        stroke: new ol.style.Stroke({
+          color: strokeColor,
+          width: strokeWidth,
+        }),
+        opacity: opacity,
       }),
-      stroke: new ol.style.Stroke({
-        color: strokeColor,
-        width: strokeWidth,
+      text: new ol.style.Text({
+        offsetX: 0,
+        offsetY: radius + 20,
+        textAlign: "center",
+        font: "14px Poppins,sans-serif",
+        fill: new ol.style.Fill({ color: "#fff" }),
+        stroke: new ol.style.Stroke({
+          color: "#333",
+          width: 2,
+        }),
+        text: "",
       }),
-      opacity: opacity,
-    }),
-    text: new ol.style.Text({
-      offsetX: 0,
-      offsetY: radius + 20, // Posicionar debajo del círculo con margen
-      textAlign: "center",
-      font: "16px Poppins,sans-serif",
-      fill: new ol.style.Fill({ color: "#fff" }),
-      stroke: new ol.style.Stroke({
-        color: "#333",
-        width: 2,
+    });
+  } 
+  // ESTACIONES = CÍRCULOS MÁS GRANDES
+  else {
+    return new ol.style.Style({
+      image: new ol.style.Circle({
+        radius: radius,
+        fill: new ol.style.Fill({
+          color: circleColor,
+        }),
+        stroke: new ol.style.Stroke({
+          color: strokeColor,
+          width: strokeWidth,
+        }),
+        opacity: opacity,
       }),
-      text: "",
-    }),
-  });
-  } else {
-      return new ol.style.Style({
-    image: new ol.style.Circle({
-      radius: radius,
-
-      fill: new ol.style.Fill({
-        color: circleColor,
+      text: new ol.style.Text({
+        offsetX: 0,
+        offsetY: radius + 20,
+        textAlign: "center",
+        font: "14px Poppins,sans-serif",
+        fill: new ol.style.Fill({ color: "#fff" }),
+        stroke: new ol.style.Stroke({
+          color: "#333",
+          width: 2,
+        }),
+        text: "",
       }),
-      stroke: new ol.style.Stroke({
-        color: strokeColor,
-        width: strokeWidth,
-      }),
-      opacity: opacity,
-    }),
-    text: new ol.style.Text({
-      offsetX: 0,
-      offsetY: radius + 20, // Posicionar debajo del círculo con margen
-      textAlign: "center",
-      font: "16px Poppins,sans-serif",
-      fill: new ol.style.Fill({ color: "#fff" }),
-      stroke: new ol.style.Stroke({
-        color: "#333",
-        width: 2,
-      }),
-      text: "",
-    }),
-  });
-};
+    });
+  }
 }
 //------------------------------------------------------------------------
 var m_vectorSource = new ol.source.Vector({});
@@ -4489,6 +4523,35 @@ function hideInfo() {
     rangeElement.remove();
   }
 }
+
+// Modal explicativo de WRF
+$(document).ready(function() {
+  $('#btn_wrf_info').click(function(e) {
+    e.preventDefault();
+    
+    const wrfContent = $("<div style='font-family: Poppins, sans-serif; line-height: 1.6;'></div>");
+    
+    wrfContent.append('<h3 style="color: #5a1b30; margin-bottom: 15px;">¿Qué es el Modelo WRF?</h3>');
+    wrfContent.append('<p><strong>WRF (Weather Research and Forecasting)</strong> es un sistema de modelado atmosférico de última generación diseñado para la investigación y predicción del tiempo.</p>');
+    wrfContent.append('<h4 style="color: #5a1b30; margin-top: 20px;">Características principales:</h4>');
+    wrfContent.append('<ul style="margin-left: 20px;"><li>Genera pronósticos meteorológicos de alta resolución espacial</li><li>Simula la dispersión de contaminantes atmosféricos</li><li>Permite evaluar la calidad del aire con anticipación</li><li>Proporciona información detallada a nivel municipal</li></ul>');
+    wrfContent.append('<p style="margin-top: 15px;">En SMADSOT utilizamos WRF para ofrecer pronósticos precisos que apoyan la toma de decisiones en materia ambiental y de salud pública en el Estado de Puebla.</p>');
+    
+    BootstrapDialog.show({
+      title: 'Modelo de Pronóstico WRF',
+      message: wrfContent,
+      cssClass: 'modal-dialog',
+      closable: true,
+      buttons: [{
+        label: 'Cerrar',
+        cssClass: 'btn-primary',
+        action: function(dialogRef) {
+          dialogRef.close();
+        }
+      }]
+    });
+  });
+});
 
 // ====== Controles de rango (similar al ejemplo solicitado) ======
 function ensureLegendRangeControls(){
