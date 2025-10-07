@@ -244,13 +244,28 @@
               </select>
             </div>-->
 
+            <!-- filtro en Escala de colores -->
+            <div id="gradient-container" >
+              <label>Filtro</label>
+              <div class="gradient-inner">
+                <div class="gradient-variable" id="gradient-variable-label">
+                  Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span>
+                </div>
+                <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
+                <!--<div class="gradient-meta-row">
+                  <div class="gradient-horizontal-values horizontal-values" id="gradient-values"></div>
+                </div> -->
+              </div>
+            </div>
+
+
             <!-- Animation Controls -->
             <div class="animation-controls">
               <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
                 <i class="fa-solid fa-play" id="playIcon"></i>
               </button>
               <div class="speed-slider">
-                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
+                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad de animación</label>
                 <input type="range" min="100" max="2000" value="1000" id="speedSlider">
               </div>
             </div>
@@ -261,15 +276,18 @@
                 <i class="fa-solid fa-book"></i> Glosario
               </button>
               <button class="footer-btn" id="btn_datos">
-                <i class="fa-solid fa-download"></i> Datos
+                <i class="fa-solid fa-download"></i> Datos por Municipios
               </button>
               <button class="footer-btn" id="btn_recarga">
                 <i class="fa-solid fa-reload"></i> Limpiar Filtro
               </button>
+              <button class="footer-btn" id="btn_aplicar" title="Aplicar los cambios seleccionados">
+                <i class="fa-solid fa-check"></i> Aplicar Cambios
+              </button>
             </div>
           </div>
         </div>
-        <!-- Escala integrada al panel de capas -->
+        <!-- Escala integrada al panel de capas 
         <div id="gradient-container" class="horizontal-mode embedded bottom-floating">
           <div class="gradient-inner">
             <div class="gradient-variable" id="gradient-variable-label">Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span></div>
@@ -277,11 +295,11 @@
             <div class="gradient-meta-row">
               <div class="gradient-horizontal-values horizontal-values" id="gradient-values"></div>
             </div>
-            <div class="gradient-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:11px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
+            <div class="gradient-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:16px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
               Haz clic para filtrar &bull; Doble clic para limpiar
             </div>
           </div>
-        </div>
+        </div>-->
         <div id="filter-info">
           <div class="permanent-date"></div>
         </div>

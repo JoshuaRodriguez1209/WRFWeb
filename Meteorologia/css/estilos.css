@@ -794,11 +794,11 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 /* Variante flotante fija en esquina inferior izquierda */
 #gradient-container.horizontal-mode.embedded.bottom-floating {
   position: fixed; /* Asegura que no se mueva */
-  top: 86%; /* más pegado a la parte inferior */
-  left: 5.8%;         /* 👈 Esto es crucial */
+  top: 85%; /* más pegado a la parte inferior */
+  left: 6%;         /* 👈 Esto es crucial */
   transform: none;
-  width: 400px; /* ligeramente más compacto */
-  max-width: 440px;
+  width: 450px; /* ligeramente más compacto */
+  max-width: 480px;
   min-width: 300px;
   margin-top: 0;
   padding: 10px 14px 12px 14px; /* menos alto */
@@ -811,7 +811,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 }
 
 @media (max-width: 1400px) {
-  #gradient-container.horizontal-mode.embedded.bottom-floating { width: 360px; }
+  #gradient-container.horizontal-mode.embedded.bottom-floating { width: 460px; }
 }
 @media (max-width: 992px) {
   #gradient-container.horizontal-mode.embedded.bottom-floating { width: 320px; }
@@ -925,6 +925,160 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
   cursor: crosshair;
   pointer-events: auto;
+}
+
+.gradient-bar-wrapper {
+  position: relative;
+  width: 100%;
+  height: 22px;
+}
+.gradient-bar-wrapper canvas {
+  position: absolute;
+  left:0; top:0; width:100%; height:100%;
+}
+.gradient-bar-wrapper .dual-slider-overlay {
+  position:absolute;
+  inset:0;
+  pointer-events:none; /* sliders reactivan pointer en thumbs */
+}
+.gradient-bar-wrapper .dual-slider-overlay input[type=range] {
+  -webkit-appearance:none; appearance:none;
+  position:absolute; left:0; top:0; width:100%; height:22px; margin:0;
+  background:transparent; pointer-events:none; /* sólo pulgar */
+}
+.gradient-bar-wrapper .dual-slider-overlay input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none; appearance:none; pointer-events:auto;
+  width:14px; height:14px; border-radius:50%; background:#ffffff;
+  border:2px solid #5a1b30; box-shadow:0 0 0 2px rgba(90,27,48,0.3);
+  cursor:pointer; transition:transform .15s;
+}
+.gradient-bar-wrapper .dual-slider-overlay input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.15); }
+.gradient-bar-wrapper .dual-slider-overlay input[type=range]::-moz-range-thumb {
+  width:14px; height:14px; border-radius:50%; background:#ffffff;
+  border:2px solid #5a1b30; cursor:pointer;
+}
+.gradient-bar-wrapper .dual-slider-selection {
+  position:absolute; top:0; height:100%; left:0; width:0%;
+  background:linear-gradient(90deg, rgba(90,27,48,0.45), rgba(193,152,98,0.45));
+  mix-blend-mode:overlay;
+  pointer-events:none;
+  border-radius:6px;
+  transition:left .1s, width .1s;
+}
+
+/* ===== Rango manual (dual slider + inputs) ===== */
+#legend-range-filter {
+  margin-top: 10px;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid #d8d8d8;
+  border-radius: 10px;
+  padding: 10px 12px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: Poppins, sans-serif;
+  position: relative;
+}
+#legend-range-filter .legend-range-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5a1b30;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+}
+#legend-range-filter .legend-range-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+}
+#legend-range-filter .range-field { display:flex; flex-direction:column; gap:2px; }
+#legend-range-filter .range-field label { font-size:10px; font-weight:600; color:#555; }
+#legend-range-filter .range-field input {
+  padding: 4px 6px;
+  font-size: 12px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  width: 92px;
+  background:#fff;
+}
+#legend-range-filter .range-sep { font-size:14px; font-weight:600; color:#444; padding:0 4px; }
+#legend-range-filter .range-apply-btn, #legend-range-filter .range-clear-btn {
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight:600;
+  border-radius: 6px;
+  padding: 6px 12px;
+  display:flex; align-items:center; justify-content:center;
+  transition: background .25s, box-shadow .25s;
+}
+#legend-range-filter .range-apply-btn { background:#5a1b30; color:#fff; }
+#legend-range-filter .range-apply-btn:hover { background:#722540; }
+#legend-range-filter .range-clear-btn { background:#ececec; color:#444; width:34px; }
+#legend-range-filter .range-clear-btn:hover { background:#dcdcdc; }
+
+#legend-range-filter .legend-dual-slider-wrapper {
+  position: relative;
+  width: 100%;
+  height: 34px;
+  display:flex;
+  align-items:center;
+  margin-top:4px;
+}
+#legend-range-filter .legend-range {
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  position:absolute;
+  background:transparent;
+  pointer-events:none; /* captar solo en el pulgar (lo simulamos) */
+  height:34px;
+  top:0; left:0;
+}
+#legend-range-filter .legend-range::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  appearance:none;
+  pointer-events:auto; /* permitir drag en el pulgar */
+  width:16px; height:16px;
+  border-radius:50%;
+  background:#5a1b30;
+  border:2px solid #fff;
+  box-shadow:0 0 0 2px rgba(90,27,48,0.25);
+  cursor:pointer;
+  transition: transform .15s;
+}
+#legend-range-filter .legend-range::-webkit-slider-thumb:hover { transform:scale(1.15); }
+#legend-range-filter .legend-range::-moz-range-thumb {
+  width:16px; height:16px; border:none; border-radius:50%; background:#5a1b30; cursor:pointer;
+}
+#legend-range-filter .legend-range::-webkit-slider-runnable-track { height:8px; border-radius:4px; background:linear-gradient(90deg,#c4c4c4,#e1e1e1); }
+#legend-range-filter .legend-range::-moz-range-track { height:8px; border-radius:4px; background:linear-gradient(90deg,#c4c4c4,#e1e1e1); }
+
+/* Fondo resaltado del rango seleccionado (pseudo capa) */
+#legend-range-filter .legend-dual-slider-wrapper:before {
+  content:'';
+  position:absolute;
+  left:0; top:13px; height:8px; width:100%;
+  background:linear-gradient(90deg,#ccc,#ddd);
+  border-radius:4px;
+  z-index:0;
+}
+#legend-range-filter .legend-dual-slider-wrapper:after {
+  content:'';
+  position:absolute;
+  left:0; top:13px; height:8px;
+  background:linear-gradient(90deg,#5a1b30,#c19862);
+  border-radius:4px;
+  z-index:0;
+  /* Se ajustará dinámicamente por JS si se requiere más adelante */
+}
+
+@media (max-width:600px){
+  #legend-range-filter { padding:8px 10px 12px 10px; }
+  #legend-range-filter .legend-range-head { font-size:11px; }
+  #legend-range-filter .range-field input { width:80px; }
+  #legend-range-filter .range-apply-btn { padding:5px 10px; }
 }
 
 /* Etiquetas bajo la barra horizontal (min / max) */
@@ -1111,6 +1265,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   position: relative;
 }
 
+
 .historical-wrapper canvas {
   transition: all 0.3s ease;
 }
@@ -1188,16 +1343,39 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 
 /* Estilos para el dashboard histórico */
 #historial-dashboard {
-  position: relative;
-  top: 150px;
-  left: 60px;
-  padding: 30px;
-  width: calc(100% - 60px);
+  position: relative;              /* evitar desplazar fuera del flujo */
+  left: 40px;
+  margin: 160px 0 40px 0;         /* sustituye top:150px con margen superior controlado */
+  padding: 30px 40px;             /* espacio interno uniforme */
+  width: 100%;                    /* ocupar todo el ancho disponible del contenedor */
   background-color: #ffffff;
-  /* Altura adaptable; evita forzar viewport y generar scroll interno adicional */
-  min-height: auto;
-  transition: all 0.3s ease;
-  animation: fadeIn 0.5s ease;
+  min-height: auto;               /* crecer según contenido */
+  transition: margin .3s ease, padding .3s ease, background .3s ease;
+  animation: fadeIn .5s ease;
+  box-sizing: border-box;
+}
+
+/* Estado sin contenido: ocultar scrollbar y permitir expandirse naturalmente */
+#historial-dashboard.historial-empty {
+  overflow: visible !important;
+}
+
+/* Forzar sin scrollbar cuando el contenido cabe */
+#historial-dashboard.no-scroll {
+  overflow-y: hidden !important;
+  overflow-x: hidden !important;
+}
+
+/* Forzar scrollbar sólo cuando realmente se necesita (fallback explícito) */
+#historial-dashboard.force-scroll {
+  overflow-y: auto !important;
+}
+
+/* Asegurar que no haya height / max-height heredados de versiones previas */
+#historial-dashboard {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible; /* permitir que el contenido inicial no fuerce scroll */
 }
 
 .dashboard-header {

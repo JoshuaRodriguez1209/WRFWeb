@@ -896,9 +896,9 @@ var list_var = async function (datos) {
   //	for (var i = list_files.length - 1; i >= 0; i--){					//Reversa
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
-    if(!str_file) continue;
+    if(!str_file || typeof str_file !== 'string') continue;
     str_file = str_file.substring(1); // quitar ../ inicial
-    if (str_file === "") continue;
+    if (!str_file || str_file === "" || str_file === "/") continue;
 
     var pos = str_file.lastIndexOf("/");
     var fileName = str_file.substring(pos + 1); // ejemplo: something_wind_012.png o temp_24.png
@@ -926,6 +926,12 @@ var list_var = async function (datos) {
   }
   $("#selectHora").html(dir_var);
 
+  // Seleccionar primer valor válido para evitar undefined en update_var
+  const sel = document.getElementById('selectHora');
+  if (sel && sel.options.length > 0) {
+    sel.selectedIndex = 0;
+  }
+
   await make_animation(datos);
   update_var();
 };
@@ -940,14 +946,42 @@ async function update_var() {
   m_barra = null;
 
   var str_file = $("#selectHora").val();
+  // Fallbacks si el valor del select es inválido
+  if (typeof str_file !== 'string' || !str_file.length) {
+    const sel = document.getElementById('selectHora');
+    if (sel && sel.options && sel.options.length > 0) {
+      str_file = sel.options[sel.selectedIndex >= 0 ? sel.selectedIndex : 0].value;
+      console.warn('update_var: valor inválido inicial, usando opción del select:', str_file);
+    } else if (Array.isArray(m_frames) && m_frames.length > 0) {
+      // Usar el primer frame de la animación como último recurso
+      const frame0 = m_frames[0];
+      if (frame0) {
+        // Intentar distintas propiedades comunes
+        str_file = frame0.img && frame0.img.src ? frame0.img.src : (frame0.str_file || frame0.url || '');
+        console.warn('update_var: usando primer frame de animación como fallback:', str_file);
+      }
+    }
+  }
+
+  // Si sigue siendo inválido, abortar silenciosamente (ya se registró advertencia)
+  if (typeof str_file !== 'string' || !str_file.length) {
+    console.warn('update_var: no se pudo determinar un archivo válido después de fallbacks. Abortando.');
+    return;
+  }
 
   set_layer(m_map, str_file, "add", m_dlayer);
   var img = new Image();
   img.onload = function () {
     m_lienzo = new CLienzo(img);
-    if (filter_color) {
-      const filteredLayer = applyFilterToImage(m_lienzo.img);
-      put_FilteredImage(filteredLayer);
+    if (filter_value_min != null && filter_value_max != null){
+      const fl = applyValueRangeFilter(m_lienzo.img);
+      if (fl) put_FilteredImage(fl); else if (filter_color){
+        const filteredLayer = applyFilterToImage(m_lienzo.img);
+        put_FilteredImage(filteredLayer);
+      }
+    } else if (filter_color) {
+        const filteredLayer = applyFilterToImage(m_lienzo.img);
+        put_FilteredImage(filteredLayer);
     }
   };
   img.src = str_file;
@@ -1495,10 +1529,29 @@ function show_chem(show_dialog) {
 
 var m_str_cvs = "";
 var m_str_file_csv = "datos.csv";
+let m_pendingDirectDownload = false; // indica que debe auto-descargar tras cargar JSON
+let m_autoDownloadAfterDialog = false; // descarga automática tras construir el modal
+// --- Nuevas variables globales para filtro por rango de valores ---
+let filter_value_min = null;
+let filter_value_max = null;
+
+// Utilidad: construir URL JSON normalizando barras
+function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
+  // Asegurar trailing slash en runBase
+  if (runBase && !runBase.endsWith('/')) runBase += '/';
+  // dirFragment comienza y termina con slash? aseguramos solo uno al final
+  if (dirFragment.startsWith('/')) dirFragment = dirFragment.substring(1);
+  if (!dirFragment.endsWith('/')) dirFragment += '';// ya incluye la barra inicial en concatenación final
+  if (typeFragment.startsWith('/')) typeFragment = typeFragment.substring(1);
+  console.log('[buildJsonUrl]', {runBase, dirFragment, typeFragment, clave, fech, hor});
+  return runBase + dirFragment + typeFragment + clave + '_' + fech + '_' + hor + 'z.json';
+}
 
 //-------------------------------------------------------------------------------
 function show_feature(tipo, dir_dat, show_dialog) {
-  var dir = m_feature.get("dir") + dir_dat;
+  var dirProp = m_feature.get("dir") || '';
+  // Normalizar para evitar doble slash o faltante
+  var dir = dirProp + dir_dat;
   var clave = m_feature.get("clave");
   var name = m_feature.get("nombre");
 
@@ -1513,7 +1566,8 @@ function show_feature(tipo, dir_dat, show_dialog) {
     tipo_ext = "contaminantes";
   }
 
-  var dir_json = m_dir_runs + dir + clave + "_" + fech + "_" + hor + "z.json";
+  var dir_json = buildJsonUrl(m_dir_runs, dirProp, dir_dat, clave, fech, hor);
+  console.log('[show_feature] JSON URL ->', dir_json);
 
   m_str_file_csv = name + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
 
@@ -1549,254 +1603,193 @@ function avg(arr) {
 
 //-------------------------------------------------------------------------------
 function set_chart_meteo(str_file, contenDialog, show_dialog) {
-  m_str_cvs =
-    "Fecha, Temperatura (°C), Humedad (%), Precipitación (mm), Radiación (w/m2), Viento (km/h), Presión (hPa) \r\n";
+  m_str_cvs = "Fecha, Temperatura (°C), Humedad (%), Precipitación (mm), Radiación (w/m2), Viento (km/h), Presión (hPa) \r\n";
   $.ajax({
     url: str_file,
     dataType: "text",
     success: function (data) {
-      var djson = JSON.parse(data);
-
-      set_csv_atmos(djson, str_file);
-
-      if (show_dialog) {
-const resumenHTML = `
+      try {
+        const djson = JSON.parse(data);
+        console.log('[set_chart_meteo] datos OK', str_file, Object.keys(djson));
+        set_csv_atmos(djson, str_file);
+        if (show_dialog) {
+          const resumenHTML = `
   <div class="summary-block">
     <div class="summary-header">
       <h4 class="summary-title">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar (.CSV)</button>
+      <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
     </div>
     <div class="summary-grid" id="pollutantSummary">
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-temperature-half"></i></div>
         <div class="summary-body">
           <div class="summary-name">Temperatura</div>
-          <div class="summary-value">${avg(djson["t2m"])} °C</div>
+          <div class="summary-value">${avg(djson["t2m"]) } °C</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-droplet"></i></div>
         <div class="summary-body">
           <div class="summary-name">Humedad</div>
-          <div class="summary-value">${avg(djson["rh"])} %</div>
+          <div class="summary-value">${avg(djson["rh"]) } %</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-cloud-rain"></i></div>
         <div class="summary-body">
           <div class="summary-name">Precipitación</div>
-          <div class="summary-value">${avg(djson["pre"])} mm</div>
+          <div class="summary-value">${avg(djson["pre"]) } mm</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-sun"></i></div>
         <div class="summary-body">
           <div class="summary-name">Radiación</div>
-          <div class="summary-value">${avg(djson["sw"])} w/m²</div>
+          <div class="summary-value">${avg(djson["sw"]) } w/m²</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-wind"></i></div>
         <div class="summary-body">
           <div class="summary-name">Viento</div>
-          <div class="summary-value">${avg(djson["wnd"])} km/h</div>
+          <div class="summary-value">${avg(djson["wnd"]) } km/h</div>
         </div>
       </div>
       <div class="summary-card">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-gauge"></i></div>
         <div class="summary-body">
           <div class="summary-name">Presión</div>
-          <div class="summary-value">${avg(djson["psl"])} hPa</div>
+          <div class="summary-value">${avg(djson["psl"]) } hPa</div>
         </div>
       </div>
     </div>
   </div>`;
-
-        contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["t2m"],
-          "line",
-          str_file,
-          "Temperatura",
-          "°C",
-          "rgb(255, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["rh"],
-          "line",
-          str_file,
-          "Humedad ",
-          "%",
-          "rgb(0, 0, 255)"
-        );
-        set_canva(
-          contenDialog,
-          djson["pre"],
-          "bar",
-          str_file,
-          "Precipitación",
-          "mm",
-          "rgb(0, 128, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["sw"],
-          "line",
-          str_file,
-          "Radiación",
-          "w/m2",
-          "rgb(255, 255, 0)"
-        );
-        /*set_canva(contenDialog, djson['dir'], 'bar', str_file, 'Direccion del Viento', '0-360 grados', 'rgb(243, 156, 18)');*/
-        set_canva(
-          contenDialog,
-          djson["wnd"],
-          "line",
-          str_file,
-          "Viento",
-          "km/h",
-          "rgb(128, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["psl"],
-          "line",
-          str_file,
-          "Presión ",
-          "hPa",
-          "rgb(0, 128, 128)"
-        );
-      } else {
-        downloadFileCSV();
+          contenDialog.append(resumenHTML);
+          set_canva(contenDialog, djson["t2m"], "line", str_file, "Temperatura", "°C", "rgb(255, 0, 0)");
+          set_canva(contenDialog, djson["rh"],  "line", str_file, "Humedad", "%", "rgb(0, 0, 255)");
+          set_canva(contenDialog, djson["pre"], "bar",  str_file, "Precipitación", "mm", "rgb(0, 128, 0)");
+          set_canva(contenDialog, djson["sw"],  "line", str_file, "Radiación", "w/m2", "rgb(255, 255, 0)");
+          set_canva(contenDialog, djson["wnd"], "line", str_file, "Viento", "km/h", "rgb(128, 0, 0)");
+          set_canva(contenDialog, djson["psl"], "line", str_file, "Presión", "hPa", "rgb(0, 128, 128)");
+          if (m_autoDownloadAfterDialog) {
+            // Esperar un pequeño ciclo para asegurar DOM listo
+            setTimeout(() => { try { downloadFileCSV(); } catch(e){} }, 50);
+            m_autoDownloadAfterDialog = false;
+          }
+        } else if (m_pendingDirectDownload) {
+          downloadFileCSV();
+          m_pendingDirectDownload = false;
+        }
+      } catch(err){
+        console.error('[set_chart_meteo] parse error', err);
+        if (m_pendingDirectDownload){
+          alert('Error al procesar datos meteorológicos');
+          m_pendingDirectDownload = false;
+        }
       }
     },
+    error: function () {
+      console.error('Error al cargar datos meteo', str_file);
+      if (m_pendingDirectDownload){
+        alert('No se pudo cargar datos meteorológicos para descarga: ' + str_file);
+        m_pendingDirectDownload = false;
+      }
+    }
   });
 }
 
 function set_chart_chem(str_file, contenDialog, show_dialog) {
-  m_str_cvs =
-    "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
+  m_str_cvs = "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
   $.ajax({
     url: str_file,
     dataType: "text",
     success: function (data) {
-      var djson = JSON.parse(data);
-
-      set_csv_chem(djson, str_file);
-
-      if (show_dialog) {
-      const resumenHTML = `
+      try {
+        const djson = JSON.parse(data);
+        console.log('[set_chart_chem] datos OK', str_file, Object.keys(djson));
+        set_csv_chem(djson, str_file);
+        if (show_dialog) {
+          const resumenHTML = `
         <div class="summary-block">
           <div class="summary-header">
             <h4 class="summary-title">Resumen de Promedios</h4>
-            <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar (.CSV)</button>
+            <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
           </div>
           <div class="summary-grid" id="pollutantSummaryChem">
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Monóxido de Carbono</div>
-                <div class="summary-value">${avg(djson["CO"])} ppm</div>
+                <div class="summary-value">${avg(djson["CO"]) } ppm</div>
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Nitrógeno</div>
-                <div class="summary-value">${avg(djson["NO2"])} ppb</div>
+                <div class="summary-value">${avg(djson["NO2"]) } ppb</div>
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Ozono</div>
-                <div class="summary-value">${avg(djson["O3"])} ppb</div>
+                <div class="summary-value">${avg(djson["O3"]) } ppb</div>
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Azufre</div>
-                <div class="summary-value">${avg(djson["SO2"])} ppb</div>
+                <div class="summary-value">${avg(djson["SO2"]) } ppb</div>
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 10</div>
-                <div class="summary-value">${avg(djson["PM10"])} µg/m³</div>
+                <div class="summary-value">${avg(djson["PM10"]) } µg/m³</div>
               </div>
             </div>
             <div class="summary-card">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle-dot"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 2.5</div>
-                <div class="summary-value">${avg(djson["PM25"])} µg/m³</div>
+                <div class="summary-value">${avg(djson["PM25"]) } µg/m³</div>
               </div>
             </div>
           </div>
         </div>`;
-        contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["CO"],
-          "line",
-          str_file,
-          "Monóxido de Carbono",
-          "ppm",
-          "#8B4513"
-        );
-        set_canva(
-          contenDialog,
-          djson["NO2"],
-          "line",
-          str_file,
-          "Dióxido de Nitrógeno",
-          "ppb",
-          "#6A5ACD"
-        );
-        set_canva(
-          contenDialog,
-          djson["O3"],
-          "line",
-          str_file,
-          "Ozono",
-          "ppb",
-          "#32CD32"
-        );
-        set_canva(
-          contenDialog,
-          djson["SO2"],
-          "line",
-          str_file,
-          "Dióxido de Azufre",
-          "ppb",
-          "#4169E1"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM10"],
-          "line",
-          str_file,
-          "Partículas PM 10",
-          "µg/m³",
-          "#FF9F40"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM25"],
-          "line",
-          str_file,
-          "Partículas PM 2.5",
-          "µg/m³",
-          "#FFCD56"
-        );
-      } else {
-        downloadFileCSV();
+          contenDialog.append(resumenHTML);
+          set_canva(contenDialog, djson["CO"],   "line", str_file, "Monóxido de Carbono", "ppm",   "#8B4513");
+          set_canva(contenDialog, djson["NO2"],  "line", str_file, "Dióxido de Nitrógeno", "ppb", "#6A5ACD");
+          set_canva(contenDialog, djson["O3"],   "line", str_file, "Ozono", "ppb", "#32CD32");
+          set_canva(contenDialog, djson["SO2"],  "line", str_file, "Dióxido de Azufre", "ppb", "#4169E1");
+          set_canva(contenDialog, djson["PM10"], "line", str_file, "Partículas PM 10", "µg/m³", "#FF9F40");
+          set_canva(contenDialog, djson["PM25"], "line", str_file, "Partículas PM 2.5", "µg/m³", "#FFCD56");
+          if (m_autoDownloadAfterDialog) {
+            setTimeout(() => { try { downloadFileCSV(); } catch(e){} }, 50);
+            m_autoDownloadAfterDialog = false;
+          }
+        } else if (m_pendingDirectDownload) {
+          downloadFileCSV();
+          m_pendingDirectDownload = false;
+        }
+      } catch(err){
+        console.error('[set_chart_chem] parse error', err);
+        if (m_pendingDirectDownload){
+          alert('Error al procesar datos químicos');
+          m_pendingDirectDownload = false;
+        }
       }
     },
+    error: function () {
+      console.error('Error al cargar datos chem', str_file);
+      if (m_pendingDirectDownload){
+        alert('No se pudo cargar datos químicos para descarga: ' + str_file);
+        m_pendingDirectDownload = false;
+      }
+    }
   });
 }
 
@@ -2295,94 +2288,222 @@ function show_datos(datos) {
       : 0;
   });
 
-  var texthtml = $("<div class='datos-modal-wrapper'>");
-  // Barra de descarga masiva (TOP)
-  texthtml.append(`
-    <div class="bulk-download-bar" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin: 4px 0 8px 0;">
-      <button id="btn-download-all-cabeceras" class="mini-download-btn" type="button" title="Descargar todo (CSV)">
-        <i class="fa fa-download"></i> Todo
-      </button>
-    </div>
-  `);
-  // Encabezados
-  const descargaLabel = (window.innerWidth && window.innerWidth < 640) ? 'Des.' : 'Descarga';
-  texthtml.append("<div class='datos-header-row'>");
-  texthtml.append('<div class="datos-cell datos-head" style="width:20%">Clave</div>');
-  texthtml.append('<div class="datos-cell datos-head" style="width:60%">Municipio</div>');
-  texthtml.append(`<div class="datos-cell datos-head" style="width:20%" title="Descarga">${descargaLabel}</div>`);
+  var texthtml = $("<div>");
+  //texthtml.append('<table width="100%">');
+
+  //texthtml.append('<tbody>');
+  texthtml.append("<div>");
+  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
+  let modo = 'meteo';
+  try {
+    const sel = document.getElementById('select_dat');
+    if (sel && sel.value) {
+      modo = sel.value === 'quim' ? 'chem' : 'meteo';
+    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
+      modo = 'chem';
+    }
+  } catch(e) {}
+
+  // Bloque de acciones masivas (solo un botón según modo)
+  if (modo === 'meteo') {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadMeteoZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Meteorología)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Met)</span>'
+      + '</button>'
+      + '</div>');
+  } else {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadChemZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Calidad del Aire)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Calidad)</span>'
+      + '</button>'
+      + '</div>');
+  }
+  texthtml.append(
+    '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Clave</div>'
+  );
+  texthtml.append(
+    '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Municipio</div>'
+  );
+  texthtml.append(
+    '<div style="display: inline-block; width: 20%;  vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Opciones</div>'
+  );
   texthtml.append("</div>");
 
   for (var i = 0; i < features.length; i++) {
     var feature = features[i];
-    const clave = feature.get("clave");
-    const nombre = feature.get("nombre") || "";
-    const row = $(`
-      <div class="datos-row" style="display:flex; width:100%;">
-        <div class="datos-cell" style="width:20%">${clave}</div>
-        <div class="datos-cell" style="width:60%">${nombre}</div>
-        <div class="datos-cell" style="width:20%; text-align:center;">
-          <a href="#" class="row-download-link" title="Descargar CSV" data-clave="${clave}">
-            <i class="fa fa-download"></i>
-          </a>
-        </div>
-      </div>`);
-    texthtml.append(row);
+
+    //texthtml.append('<tr>');
+    texthtml.append(
+      '<div <div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
+        feature.get("clave") +
+        "</div>"
+    );
+    texthtml.append(
+      '<div style="display: inline-block; width: 60%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff;" >' +
+        feature.get("nombre") +
+        "</div>"
+    );
+
+    var str_link =
+      '<a href="#" class="row-download-link" onclick="downloadCSV(\'' +
+      feature.get("clave") +
+      "');\" title=\"Descargar datos (CSV)\">" +
+      '<i class="fa-solid fa-download"></i>' +
+      "</a>";
+    texthtml.append(
+      '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff; text-align: center;" >' +
+        str_link +
+        "</div>"
+    );
+    //texthtml.append('</tr>');
   }
 
-  // Estilos rápidos inline para asegurar compatibilidad móvil
-  texthtml.append(`<style>
-    .datos-modal-wrapper{font-family:'Poppins',sans-serif; font-size:13px;}
-    .datos-head{font-weight:600; background:#f2f2f2;}
-    .datos-row:nth-child(even){background:#fcfcfc;}
-    .datos-cell{padding:6px 4px; box-sizing:border-box; display:inline-block; vertical-align:middle; word-break:break-word;}
-    @media (max-width:600px){
-      .datos-cell{font-size:12px; padding:6px 3px;}
-      .bulk-download-bar{position:sticky; top:0; background:#fff; padding:6px 4px; z-index:10;}
-    }
-  </style>`);
+  //texthtml.append('</tbody>');
+  //texthtml.append('</table>');
+  texthtml.append("</div>");
 
   BootstrapDialog.show({
     title: "Datos",
     closable: true,
     message: texthtml,
-    onshown: function(){
-      // Handler descarga individual
-      texthtml.on('click', 'a.row-download-link', function(e){
-        e.preventDefault();
-        const clave = this.getAttribute('data-clave');
-        if (clave) downladCSV(clave);
-      });
-      // Descarga masiva
-      const btnAll = document.getElementById('btn-download-all-cabeceras');
-      if (btnAll){
-        btnAll.addEventListener('click', function(){
-          try { bulkDownloadCabeceras(features); } catch(err){ console.error('Bulk download error', err);} 
-        });
-      }
-    }
   });
 }
 
-// Generar un CSV con todas las cabeceras (clave, nombre)
-function bulkDownloadCabeceras(features){
-  if (!features || !features.length) return;
-  const header = 'clave,municipio';
-  const lines = features.map(f => {
-    const c = (f.get && f.get('clave')) || '';
-    let n = (f.get && f.get('nombre')) || '';
-    // Escapar comas y comillas
-    if (/[,"\n]/.test(n)) n = '"' + n.replace(/"/g,'""') + '"';
-    return `${c},${n}`;
-  });
-  const csv = [header].concat(lines).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  const ts = new Date().toISOString().slice(0,10);
-  a.download = `cabeceras_${ts}.csv`;
-  a.href = URL.createObjectURL(blob);
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+// Generar un ZIP con CSVs individuales de cada cabecera (+ CSV resumen opcional)
+async function bulkDownloadCabeceras(features){
+  if (!features || !features.length) {
+    alert('No hay municipios disponibles para descargar.');
+    return;
+  }
+  
+  // Determinar tipo según select_dat
+  const sel = document.getElementById('select_dat');
+  const modo = sel ? sel.value : 'meteo';
+  const tipo = modo === 'quim' ? 'chem' : 'meteo';
+  const sufijo = tipo === 'meteo' ? 'meteorologicos' : 'contaminantes';
+  
+  if (!m_dir_runs) {
+    alert('No hay ejecución seleccionada. Selecciona una fecha/hora primero.');
+    return;
+  }
+  
+  // Buscar el botón para mostrar feedback
+  const triggerBtn = document.querySelector('#btn-download-all-cabeceras');
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.dataset.original = triggerBtn.innerHTML;
+    triggerBtn.innerHTML = '<i class="fa fa-hourglass-half fa-spin"></i> Preparando...';
+  }
+  
+  try {
+    const JSZipLib = await ensureJSZip();
+    const zip = new JSZipLib();
+    
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+    
+    // Encabezados según tipo
+    const headerM = 'Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    const headerC = 'Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+    
+  let processed = 0;
+  const resumenLines = ['clave,municipio'];
+    
+    for (const feature of features) {
+      const clave = feature.get('clave');
+      const nombre = (feature.get('nombre') || '').replace(/[\r\n]+/g, ' ').trim();
+      const dir = feature.get('dir');
+      
+      if (!dir) {
+        console.warn('Feature sin dir:', clave);
+        continue;
+      }
+      
+  const safeName = nombre.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  resumenLines.push(`${clave},"${nombre.replace(/"/g,'""')}"`);
+  const jsonUrl = buildJsonUrl(m_dir_runs, dir, dir_dat, clave, fech, hor);
+  console.log('[bulkDownloadCabeceras] fetch', jsonUrl);
+      
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) {
+          console.warn('No se pudo leer', jsonUrl, resp.status);
+          continue;
+        }
+        
+        const data = await resp.json();
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        
+        const len = Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0;
+        let hs = 0;
+        const lines = [tipo === 'meteo' ? headerM : headerC];
+        
+        for (let i = 0; i < len; i++) {
+          hs += 3;
+          const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g, ' ');
+          
+          if (tipo === 'meteo') {
+            lines.push([
+              fechaLabel,
+              safeVal(data.t2m, i), safeVal(data.rh, i), safeVal(data.pre, i),
+              safeVal(data.sw, i), safeVal(data.wnd, i), safeVal(data.psl, i)
+            ].join(','));
+          } else {
+            lines.push([
+              fechaLabel,
+              safeVal(data.CO, i), safeVal(data.NO2, i), safeVal(data.O3, i), safeVal(data.SO2, i),
+              safeVal(data.PM10, i), safeVal(data.PM25, i)
+            ].join(','));
+          }
+        }
+        
+        const csvContent = '\uFEFF' + lines.join('\r\n') + '\r\n';
+        const fileName = `${clave}_${safeName}_${fech}_${hor}z.csv`;
+        zip.file(fileName, csvContent);
+        processed++;
+        
+        // Actualizar progreso en el botón
+        if (triggerBtn) {
+          triggerBtn.innerHTML = `<i class=\"fa fa-hourglass-half fa-spin\"></i> ${processed}/${features.length} ZIP`;
+        }
+        
+      } catch (e) {
+        console.warn('Error procesando', jsonUrl, e);
+      }
+    }
+    
+    if (processed === 0) {
+      alert('No se pudo procesar ningún municipio. Verifica que haya datos disponibles.');
+      return;
+    }
+    
+    // Añadir CSV resumen al ZIP
+    zip.file(`resumen_${sufijo}_${fech}_${hor}z.csv`, '\uFEFF' + resumenLines.join('\r\n') + '\r\n');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.download = `todos_${sufijo}_${fech}_${hor}z.zip`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+    }, 500);
+    
+  } catch (err) {
+    console.error('Error generando ZIP:', err);
+    alert('No se pudo generar el ZIP: ' + err.message);
+  } finally {
+    // Restaurar botón
+    if (triggerBtn) {
+      setTimeout(() => {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = triggerBtn.dataset.original || '<i class="fa fa-download"></i> ZIP Completo';
+      }, 600);
+    }
+  }
 }
 
 
@@ -2404,7 +2525,85 @@ function downladCSV(clave) {
     }
   }
 }
+
+function downloadCSV(clave) {
+  if (!clave) return;
+  const src = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+  if (!src || !src.length) {
+    console.warn('downloadCSV: m_vectorSource vacío, no se puede resolver clave', clave);
+    return;
+  }
+  for (let i = 0; i < src.length; i++) {
+    const feature = src[i];
+    try {
+      if (feature.get('clave') == clave && feature.get('local') == 'cabecera') {
+        m_feature = feature;
+        m_pendingDirectDownload = true;
+        const sel = document.getElementById('select_dat');
+        const modo = sel ? sel.value : 'meteo';
+        if (modo === 'quim') {
+          show_chem(false);
+        } else {
+          show_meteo(false);
+        }
+        return; // encontrado
+      }
+    } catch(e){ console.warn('downloadCSV: error procesando feature', e); }
+  }
+  console.warn('downloadCSV: clave no encontrada', clave);
+}
 let filter_color = null;
+// Aplica filtro de rango numérico usando gradientLookup (asume escala lineal de valores a colores)
+function applyValueRangeFilter(img){
+  if (!img || filter_value_min == null || filter_value_max == null) return null;
+  if (!window.gradientDomainMin || typeof window.gradientDomainMin !== 'number') return null;
+  const minV = Math.min(filter_value_min, filter_value_max);
+  const maxV = Math.max(filter_value_min, filter_value_max);
+  try {
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return null;
+    canvas.width = img.width; canvas.height = img.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently:true });
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+    // Preconstruir mapa rápido hex->valor para colores exactos de la paleta
+    const palette = window.gradientLookup||[];
+    const hexMap = new Map();
+    for (const e of palette){ if (e && e.hex) hexMap.set(e.hex.toLowerCase(), e.value); }
+    // Si necesitamos nearest, fallback simple (distancia euclidiana)
+    function nearestValue(r,g,b){
+      // Intentar coincidencia exacta (común si raster usa misma tabla)
+      const hex = '#' + [r,g,b].map(v=> v.toString(16).padStart(2,'0')).join('');
+      if (hexMap.has(hex)) return hexMap.get(hex);
+      let bestDist = 1e12, bestVal=null;
+      for (const e of palette){
+        const hx = e.hex; if (!hx) continue;
+        const rv=parseInt(hx.substr(1,2),16), gv=parseInt(hx.substr(3,2),16), bv=parseInt(hx.substr(5,2),16);
+        const dr=rv-r, dg=gv-g, db=bv-b; const dist=dr*dr+dg*dg+db*db;
+        if (dist<bestDist){ bestDist=dist; bestVal=e.value; if (dist===0) break; }
+      }
+      return bestVal;
+    }
+    // Tolerancia pequeña para incluir colores cuantizados adyacentes
+    const expand = (maxV - minV) * 0.01; // 1% del ancho seleccionado
+    const lo = minV - expand;
+    const hi = maxV + expand;
+    for (let i=0;i<data.length;i+=4){
+      const val = nearestValue(data[i], data[i+1], data[i+2]);
+      if (val==null || val < lo || val > hi){ data[i+3] = 0; }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source: new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
+    });
+    clipLayer(filteredLayer);
+    return filteredLayer;
+  } catch(e){ console.error('Error en applyValueRangeFilter', e); return null; }
+}
 const canvas = document.getElementById("dynamic-gradient-canvas");
 canvas.addEventListener("click", function (event) {
   const rect = canvas.getBoundingClientRect();
@@ -4174,71 +4373,30 @@ function setupLegendClickFilter() {
             applyLegendFilter(percent - 0.05, percent + 0.05);
         }
     });
-    
-    // Doble click en la leyenda para limpiar filtro
-  legendGradient.addEventListener('dblclick', (e) => {
-    const btn = document.getElementById('btn_recarga');
-    if (btn) {
-      btn.click();
-    } else {
-      // fallback si el botón no existe todavía
-      clearLegendFilter();
-    }
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-    // Añadir soporte a barras alternativas (gradiente vertical / horizontal incrustado)
-    const extraSelectors = ['.gradient-bar-horizontal', '.gradient-bar'];
-    extraSelectors.forEach(sel => {
-      document.querySelectorAll(sel).forEach(el => {
-        el.addEventListener('dblclick', (e) => {
-          const btn = document.getElementById('btn_recarga');
-          if (btn) { btn.click(); } else { clearLegendFilter(); }
-          e.preventDefault();
-          e.stopPropagation();
-        });
-      });
-    });
-
-    // Doble clic en cualquier zona interna del contenedor para limpiar (máxima tolerancia)
-    if (gradientContainer) {
-      gradientContainer.addEventListener('dblclick', (e) => {
-        const btn = document.getElementById('btn_recarga');
-        if (btn) { btn.click(); } else { clearLegendFilter(); }
-        e.preventDefault();
-        e.stopPropagation();
-      });
-    }
 }
 
 function applyLegendFilter(minPercent, maxPercent) {
     if (!window.gradientLookup || !window.gradientLookup.length) return;
     
     const totalSteps = window.gradientLookup.length;
-    const minIndex = Math.floor(minPercent * totalSteps);
-    const maxIndex = Math.ceil(maxPercent * totalSteps);
-    
-    if (minIndex >= 0 && maxIndex < totalSteps) {
-        const minValue = window.gradientLookup[minIndex].value;
-        const maxValue = window.gradientLookup[maxIndex].value;
-        const avgValue = (minValue + maxValue) / 2;
-        
-        // Simular el color para el filtrado
-        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
-        if (colorEntry && colorEntry.hex) {
-            const hex = colorEntry.hex.replace('#', '');
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            
-            filter_color = [r, g, b];
-            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
-            showInfo(range);
-            const filteredLayer = applyFilterToImage(m_lienzo.img);
-            put_FilteredImage(filteredLayer);
-        }
-    }
+  let minIndex = Math.floor(minPercent * totalSteps);
+  let maxIndex = Math.ceil(maxPercent * totalSteps);
+  // Asegurar indices válidos (permitir seleccionar 100%)
+  if (maxIndex >= totalSteps) maxIndex = totalSteps - 1;
+  if (minIndex < 0) minIndex = 0;
+  if (maxIndex < minIndex) [minIndex, maxIndex] = [maxIndex, minIndex];
+
+  if (minIndex >= 0 && maxIndex >= 0 && minIndex < totalSteps && maxIndex < totalSteps) {
+    const minValue = window.gradientLookup[minIndex].value;
+    const maxValue = window.gradientLookup[maxIndex].value;
+    filter_value_min = minValue;
+    filter_value_max = maxValue;
+    filter_color = null; // desactivar filtro puntual
+    const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+    showInfo(range);
+    const filteredLayer = applyValueRangeFilter(m_lienzo && m_lienzo.img);
+    if (filteredLayer) put_FilteredImage(filteredLayer);
+  }
 }
 
 function clearLegendFilter() {
@@ -4246,7 +4404,9 @@ function clearLegendFilter() {
     if (filterIndicator) {
         filterIndicator.classList.remove('active');
     }
-    filter_color = null;          // filtro raster (canvas)
+  filter_color = null;          // filtro raster (canvas) puntual
+  filter_value_min = null;
+  filter_value_max = null;
     colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
     hideInfo();
     if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
@@ -4271,7 +4431,11 @@ function updateLegend(title, gradient, minValue, maxValue, unit) {
     
     if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
     
-    legend.style.display = 'block';
+  legend.style.display = 'block';
+  // Guardar dominio global para herramientas de rango
+  window.gradientDomainMin = minValue;
+  window.gradientDomainMax = maxValue;
+  window.gradientDomainUnit = unit;
     legendTitle.textContent = title;
     legendGradient.style.background = gradient;
     
@@ -4285,6 +4449,8 @@ function updateLegend(title, gradient, minValue, maxValue, unit) {
         span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
         legendLabels.appendChild(span);
     }
+  // Asegurar controles de rango manual listos
+  ensureLegendRangeControls();
 }
 
 // Inicializar la leyenda cuando se carga la página
@@ -4321,5 +4487,194 @@ function hideInfo() {
   const rangeElement = info.querySelector(".dynamic-range");
   if (rangeElement) {
     rangeElement.remove();
+  }
+}
+
+// ====== Controles de rango (similar al ejemplo solicitado) ======
+function ensureLegendRangeControls(){
+  const container = document.getElementById('gradient-container');
+  if (!container) return;
+  let box = document.getElementById('legend-range-filter');
+  if (!box){
+    box = document.createElement('div');
+    box.id = 'legend-range-filter';
+    box.innerHTML = `
+      <div class="legend-range-inputs">
+        <div class="range-field">
+          <label>Min</label>
+          <input type="number" step="0.1" id="legend-min-input" />
+        </div>
+        <span class="range-sep">–</span>
+        <div class="range-field">
+          <label>Max</label>
+          <input type="number" step="0.1" id="legend-max-input" />
+        </div>
+      </div>
+      <div class="legend-dual-slider-wrapper">
+        <input type="range" id="legend-range-min" class="legend-range" />
+        <input type="range" id="legend-range-max" class="legend-range" />
+      </div>`;
+    container.appendChild(box);
+    wrapCanvasWithDualSliders();
+    wireLegendRangeEvents();
+  }
+  syncLegendRangeUI();
+}
+
+// Coloca los sliders encima del canvas de gradiente existente
+function wrapCanvasWithDualSliders(){
+  const canvas = document.getElementById('dynamic-gradient-canvas');
+  if (!canvas) return;
+  // Sliders ya creados dentro de legend-range-filter
+  const minSlider = document.getElementById('legend-range-min');
+  const maxSlider = document.getElementById('legend-range-max');
+  if (!minSlider || !maxSlider) return;
+  // Evitar duplicar si ya hay wrapper
+  if (canvas.parentElement && canvas.parentElement.classList.contains('gradient-bar-wrapper')) return;
+
+  const parent = canvas.parentElement;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'gradient-bar-wrapper';
+  parent.replaceChild(wrapper, canvas);
+  wrapper.appendChild(canvas);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'dual-slider-overlay';
+  const selection = document.createElement('div');
+  selection.className = 'dual-slider-selection';
+  overlay.appendChild(selection);
+
+  // Mover sliders existentes (remueve el viejo contenedor track / lo dejamos oculto)
+  overlay.appendChild(minSlider);
+  overlay.appendChild(maxSlider);
+  wrapper.appendChild(overlay);
+
+  // Actualizar highlight cada movimiento
+  function updateHighlight(){
+    const sel = wrapper.querySelector('.dual-slider-selection');
+    if (!sel) return;
+    const a = Math.min(minSlider.value, maxSlider.value);
+    const b = Math.max(minSlider.value, maxSlider.value);
+    const pctA = (a/1000)*100;
+    const pctB = (b/1000)*100;
+    sel.style.left = pctA + '%';
+    sel.style.width = (pctB - pctA) + '%';
+  }
+  minSlider.addEventListener('input', updateHighlight);
+  maxSlider.addEventListener('input', updateHighlight);
+  // Primera pintura
+  requestAnimationFrame(updateHighlight);
+}
+
+function wireLegendRangeEvents(){
+  const minInput = document.getElementById('legend-min-input');
+  const maxInput = document.getElementById('legend-max-input');
+  const minSlider = document.getElementById('legend-range-min');
+  const maxSlider = document.getElementById('legend-range-max');
+  const clearBtn = document.getElementById('legend-clear-range-btn');
+  if (!minInput||!maxInput||!minSlider||!maxSlider) return;
+
+  function clamp(val, lo, hi){ return Math.min(hi, Math.max(lo, val)); }
+  function toNumber(v){ const n = parseFloat(v); return isFinite(n)?n:0; }
+
+  function syncFromSlider(){
+    const dmin = window.gradientDomainMin;
+    const dmax = window.gradientDomainMax;
+    const span = dmax - dmin || 1;
+    let vMin = dmin + (toNumber(minSlider.value)/1000)*span;
+    let vMax = dmin + (toNumber(maxSlider.value)/1000)*span;
+    if (vMin>vMax){ const t=vMin; vMin=vMax; vMax=t; }
+    minInput.value = vMin.toFixed(1);
+    maxInput.value = vMax.toFixed(1);
+    // Actualizar highlight si existe
+    const sel = document.querySelector('.dual-slider-selection');
+    if (sel){
+      const a = Math.min(minSlider.value, maxSlider.value);
+      const b = Math.max(minSlider.value, maxSlider.value);
+      sel.style.left = (a/1000*100)+'%';
+      sel.style.width = ((b-a)/1000*100)+'%';
+    }
+  }
+
+  function syncFromInput(){
+    const dmin = window.gradientDomainMin;
+    const dmax = window.gradientDomainMax;
+    const span = dmax - dmin || 1;
+    let vMin = clamp(toNumber(minInput.value), dmin, dmax);
+    let vMax = clamp(toNumber(maxInput.value), dmin, dmax);
+    if (vMin>vMax){ const t=vMin; vMin=vMax; vMax=t; }
+    const relMin = ((vMin - dmin)/span)*1000;
+    const relMax = ((vMax - dmin)/span)*1000;
+    minSlider.value = Math.round(relMin);
+    maxSlider.value = Math.round(relMax);
+    minInput.value = vMin.toFixed(1);
+    maxInput.value = vMax.toFixed(1);
+    const sel = document.querySelector('.dual-slider-selection');
+    if (sel){
+      const a = Math.min(minSlider.value, maxSlider.value);
+      const b = Math.max(minSlider.value, maxSlider.value);
+      sel.style.left = (a/1000*100)+'%';
+      sel.style.width = ((b-a)/1000*100)+'%';
+    }
+  }
+
+  minSlider.addEventListener('input', syncFromSlider);
+  maxSlider.addEventListener('input', syncFromSlider);
+  minInput.addEventListener('change', syncFromInput);
+  maxInput.addEventListener('change', syncFromInput);
+
+  // En lugar del botón interno "Aplicar", se usará #btn_aplicar externo si existe.
+  bindExternalApplyButton();
+
+  if (clearBtn) clearBtn.addEventListener('click', ()=>{ clearLegendFilter(); syncLegendRangeUI(); });
+}
+
+// Vincula el botón global #btn_aplicar (weather controls) para aplicar el rango actual
+function bindExternalApplyButton(){
+  const extBtn = document.getElementById('btn_aplicar');
+  if (!extBtn) return; // no existe aún
+  if (extBtn.dataset.legendBinded === '1') return; // evitar doble binding
+  extBtn.addEventListener('click', ()=>{
+    const minInput = document.getElementById('legend-min-input');
+    const maxInput = document.getElementById('legend-max-input');
+    if (!minInput || !maxInput) return;
+    const dmin = window.gradientDomainMin;
+    const dmax = window.gradientDomainMax;
+    const vMin = parseFloat(minInput.value);
+    const vMax = parseFloat(maxInput.value);
+    if (!isFinite(vMin) || !isFinite(vMax)) return;
+    const lo = Math.max(dmin, Math.min(dmax, Math.min(vMin,vMax)));
+    const hi = Math.max(dmin, Math.min(dmax, Math.max(vMin,vMax)));
+    setValueRangeFilter(lo, hi);
+  });
+  extBtn.dataset.legendBinded = '1';
+}
+
+function syncLegendRangeUI(){
+  if (typeof window.gradientDomainMin === 'undefined') return;
+  const minInput = document.getElementById('legend-min-input');
+  const maxInput = document.getElementById('legend-max-input');
+  const minSlider = document.getElementById('legend-range-min');
+  const maxSlider = document.getElementById('legend-range-max');
+  if (!minInput||!maxInput||!minSlider||!maxSlider) return;
+  const dmin = window.gradientDomainMin;
+  const dmax = window.gradientDomainMax;
+  minInput.min = dmin; maxInput.min = dmin; minInput.max = dmax; maxInput.max = dmax;
+  minInput.value = dmin.toFixed(1);
+  maxInput.value = dmax.toFixed(1);
+  // Uso de 0-1000 para mayor resolución del slider sin necesidad de hacks CSS
+  minSlider.min = 0; minSlider.max = 1000; maxSlider.min = 0; maxSlider.max = 1000;
+  minSlider.value = 0; maxSlider.value = 1000;
+}
+
+function setValueRangeFilter(lo, hi){
+  if (!isFinite(lo) || !isFinite(hi)) return;
+  filter_value_min = Math.min(lo,hi);
+  filter_value_max = Math.max(lo,hi);
+  filter_color = null; // desactivar modo puntual
+  showInfo(`${filter_value_min.toFixed(1)} - ${filter_value_max.toFixed(1)}`);
+  if (m_lienzo && m_lienzo.img){
+    const fl = applyValueRangeFilter(m_lienzo.img);
+    if (fl) put_FilteredImage(fl);
   }
 }

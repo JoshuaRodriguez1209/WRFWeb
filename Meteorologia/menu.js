@@ -189,6 +189,19 @@ $("#btn_recarga").click(function(){
 	hideInfo();
 })
 
+// Nuevo: botón Aplicar Cambios (placeholder para lógica futura)
+$("#btn_aplicar").click(function(){
+  console.log('Aplicar Cambios: ejecutar lógica de actualización manual aquí');
+  // Ejemplo: forzar recarga de la variable actual
+  try {
+    if (typeof update_var === 'function') {
+      update_var();
+    }
+  } catch(e){
+    console.warn('Error al aplicar cambios:', e);
+  }
+});
+
 // Función para mostrar y ocultar el menú
 function toggleMenu() {
   const navLinks = document.getElementById('nav-links');
@@ -326,7 +339,8 @@ $(document).on("click", "#btn_hist", function () {
   $("#panel-header-text").text("Historial de Datos");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
-
+  // Salir del modo mapa para liberar el layout y permitir ancho completo
+  document.body.classList.remove('map-active');
   // Actualizar estado activo de los botones del menú
   try {
     document.querySelectorAll('.menu-btn').forEach(b => {
@@ -343,6 +357,9 @@ $(document).on("click", "#btn_hist", function () {
   } catch (error) {
     console.error('Error actualizando estado del menú:', error);
   }
+  // Marcar como vacío al iniciar (no hay municipio seleccionado todavía)
+  const dash = document.getElementById('historial-dashboard');
+  if (dash) dash.classList.add('historial-empty');
   
   // Cargar cabeceras en el selector
   loadHistoricalCabeceras();
@@ -409,6 +426,9 @@ function updateHistoricalView() {
       if (tbody) tbody.innerHTML = '';
       lastCabeceraId = null;
       lastTipo = tipo;
+      // Marcar historial vacío (sin gráficas)
+      const dash = document.getElementById('historial-dashboard');
+      if (dash) dash.classList.add('historial-empty');
       return;
     }
     
@@ -468,6 +488,19 @@ function updateHistoricalView() {
     .then(data => {
       contentDiv.empty();
       createHistoricalView(path, contentDiv, tipo);
+      // Después de crear vistas, quitar clase de vacío si se generaron charts
+      requestAnimationFrame(() => {
+        const chartsHost = document.getElementById('chartsHost');
+        const dash = document.getElementById('historial-dashboard');
+        if (dash) {
+          if (chartsHost && chartsHost.children.length > 0) {
+            dash.classList.remove('historial-empty');
+          } else {
+            dash.classList.add('historial-empty');
+          }
+          evaluateHistorialScroll();
+        }
+      });
     })
     .catch(error => {
       contentDiv.html(`
@@ -479,6 +512,9 @@ function updateHistoricalView() {
         </div>
       `);
       console.error('Error:', error);
+      const dash = document.getElementById('historial-dashboard');
+      if (dash) dash.classList.add('historial-empty');
+      evaluateHistorialScroll();
     });
   }, 300); // 300ms de throttling
 }
@@ -554,11 +590,38 @@ function resetHistorialState() {
     // Resetear variables de tracking
     lastCabeceraId = null;
     lastTipo = 'meteo';
+
+    // Marcar historial vacío (no hay aún contenido)
+    const dash = document.getElementById('historial-dashboard');
+    if (dash) dash.classList.add('historial-empty');
+    evaluateHistorialScroll();
     
   } catch (error) {
     console.error('Error reseteando estado del historial:', error);
   }
 }
+
+// Evalúa si el contenido del historial requiere scroll y ajusta clases
+function evaluateHistorialScroll() {
+  const dash = document.getElementById('historial-dashboard');
+  if (!dash) return;
+  // Limpiar clases previas de control
+  dash.classList.remove('no-scroll','force-scroll');
+  // Pequeño defer para asegurar layout final (charts render, etc.)
+  requestAnimationFrame(() => {
+    const needsScroll = dash.scrollHeight > dash.clientHeight + 2; // tolerancia
+    if (needsScroll) {
+      dash.classList.add('force-scroll');
+    } else {
+      dash.classList.add('no-scroll');
+    }
+  });
+}
+
+// Re-evaluar al cambiar tamaño de la ventana
+window.addEventListener('resize', () => {
+  evaluateHistorialScroll();
+});
 
 // Función para verificar y corregir el estado visual del menú
 function updateMenuVisualState() {

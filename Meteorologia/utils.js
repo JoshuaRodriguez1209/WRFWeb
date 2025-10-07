@@ -40,6 +40,11 @@ function CDataLayer(map, tipo = "add", str_file = null) {
 }
 
 CDataLayer.prototype.setParam = function (str_file) {
+  // Guardar y validar antes de continuar
+  if (typeof str_file !== 'string' || !str_file.length) {
+    console.warn('setParam: str_file inválido, se omite procesamiento:', str_file);
+    return;
+  }
   this.setBar(str_file);
 
   var pos = str_file.lastIndexOf("/");
@@ -84,6 +89,14 @@ CDataLayer.prototype.pad = function (num, size) {
 };
 
 CDataLayer.prototype.setBar = function (str_file) {
+  if (typeof str_file !== 'string') {
+    console.warn('setBar: str_file no es string:', str_file);
+    return;
+  }
+  if (!str_file) {
+    console.warn('setBar: str_file vacío');
+    return;
+  }
   // Obtener el texto de la variable seleccionada en el select
   const getActiveVariableText = () => {
     const selectVar = document.getElementById('select_var');
@@ -388,5 +401,13 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
       label.textContent = value.toFixed(1);
       gradientValues.appendChild(label);
     }
+  }
+  // Registrar dominio global (para controles de rango manual)
+  window.gradientDomainMin = min;
+  window.gradientDomainMax = max;
+  window.gradientDomainUnit = units;
+  // Intentar inicializar controles de rango si la función existe (definida en app.js)
+  if (typeof ensureLegendRangeControls === 'function') {
+    try { ensureLegendRangeControls(); } catch(e) { console.warn('RangeControls init error', e); }
   }
 }
