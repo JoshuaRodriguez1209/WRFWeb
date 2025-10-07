@@ -713,16 +713,6 @@ var createParameterButtons = function(parameterData) {
       // Activar el botón clickeado
       this.classList.add('active');
       selectedParameter = param.value;
-      
-      // Mostrar indicador visual de que se procesará
-      const applyIndicator = document.getElementById('apply-indicator');
-      if (applyIndicator) {
-        applyIndicator.style.display = 'block';
-        setTimeout(() => {
-          applyIndicator.style.display = 'none';
-        }, 500);
-      }
-      
       procesa_dat();
     });
     
@@ -734,15 +724,6 @@ var createParameterButtons = function(parameterData) {
       selectedParameter = param.value;
     }
   });
-  
-  // Agregar indicador de aplicación
-  if (!document.getElementById('apply-indicator')) {
-    const indicator = document.createElement('div');
-    indicator.id = 'apply-indicator';
-    indicator.className = 'apply-indicator';
-    indicator.innerHTML = '<i class="fa-solid fa-check"></i> Aplicado';
-    container.parentElement.appendChild(indicator);
-  }
   
   // Procesar la primera opción automáticamente
   if (parameterData.length > 0) {
@@ -891,12 +872,6 @@ var set_atmos = function () {
     {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
   ];
   
-  // Cambiar título del panel
-  const headerTitle = document.getElementById('controls-header-title');
-  if (headerTitle) {
-    headerTitle.textContent = "Pronóstico Meteorológico del Estado de Puebla";
-  }
-  
   createParameterButtons(parameterData);
 };
 
@@ -910,14 +885,9 @@ var set_chem = function () {
     {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
   ];
   
-  // Cambiar título del panel
-  const headerTitle = document.getElementById('controls-header-title');
-  if (headerTitle) {
-    headerTitle.textContent = "Calidad del Aire del Estado de Puebla";
-  }
-  
   createParameterButtons(parameterData);
 };
+
 //-------------------------------------------------------------------------------
 var list_var = async function (datos) {
   var dir_var = "";
@@ -1003,15 +973,9 @@ async function update_var() {
   var img = new Image();
   img.onload = function () {
     m_lienzo = new CLienzo(img);
-    if (filter_value_min != null && filter_value_max != null){
-      const fl = applyValueRangeFilter(m_lienzo.img);
-      if (fl) put_FilteredImage(fl); else if (filter_color){
-        const filteredLayer = applyFilterToImage(m_lienzo.img);
-        put_FilteredImage(filteredLayer);
-      }
-    } else if (filter_color) {
-        const filteredLayer = applyFilterToImage(m_lienzo.img);
-        put_FilteredImage(filteredLayer);
+    if (filter_color) {
+      const filteredLayer = applyFilterToImage(m_lienzo.img);
+      put_FilteredImage(filteredLayer);
     }
   };
   img.src = str_file;
@@ -1279,7 +1243,6 @@ function cancel_animate() {
 var m_show = false;
 var m_zoom = m_view.getZoom();
 
-//------------------------------------------------------------------------
 var create_style = function (tipo) {
   // Determinar el color basado en el tipo de punto
   let circleColor = '#c19862'; // Color dorado por defecto
@@ -1303,65 +1266,62 @@ var create_style = function (tipo) {
   }
   
   const scale = get_scale();
-  const radius = tipo === 'estacion' ? Math.max(10, 14 * scale) : Math.max(8, 10 * scale);
-  
-  // CABECERAS = TRIÁNGULOS
+  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
   if (tipo === 'cabecera') {
-    return new ol.style.Style({
-      image: new ol.style.RegularShape({
-        radius: radius,
-        points: 3, // Triángulo
-        fill: new ol.style.Fill({
-          color: circleColor,
-        }),
-        stroke: new ol.style.Stroke({
-          color: strokeColor,
-          width: strokeWidth,
-        }),
-        opacity: opacity,
+  return new ol.style.Style({
+    image: new ol.style.RegularShape({
+      radius: radius,
+      points: 3,
+      fill: new ol.style.Fill({
+        color: circleColor,
       }),
-      text: new ol.style.Text({
-        offsetX: 0,
-        offsetY: radius + 20,
-        textAlign: "center",
-        font: "14px Poppins,sans-serif",
-        fill: new ol.style.Fill({ color: "#fff" }),
-        stroke: new ol.style.Stroke({
-          color: "#333",
-          width: 2,
-        }),
-        text: "",
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
       }),
-    });
-  } 
-  // ESTACIONES = CÍRCULOS MÁS GRANDES
-  else {
-    return new ol.style.Style({
-      image: new ol.style.Circle({
-        radius: radius,
-        fill: new ol.style.Fill({
-          color: circleColor,
-        }),
-        stroke: new ol.style.Stroke({
-          color: strokeColor,
-          width: strokeWidth,
-        }),
-        opacity: opacity,
+      opacity: opacity,
+    }),
+    text: new ol.style.Text({
+      offsetX: 0,
+      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
+      stroke: new ol.style.Stroke({
+        color: "#333",
+        width: 2,
       }),
-      text: new ol.style.Text({
-        offsetX: 0,
-        offsetY: radius + 20,
-        textAlign: "center",
-        font: "14px Poppins,sans-serif",
-        fill: new ol.style.Fill({ color: "#fff" }),
-        stroke: new ol.style.Stroke({
-          color: "#333",
-          width: 2,
-        }),
-        text: "",
+      text: "",
+    }),
+  });
+  } else {
+      return new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: radius,
+
+      fill: new ol.style.Fill({
+        color: circleColor,
       }),
-    });
-  }
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
+    }),
+    text: new ol.style.Text({
+      offsetX: 0,
+      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
+      stroke: new ol.style.Stroke({
+        color: "#333",
+        width: 2,
+      }),
+      text: "",
+    }),
+  });
+};
 }
 //------------------------------------------------------------------------
 var m_vectorSource = new ol.source.Vector({});
@@ -1565,9 +1525,6 @@ var m_str_cvs = "";
 var m_str_file_csv = "datos.csv";
 let m_pendingDirectDownload = false; // indica que debe auto-descargar tras cargar JSON
 let m_autoDownloadAfterDialog = false; // descarga automática tras construir el modal
-// --- Nuevas variables globales para filtro por rango de valores ---
-let filter_value_min = null;
-let filter_value_max = null;
 
 // Utilidad: construir URL JSON normalizando barras
 function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
@@ -2255,6 +2212,36 @@ function pad(num, size) {
 
 var m_glosario = "gatmos.html";
 //-------------------------------------------------------------------------------
+// Funcion unificada para regresar a la pantalla inicial sin recargar
+function restoreHome(){
+  try {
+    // Quitar modo mapa
+    document.body.classList.remove('map-active');
+    // Mostrar banner y tarjetas iniciales
+    $('#banner, #botones1').show();
+    // Asegurar que ambas tarjetas estén visibles (por si alguna quedó oculta)
+    $('#meteo, #cali').show();
+    // Ocultar contenedor de la app/mapa
+    $('#app').hide();
+    // Cerrar panel de controles si estuviera abierto
+    $('#weather-controls').removeClass('is-open');
+    // Limpiar botones activos del menú lateral
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    // (Opcional) limpiar info de filtros si existiera
+    if (typeof hideInfo === 'function') {
+      try { hideInfo(); } catch(e) {}
+    }
+  } catch(e){
+    console.warn('Error al restaurar pantalla inicial:', e);
+  }
+}
+
+// Interceptar botón "volver" para no forzar recarga completa y preservar recursos
+$(document).on('click', '#btn_back', function(e){
+  e.preventDefault();
+  restoreHome();
+});
+
 $("#meteo").click(function () {
   $("#cali").hide();
   $("#app").show();
@@ -2587,57 +2574,6 @@ function downloadCSV(clave) {
   console.warn('downloadCSV: clave no encontrada', clave);
 }
 let filter_color = null;
-// Aplica filtro de rango numérico usando gradientLookup (asume escala lineal de valores a colores)
-function applyValueRangeFilter(img){
-  if (!img || filter_value_min == null || filter_value_max == null) return null;
-  if (!window.gradientDomainMin || typeof window.gradientDomainMin !== 'number') return null;
-  const minV = Math.min(filter_value_min, filter_value_max);
-  const maxV = Math.max(filter_value_min, filter_value_max);
-  try {
-    const canvas = document.getElementById('filter-canvas');
-    if (!canvas) return null;
-    canvas.width = img.width; canvas.height = img.height;
-    const ctx = canvas.getContext('2d', { willReadFrequently:true });
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    ctx.drawImage(img,0,0);
-    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    const data = imageData.data;
-    // Preconstruir mapa rápido hex->valor para colores exactos de la paleta
-    const palette = window.gradientLookup||[];
-    const hexMap = new Map();
-    for (const e of palette){ if (e && e.hex) hexMap.set(e.hex.toLowerCase(), e.value); }
-    // Si necesitamos nearest, fallback simple (distancia euclidiana)
-    function nearestValue(r,g,b){
-      // Intentar coincidencia exacta (común si raster usa misma tabla)
-      const hex = '#' + [r,g,b].map(v=> v.toString(16).padStart(2,'0')).join('');
-      if (hexMap.has(hex)) return hexMap.get(hex);
-      let bestDist = 1e12, bestVal=null;
-      for (const e of palette){
-        const hx = e.hex; if (!hx) continue;
-        const rv=parseInt(hx.substr(1,2),16), gv=parseInt(hx.substr(3,2),16), bv=parseInt(hx.substr(5,2),16);
-        const dr=rv-r, dg=gv-g, db=bv-b; const dist=dr*dr+dg*dg+db*db;
-        if (dist<bestDist){ bestDist=dist; bestVal=e.value; if (dist===0) break; }
-      }
-      return bestVal;
-    }
-    // Tolerancia pequeña para incluir colores cuantizados adyacentes
-    const expand = (maxV - minV) * 0.01; // 1% del ancho seleccionado
-    const lo = minV - expand;
-    const hi = maxV + expand;
-    for (let i=0;i<data.length;i+=4){
-      const val = nearestValue(data[i], data[i+1], data[i+2]);
-      if (val==null || val < lo || val > hi){ data[i+3] = 0; }
-    }
-    ctx.putImageData(imageData,0,0);
-    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
-    const filteredLayer = new ol.layer.Image({
-      opacity:0.7,
-      source: new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
-    });
-    clipLayer(filteredLayer);
-    return filteredLayer;
-  } catch(e){ console.error('Error en applyValueRangeFilter', e); return null; }
-}
 const canvas = document.getElementById("dynamic-gradient-canvas");
 canvas.addEventListener("click", function (event) {
   const rect = canvas.getBoundingClientRect();
@@ -4407,30 +4343,73 @@ function setupLegendClickFilter() {
             applyLegendFilter(percent - 0.05, percent + 0.05);
         }
     });
+    
+
+    //no quieor borrar esto porque siento que igualmente puede ser util aunque no funcione para nada ahora
+    // Doble click en la leyenda para limpiar filtro
+  /*legendGradient.addEventListener('dblclick', (e) => {
+    const btn = document.getElementById('btn_recarga');
+    if (btn) {
+      btn.click();
+    } else {
+      // fallback si el botón no existe todavía
+      clearLegendFilter();
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });*/
+
+    // Añadir soporte a barras alternativas (gradiente vertical / horizontal incrustado)
+    /*const extraSelectors = ['.gradient-bar-horizontal', '.gradient-bar'];
+    extraSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.addEventListener('dblclick', (e) => {
+          const btn = document.getElementById('btn_recarga');
+          if (btn) { btn.click(); } else { clearLegendFilter(); }
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    });*/
+
+    // Doble clic en cualquier zona interna del contenedor para limpiar (máxima tolerancia)
+    /*if (gradientContainer) {
+      gradientContainer.addEventListener('dblclick', (e) => {
+        const btn = document.getElementById('btn_recarga');
+        if (btn) { btn.click(); } else { clearLegendFilter(); }
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }*/
 }
 
 function applyLegendFilter(minPercent, maxPercent) {
     if (!window.gradientLookup || !window.gradientLookup.length) return;
     
     const totalSteps = window.gradientLookup.length;
-  let minIndex = Math.floor(minPercent * totalSteps);
-  let maxIndex = Math.ceil(maxPercent * totalSteps);
-  // Asegurar indices válidos (permitir seleccionar 100%)
-  if (maxIndex >= totalSteps) maxIndex = totalSteps - 1;
-  if (minIndex < 0) minIndex = 0;
-  if (maxIndex < minIndex) [minIndex, maxIndex] = [maxIndex, minIndex];
-
-  if (minIndex >= 0 && maxIndex >= 0 && minIndex < totalSteps && maxIndex < totalSteps) {
-    const minValue = window.gradientLookup[minIndex].value;
-    const maxValue = window.gradientLookup[maxIndex].value;
-    filter_value_min = minValue;
-    filter_value_max = maxValue;
-    filter_color = null; // desactivar filtro puntual
-    const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
-    showInfo(range);
-    const filteredLayer = applyValueRangeFilter(m_lienzo && m_lienzo.img);
-    if (filteredLayer) put_FilteredImage(filteredLayer);
-  }
+    const minIndex = Math.floor(minPercent * totalSteps);
+    const maxIndex = Math.ceil(maxPercent * totalSteps);
+    
+    if (minIndex >= 0 && maxIndex < totalSteps) {
+        const minValue = window.gradientLookup[minIndex].value;
+        const maxValue = window.gradientLookup[maxIndex].value;
+        const avgValue = (minValue + maxValue) / 2;
+        
+        // Simular el color para el filtrado
+        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
+        if (colorEntry && colorEntry.hex) {
+            const hex = colorEntry.hex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            filter_color = [r, g, b];
+            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+            showInfo(range);
+            const filteredLayer = applyFilterToImage(m_lienzo.img);
+            put_FilteredImage(filteredLayer);
+        }
+    }
 }
 
 function clearLegendFilter() {
@@ -4438,9 +4417,7 @@ function clearLegendFilter() {
     if (filterIndicator) {
         filterIndicator.classList.remove('active');
     }
-  filter_color = null;          // filtro raster (canvas) puntual
-  filter_value_min = null;
-  filter_value_max = null;
+    filter_color = null;          // filtro raster (canvas)
     colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
     hideInfo();
     if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
@@ -4465,11 +4442,7 @@ function updateLegend(title, gradient, minValue, maxValue, unit) {
     
     if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
     
-  legend.style.display = 'block';
-  // Guardar dominio global para herramientas de rango
-  window.gradientDomainMin = minValue;
-  window.gradientDomainMax = maxValue;
-  window.gradientDomainUnit = unit;
+    legend.style.display = 'block';
     legendTitle.textContent = title;
     legendGradient.style.background = gradient;
     
@@ -4483,13 +4456,12 @@ function updateLegend(title, gradient, minValue, maxValue, unit) {
         span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
         legendLabels.appendChild(span);
     }
-  // Asegurar controles de rango manual listos
-  ensureLegendRangeControls();
 }
 
 // Inicializar la leyenda cuando se carga la página
 document.addEventListener('DOMContentLoaded', () => {
     setupLegendClickFilter();
+  initDualRangeFilter();
 });
 
 function showInfo(value) {
@@ -4518,226 +4490,199 @@ function showInfo(value) {
 
 function hideInfo() {
   const info = document.getElementById("filter-info");
+  if (!info) return; // Guard: si no existe el contenedor, abortar silenciosamente
   const rangeElement = info.querySelector(".dynamic-range");
   if (rangeElement) {
     rangeElement.remove();
   }
 }
 
-// Modal explicativo de WRF
-$(document).ready(function() {
-  $('#btn_wrf_info').click(function(e) {
-    e.preventDefault();
+// ================= Rango dual con sliders INTEGRADOS (no overlay) =================
+function initDualRangeFilter(){
+  // Usar el contenedor de la nueva leyenda (#legend-gradient) en lugar de #gradient-container
+  const container = document.getElementById('legend-gradient') || document.getElementById('gradient-container');
+  const bar = document.getElementById('dynamic-gradient-canvas');
+  if (!container || !bar) {
+    console.warn('[initDualRangeFilter] No se encontró contenedor (#legend-gradient) o canvas.');
+    return;
+  }
+  // Reusar si ya existe
+  let wrap = container.querySelector('.legend-dual-slider-wrapper');
+  if (!wrap) {
+    // Crear wrapper para sliders DEBAJO del canvas (integrado, no flotante)
+    wrap = document.createElement('div');
+    wrap.className = 'legend-dual-slider-wrapper';
+    wrap.style.cssText = 'width:100%; margin-top:8px;';
     
-    const wrfContent = $("<div style='font-family: Poppins, sans-serif; line-height: 1.6;'></div>");
+    // Insertar DESPUÉS del canvas (no envolverlo)
+    const parent = bar.parentNode;
+    parent.insertBefore(wrap, bar.nextSibling);
     
-    wrfContent.append('<h3 style="color: #5a1b30; margin-bottom: 15px;">¿Qué es el Modelo WRF?</h3>');
-    wrfContent.append('<p><strong>WRF (Weather Research and Forecasting)</strong> es un sistema de modelado atmosférico de última generación diseñado para la investigación y predicción del tiempo.</p>');
-    wrfContent.append('<h4 style="color: #5a1b30; margin-top: 20px;">Características principales:</h4>');
-    wrfContent.append('<ul style="margin-left: 20px;"><li>Genera pronósticos meteorológicos de alta resolución espacial</li><li>Simula la dispersión de contaminantes atmosféricos</li><li>Permite evaluar la calidad del aire con anticipación</li><li>Proporciona información detallada a nivel municipal</li></ul>');
-    wrfContent.append('<p style="margin-top: 15px;">En SMADSOT utilizamos WRF para ofrecer pronósticos precisos que apoyan la toma de decisiones en materia ambiental y de salud pública en el Estado de Puebla.</p>');
+    // Barra de sliders (layout horizontal integrado)
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'dual-slider-container';
+    sliderContainer.style.cssText = 'position:relative; width:100%; height:30px; margin-bottom:6px;';
     
-    BootstrapDialog.show({
-      title: 'Modelo de Pronóstico WRF',
-      message: wrfContent,
-      cssClass: 'modal-dialog',
-      closable: true,
-      buttons: [{
-        label: 'Cerrar',
-        cssClass: 'btn-primary',
-        action: function(dialogRef) {
-          dialogRef.close();
-        }
-      }]
+    // Sliders (uno encima del otro, pero ahora SIN overlay visual flotante)
+    const rLow = document.createElement('input');
+    Object.assign(rLow, {type:'range', min:0, max:1000, value:0});
+    rLow.className='dual-range low';
+    rLow.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent; pointer-events:auto;';
+    
+    const rHigh = document.createElement('input');
+    Object.assign(rHigh, {type:'range', min:0, max:1000, value:1000});
+    rHigh.className='dual-range high';
+    rHigh.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent; pointer-events:auto;';
+    
+    sliderContainer.appendChild(rLow);
+    sliderContainer.appendChild(rHigh);
+    wrap.appendChild(sliderContainer);
+    
+    // Inputs numéricos (SIN botón limpiar - ya existe "Limpiar Filtro" en footer)
+    const inputsRow = document.createElement('div');
+    inputsRow.className='dual-inputs';
+    inputsRow.style.cssText='display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-top:4px;';
+    inputsRow.innerHTML = `
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Mín
+        <input type="number" step="0.1" class="dual-min" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Máx
+        <input type="number" step="0.1" class="dual-max" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>`;
+    wrap.appendChild(inputsRow);
+  }
+
+  const rLow = wrap.querySelector('.dual-range.low');
+  const rHigh = wrap.querySelector('.dual-range.high');
+  const inpMin = wrap.querySelector('.dual-min');
+  const inpMax = wrap.querySelector('.dual-max');
+
+  function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+  function slidersToValues(){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return {lo:0,hi:0};
+    const gmin = window.gradientMin, gmax = window.gradientMax;
+    const lo = gmin + (gmax-gmin)*(parseInt(rLow.value,10)/1000);
+    const hi = gmin + (gmax-gmin)*(parseInt(rHigh.value,10)/1000);
+    return {lo: Math.min(lo,hi), hi: Math.max(lo,hi)};
+  }
+  function valuesToSliders(lo,hi){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return;
+    const gmin = window.gradientMin, gmax = window.gradientMax, span = (gmax-gmin)||1;
+    rLow.value  = Math.round(((lo-gmin)/span)*1000);
+    rHigh.value = Math.round(((hi-gmin)/span)*1000);
+  }
+  
+  function syncInputsFromSliders(){
+    const {lo,hi} = slidersToValues();
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    inpMin.value = lo.toFixed(1);
+    inpMax.value = hi.toFixed(1);
+  }
+  
+  function syncSlidersFromInputs(){
+    let lo = parseFloat(inpMin.value), hi = parseFloat(inpMax.value);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    if (lo>hi) [lo,hi]=[hi,lo];
+    if (typeof window.gradientMin === 'number'){ 
+      lo = clamp(lo, window.gradientMin, window.gradientMax); 
+      hi = clamp(hi, window.gradientMin, window.gradientMax); 
+    }
+    valuesToSliders(lo,hi); 
+    scheduleApply(); 
+    showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+  }
+
+  // Inicializar rangos a full
+  (function init(){
+    if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+      inpMin.value = window.gradientMin.toFixed(1);
+      inpMax.value = window.gradientMax.toFixed(1);
+      valuesToSliders(window.gradientMin, window.gradientMax);
+    } else {
+      setTimeout(init,300);
+    }
+  })();
+
+  let applyTimer=null;
+  function scheduleApply(){
+    if (applyTimer) clearTimeout(applyTimer);
+    applyTimer = setTimeout(()=>{
+      const {lo,hi}=slidersToValues();
+      if (isFinite(lo) && isFinite(hi)) {
+        applyRangeMask(lo,hi);
+        showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+      }
+    },150);
+  }
+
+  rLow.addEventListener('input', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+  });
+  
+  rHigh.addEventListener('input', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+  });
+  
+  inpMin.addEventListener('change', syncSlidersFromInputs);
+  inpMax.addEventListener('change', syncSlidersFromInputs);
+  inpMin.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+  inpMax.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+}
+
+function applyRangeMask(minVal, maxVal){
+  if (!m_lienzo || !m_lienzo.img || typeof window.gradientMin !== 'number') return;
+  // Construir un mapa rápido valor->RGBA usando gradientLookup ordenado por value
+  // Para performance mantenemos el mismo método que applyFilterToImage pero revisando rango
+  try {
+    const baseImg = m_lienzo.img;
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return;
+    canvas.width = baseImg.width; canvas.height = baseImg.height;
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(baseImg,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    // Estrategia: convertir RGB de cada pixel a valor aproximado buscando color más cercano en gradientLookup.
+    // Si dataset es grande podría optimizarse con clustering; por ahora brute force con caching.
+    const cache = new Map(); // key r,g,b -> value
+    const lookup = window.gradientLookup||[];
+    function nearestVal(r,g,b){
+      const key = (r<<16)|(g<<8)|b;
+      if (cache.has(key)) return cache.get(key);
+      let bestD=1e9, bestV=null;
+      for (const c of lookup){
+        const hx = c.hex.replace('#','');
+        const cr = parseInt(hx.substring(0,2),16);
+        const cg = parseInt(hx.substring(2,4),16);
+        const cb = parseInt(hx.substring(4,6),16);
+        const d = (r-cr)*(r-cr)+(g-cg)*(g-cg)+(b-cb)*(b-cb);
+        if (d<bestD){ bestD=d; bestV=c.value; if (d===0) break; }
+      }
+      cache.set(key,bestV);
+      return bestV;
+    }
+
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const v = nearestVal(r,g,b);
+      if (v < minVal || v > maxVal){
+        data[i+3]=0; // transparencia
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source:new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
     });
-  });
-});
-
-// ====== Controles de rango (similar al ejemplo solicitado) ======
-function ensureLegendRangeControls(){
-  const container = document.getElementById('gradient-container');
-  if (!container) return;
-  let box = document.getElementById('legend-range-filter');
-  if (!box){
-    box = document.createElement('div');
-    box.id = 'legend-range-filter';
-    box.innerHTML = `
-      <div class="legend-range-inputs">
-        <div class="range-field">
-          <label>Min</label>
-          <input type="number" step="0.1" id="legend-min-input" />
-        </div>
-        <span class="range-sep">–</span>
-        <div class="range-field">
-          <label>Max</label>
-          <input type="number" step="0.1" id="legend-max-input" />
-        </div>
-      </div>
-      <div class="legend-dual-slider-wrapper">
-        <input type="range" id="legend-range-min" class="legend-range" />
-        <input type="range" id="legend-range-max" class="legend-range" />
-      </div>`;
-    container.appendChild(box);
-    wrapCanvasWithDualSliders();
-    wireLegendRangeEvents();
-  }
-  syncLegendRangeUI();
-}
-
-// Coloca los sliders encima del canvas de gradiente existente
-function wrapCanvasWithDualSliders(){
-  const canvas = document.getElementById('dynamic-gradient-canvas');
-  if (!canvas) return;
-  // Sliders ya creados dentro de legend-range-filter
-  const minSlider = document.getElementById('legend-range-min');
-  const maxSlider = document.getElementById('legend-range-max');
-  if (!minSlider || !maxSlider) return;
-  // Evitar duplicar si ya hay wrapper
-  if (canvas.parentElement && canvas.parentElement.classList.contains('gradient-bar-wrapper')) return;
-
-  const parent = canvas.parentElement;
-  const wrapper = document.createElement('div');
-  wrapper.className = 'gradient-bar-wrapper';
-  parent.replaceChild(wrapper, canvas);
-  wrapper.appendChild(canvas);
-
-  const overlay = document.createElement('div');
-  overlay.className = 'dual-slider-overlay';
-  const selection = document.createElement('div');
-  selection.className = 'dual-slider-selection';
-  overlay.appendChild(selection);
-
-  // Mover sliders existentes (remueve el viejo contenedor track / lo dejamos oculto)
-  overlay.appendChild(minSlider);
-  overlay.appendChild(maxSlider);
-  wrapper.appendChild(overlay);
-
-  // Actualizar highlight cada movimiento
-  function updateHighlight(){
-    const sel = wrapper.querySelector('.dual-slider-selection');
-    if (!sel) return;
-    const a = Math.min(minSlider.value, maxSlider.value);
-    const b = Math.max(minSlider.value, maxSlider.value);
-    const pctA = (a/1000)*100;
-    const pctB = (b/1000)*100;
-    sel.style.left = pctA + '%';
-    sel.style.width = (pctB - pctA) + '%';
-  }
-  minSlider.addEventListener('input', updateHighlight);
-  maxSlider.addEventListener('input', updateHighlight);
-  // Primera pintura
-  requestAnimationFrame(updateHighlight);
-}
-
-function wireLegendRangeEvents(){
-  const minInput = document.getElementById('legend-min-input');
-  const maxInput = document.getElementById('legend-max-input');
-  const minSlider = document.getElementById('legend-range-min');
-  const maxSlider = document.getElementById('legend-range-max');
-  const clearBtn = document.getElementById('legend-clear-range-btn');
-  if (!minInput||!maxInput||!minSlider||!maxSlider) return;
-
-  function clamp(val, lo, hi){ return Math.min(hi, Math.max(lo, val)); }
-  function toNumber(v){ const n = parseFloat(v); return isFinite(n)?n:0; }
-
-  function syncFromSlider(){
-    const dmin = window.gradientDomainMin;
-    const dmax = window.gradientDomainMax;
-    const span = dmax - dmin || 1;
-    let vMin = dmin + (toNumber(minSlider.value)/1000)*span;
-    let vMax = dmin + (toNumber(maxSlider.value)/1000)*span;
-    if (vMin>vMax){ const t=vMin; vMin=vMax; vMax=t; }
-    minInput.value = vMin.toFixed(1);
-    maxInput.value = vMax.toFixed(1);
-    // Actualizar highlight si existe
-    const sel = document.querySelector('.dual-slider-selection');
-    if (sel){
-      const a = Math.min(minSlider.value, maxSlider.value);
-      const b = Math.max(minSlider.value, maxSlider.value);
-      sel.style.left = (a/1000*100)+'%';
-      sel.style.width = ((b-a)/1000*100)+'%';
-    }
-  }
-
-  function syncFromInput(){
-    const dmin = window.gradientDomainMin;
-    const dmax = window.gradientDomainMax;
-    const span = dmax - dmin || 1;
-    let vMin = clamp(toNumber(minInput.value), dmin, dmax);
-    let vMax = clamp(toNumber(maxInput.value), dmin, dmax);
-    if (vMin>vMax){ const t=vMin; vMin=vMax; vMax=t; }
-    const relMin = ((vMin - dmin)/span)*1000;
-    const relMax = ((vMax - dmin)/span)*1000;
-    minSlider.value = Math.round(relMin);
-    maxSlider.value = Math.round(relMax);
-    minInput.value = vMin.toFixed(1);
-    maxInput.value = vMax.toFixed(1);
-    const sel = document.querySelector('.dual-slider-selection');
-    if (sel){
-      const a = Math.min(minSlider.value, maxSlider.value);
-      const b = Math.max(minSlider.value, maxSlider.value);
-      sel.style.left = (a/1000*100)+'%';
-      sel.style.width = ((b-a)/1000*100)+'%';
-    }
-  }
-
-  minSlider.addEventListener('input', syncFromSlider);
-  maxSlider.addEventListener('input', syncFromSlider);
-  minInput.addEventListener('change', syncFromInput);
-  maxInput.addEventListener('change', syncFromInput);
-
-  // En lugar del botón interno "Aplicar", se usará #btn_aplicar externo si existe.
-  bindExternalApplyButton();
-
-  if (clearBtn) clearBtn.addEventListener('click', ()=>{ clearLegendFilter(); syncLegendRangeUI(); });
-}
-
-// Vincula el botón global #btn_aplicar (weather controls) para aplicar el rango actual
-function bindExternalApplyButton(){
-  const extBtn = document.getElementById('btn_aplicar');
-  if (!extBtn) return; // no existe aún
-  if (extBtn.dataset.legendBinded === '1') return; // evitar doble binding
-  extBtn.addEventListener('click', ()=>{
-    const minInput = document.getElementById('legend-min-input');
-    const maxInput = document.getElementById('legend-max-input');
-    if (!minInput || !maxInput) return;
-    const dmin = window.gradientDomainMin;
-    const dmax = window.gradientDomainMax;
-    const vMin = parseFloat(minInput.value);
-    const vMax = parseFloat(maxInput.value);
-    if (!isFinite(vMin) || !isFinite(vMax)) return;
-    const lo = Math.max(dmin, Math.min(dmax, Math.min(vMin,vMax)));
-    const hi = Math.max(dmin, Math.min(dmax, Math.max(vMin,vMax)));
-    setValueRangeFilter(lo, hi);
-  });
-  extBtn.dataset.legendBinded = '1';
-}
-
-function syncLegendRangeUI(){
-  if (typeof window.gradientDomainMin === 'undefined') return;
-  const minInput = document.getElementById('legend-min-input');
-  const maxInput = document.getElementById('legend-max-input');
-  const minSlider = document.getElementById('legend-range-min');
-  const maxSlider = document.getElementById('legend-range-max');
-  if (!minInput||!maxInput||!minSlider||!maxSlider) return;
-  const dmin = window.gradientDomainMin;
-  const dmax = window.gradientDomainMax;
-  minInput.min = dmin; maxInput.min = dmin; minInput.max = dmax; maxInput.max = dmax;
-  minInput.value = dmin.toFixed(1);
-  maxInput.value = dmax.toFixed(1);
-  // Uso de 0-1000 para mayor resolución del slider sin necesidad de hacks CSS
-  minSlider.min = 0; minSlider.max = 1000; maxSlider.min = 0; maxSlider.max = 1000;
-  minSlider.value = 0; maxSlider.value = 1000;
-}
-
-function setValueRangeFilter(lo, hi){
-  if (!isFinite(lo) || !isFinite(hi)) return;
-  filter_value_min = Math.min(lo,hi);
-  filter_value_max = Math.max(lo,hi);
-  filter_color = null; // desactivar modo puntual
-  showInfo(`${filter_value_min.toFixed(1)} - ${filter_value_max.toFixed(1)}`);
-  if (m_lienzo && m_lienzo.img){
-    const fl = applyValueRangeFilter(m_lienzo.img);
-    if (fl) put_FilteredImage(fl);
-  }
+    clipLayer(filteredLayer);
+    if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+    if (m_dlayer && m_dlayer.layer) m_dlayer.layer.setVisible(false);
+    m_map.getLayers().insertAt(1, filteredLayer);
+    window.filtered_layer = filteredLayer;
+  } catch(e){ console.error('applyRangeMask error', e); }
 }

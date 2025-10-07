@@ -327,6 +327,9 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
   const values_re = filtered.map(([_, val]) => parseFloat(val.trim())).reverse();
   const min = Math.min(...values);
   const max = Math.max(...values);
+  // Exponer globalmente para filtros numéricos
+  window.gradientMin = min;
+  window.gradientMax = max;
   const stops = values.map((v) => ((v - min) / (max - min)) * 100);
   const canvas = document.getElementById("dynamic-gradient-canvas");
   const ctx = canvas.getContext("2d");
@@ -361,19 +364,26 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
-  const varLabel = document.getElementById("gradient-variable-label") || document.getElementById("gradient-title");
+  const varLabel = document.getElementById("gradient-variable-label") || document.getElementById("gradient-title") || document.getElementById("legend-title");
   const unitEl = document.getElementById("gradient-units");
   if (varLabel) {
     // Mantener estructura: Nombre (unidad) - usar fallback global si no viene título
     const safeTitle = title || window.currentVariableLabel || '';
     const safeUnit = (units && units.trim()) ? ` (${units.trim()})` : '';
-    varLabel.innerHTML = `${safeTitle}<span id="gradient-units" class="gradient-inline-unit">${safeUnit}</span>`;
+    // Si es legend-title no soporta innerHTML con span anidado, usar textContent
+    if (varLabel.id === 'legend-title') {
+      varLabel.textContent = safeTitle + safeUnit;
+    } else {
+      varLabel.innerHTML = `${safeTitle}<span id="gradient-units" class="gradient-inline-unit">${safeUnit}</span>`;
+    }
   } else if (unitEl) {
     unitEl.textContent = units || '';
   }
 
-  const gradientValues = document.getElementById("gradient-values");
-  gradientValues.innerHTML = "";
+  const gradientValues = document.getElementById("gradient-values") || document.getElementById("legend-labels");
+  if (gradientValues) {
+    gradientValues.innerHTML = "";
+  }
 
   // Para el modo horizontal mostramos los valores en orden izquierda (max) -> derecha (min) si el gradiente es derecha->izquierda
   const steps = 10;
@@ -382,7 +392,7 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
 
   if (canvas.classList.contains('gradient-bar-horizontal')) {
     // Usar el contenedor embebido existente si está disponible
-    const inlineValues = document.getElementById('gradient-values');
+    const inlineValues = gradientValues; // ya tiene fallback arriba
     if (inlineValues) {
       inlineValues.innerHTML = '';
       // Queremos min a la izquierda y max a la derecha (orden ascendente)
@@ -395,19 +405,13 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
     }
   } else {
     // Vertical (como antes, de arriba (max) a abajo (min))
-    for (let i = steps; i >= 0; i--) {
-      const value = min + i * stepSize;
-      const label = document.createElement("div");
-      label.textContent = value.toFixed(1);
-      gradientValues.appendChild(label);
+    if (gradientValues) {
+      for (let i = steps; i >= 0; i--) {
+        const value = min + i * stepSize;
+        const label = document.createElement("div");
+        label.textContent = value.toFixed(1);
+        gradientValues.appendChild(label);
+      }
     }
-  }
-  // Registrar dominio global (para controles de rango manual)
-  window.gradientDomainMin = min;
-  window.gradientDomainMax = max;
-  window.gradientDomainUnit = units;
-  // Intentar inicializar controles de rango si la función existe (definida en app.js)
-  if (typeof ensureLegendRangeControls === 'function') {
-    try { ensureLegendRangeControls(); } catch(e) { console.warn('RangeControls init error', e); }
   }
 }

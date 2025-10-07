@@ -300,17 +300,16 @@
             </div>
           </div>
         </div>
-        <!-- Escala integrada al panel de capas 
-        <div id="gradient-container" class="horizontal-mode embedded bottom-floating">
-          <div class="gradient-inner">
-            <div class="gradient-variable" id="gradient-variable-label">Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span></div>
-            <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
-            <div class="gradient-meta-row">
-              <div class="gradient-horizontal-values horizontal-values" id="gradient-values"></div>
-            </div>
-            <div class="gradient-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:16px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
-              Haz clic para filtrar &bull; Doble clic para limpiar
-            </div>
+        <!-- Leyenda dinámica (gradiente + valores) restaurada -->
+        <div class="legend" id="legend" style="display:none; margin-top:10px;">
+          <div class="legend-title" id="legend-title">Escala</div>
+          <div class="legend-gradient" id="legend-gradient" style="position:relative;">
+            <!-- Canvas del gradiente usado por filtros y sliders -->
+            <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380" style="display:block;width:100%;"></canvas>
+          </div>
+          <div class="legend-labels" id="legend-labels"></div>
+          <div class="legend-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:12px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
+            Arrastra los sliders o ingresa valores para filtrar la capa
           </div>
         </div>
         <!-- Agregar después del gradient-container -->

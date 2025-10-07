@@ -1498,34 +1498,74 @@ html, body, #app, .container, .row {
   box-sizing: border-box !important;
 }
 
-.apply-indicator {
-  display: none;
-  position: absolute;
-  top: 50%;
-  right: 20px;
-  transform: translateY(-50%);
-  background: linear-gradient(135deg, #2ecc71, #27ae60);
-  color: white;
-  padding: 8px 15px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
-  animation: slideInRight 0.3s ease;
-  z-index: 1000;
+/* Map Legend (Simbología estática de cabeceras y estaciones) */
+.map-legend {
+    position: absolute;
+    bottom: 20px;
+    left: 100px;
+    width: 220px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 999;
+    display: none; /* Oculto por defecto */
 }
 
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateY(-50%) translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-  }
+body.map-active .map-legend {
+    display: block; /* Visible solo en modo mapa */
 }
 
-.apply-indicator i {
-  margin-right: 5px;
+.legend-header h4 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--primary-brand-color);
+    border-bottom: 2px solid var(--secondary-brand-color);
+    padding-bottom: 6px;
+}
+
+.legend-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-color);
+}
+
+.legend-symbol {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.legend-symbol svg {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .map-legend {
+        bottom: 40px;
+        left: 10px;
+        width: calc(100% - 20px);
+        max-width: 180px;
+        padding: 10px;
+    }
+    
+    .legend-header h4 {
+        font-size: 12px;
+    }
+    
+    .legend-item {
+        font-size: 11px;
+    }
 }

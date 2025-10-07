@@ -175,7 +175,8 @@
   position: relative;
   width: 100%;
   height: 800px;
-  background-image: url("../images/header//banner-intro-inicio.jpg");
+  /* Corregido: usar .png y remover doble slash para evitar 404 */
+  background-image: url("../images/header/banner-intro-inicio.png");
   background-size: cover;
   background-position: center;
 }
