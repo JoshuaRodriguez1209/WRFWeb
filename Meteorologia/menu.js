@@ -352,7 +352,6 @@ $(document).on("click", "#btn_hist", function () {
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   // Salir del modo mapa para liberar el layout y permitir ancho completo
-  document.body.classList.remove('map-active');
   // Actualizar estado activo de los botones del menú
   try {
     document.querySelectorAll('.menu-btn').forEach(b => {
@@ -677,3 +676,22 @@ $(document).ready(function() {
     }
   });
 });
+
+// Accessibility menu toggle
+function toggleAccessibility() {
+  const menu = document.getElementById('accessibilityMenu');
+  menu.classList.toggle('active');
+}
+
+// Accessibility features
+function toggleFeature(feature) {
+  if (feature === 'large-text') {
+    document.body.classList.remove('small-text');
+  } else if (feature === 'small-text') {
+    document.body.classList.remove('large-text');
+  } else if (feature === 'large-spacing') {
+    document.body.classList.remove('small-spacing');
+  }
+  
+  document.body.classList.toggle(feature);
+}
