@@ -1483,35 +1483,34 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   left: 40px;
   margin: 160px 0 40px 0;         /* sustituye top:150px con margen superior controlado */
   padding: 30px 40px;             /* espacio interno uniforme */
-  width: 100%;                    /* ocupar todo el ancho disponible del contenedor */
+  width: calc(100% - 80px);       /* ajustar ancho considerando left offset */
+  max-width: none;                /* permitir ancho completo */
   background-color: #ffffff;
   min-height: auto;               /* crecer según contenido */
+  max-height: calc(100vh - 200px); /* altura máxima para permitir scroll */
+  overflow-y: auto;               /* habilitar scroll vertical por defecto */
+  overflow-x: hidden;             /* evitar scroll horizontal */
   transition: margin .3s ease, padding .3s ease, background .3s ease;
   animation: fadeIn .5s ease;
   box-sizing: border-box;
 }
 
-/* Estado sin contenido: ocultar scrollbar y permitir expandirse naturalmente */
+/* Estado sin contenido: mantener scroll pero sin contenido */
 #historial-dashboard.historial-empty {
-  overflow: visible !important;
+  overflow-y: auto;
+  min-height: 300px;
 }
 
-/* Forzar sin scrollbar cuando el contenido cabe */
-#historial-dashboard.no-scroll {
-  overflow-y: hidden !important;
+/* Forzar scroll cuando hay contenido suficiente */
+#historial-dashboard.force-scroll {
+  overflow-y: auto !important;
   overflow-x: hidden !important;
 }
 
-/* Forzar scrollbar sólo cuando realmente se necesita (fallback explícito) */
-#historial-dashboard.force-scroll {
+/* Permitir scroll automático cuando el contenido lo requiera */
+#historial-dashboard.no-scroll {
   overflow-y: auto !important;
-}
-
-/* Asegurar que no haya height / max-height heredados de versiones previas */
-#historial-dashboard {
-  height: auto !important;
-  max-height: none !important;
-  overflow: visible; /* permitir que el contenido inicial no fuerce scroll */
+  overflow-x: hidden !important;
 }
 
 .dashboard-header {
@@ -1553,6 +1552,9 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   background: #ffffff;
   border-radius: 15px;
   padding: 30px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
 /* Variable Selection Grid */
@@ -1633,6 +1635,8 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   background: #ffffff;
   border-radius: 15px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  margin-bottom: 30px;
+  width: 100%;
 }
 
 .visualization-container {
@@ -1643,9 +1647,11 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 }
 
 .stats-container {
-  padding: 20px;
+  padding: 25px;
   background: #ffffff;
   border-radius: 0 0 15px 15px;
+  margin-top: 20px;
+  clear: both;
 }
 
 .stats-container h4 {
@@ -1817,50 +1823,82 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 /* === Contenedor de múltiples gráficas === */
 .charts-grid{
   display: grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:16px;
+  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  gap: 20px;
+  width: 100%;
+  min-height: 300px;
+  padding: 10px 0;
 }
 
 /* Grid de una columna para gráficas individuales */
 .charts-grid.individual {
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 25px;
 }
 .chart-card{
   background:#fff;
   border:1px solid #eee;
   border-radius:14px;
-  padding:12px;
+  padding:15px;
   box-shadow:0 4px 14px rgba(0,0,0,.06);
   animation:fadeInUp .35s ease both;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
 }
 @keyframes fadeInUp{
   from{opacity:0; transform:translateY(8px)}
   to{opacity:1; transform:translateY(0)}
 }
 
-/* Altura contenida para que no ocupen mucho alto */
-.chart-card canvas{ height:240px !important; }
-@media (max-width: 768px){
-  .chart-card canvas{ height:220px !important; }
+/* Altura mejorada para mejor visualización */
+.chart-card canvas{ 
+  height: 280px !important; 
+  flex: 1;
+  min-height: 280px;
 }
 @media (max-width: 768px){
   .charts-grid{
     grid-template-columns: 1fr;
-    gap: 14px;
-    /* Evita scroll interno duplicado; deja que el modal maneje el scroll */
-    overflow-y: visible;
+    gap: 20px;
+    padding: 15px 0;
   }
-  .chart-card{ padding:10px; }
+  .chart-card{ 
+    padding: 15px; 
+    min-height: 280px;
+  }
   .chart-card canvas{
-    height: 180px !important;
-    max-height: 180px;
+    height: 240px !important;
+    min-height: 240px;
+  }
+  
+  #historial-dashboard {
+    left: 10px;
+    width: calc(100% - 20px);
+    padding: 20px;
+    margin: 140px 0 20px 0;
   }
 }
 
 
 /* Contenedor visualización */
 .visualization-container{ padding:12px !important; }
+
+/* Contenedor del contenido del historial */
+#hist-content {
+  width: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Asegurar que el host de las gráficas tenga espacio suficiente */
+#chartsHost {
+  width: 100%;
+  min-height: 300px;
+  margin-bottom: 20px;
+}
 
 /* Botones de variables */
 .variable-toggle{
