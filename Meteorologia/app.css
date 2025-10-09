@@ -1548,24 +1548,18 @@ body.map-active .map-legend {
     flex-shrink: 0;
 }
 
-.legend-symbol svg {
-    display: block;
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
-@media (max-width: 768px) {
-    .map-legend {
-        bottom: 40px;
-        left: 10px;
-        width: calc(100% - 20px);
-        max-width: 180px;
-        padding: 10px;
-    }
-    
-    .legend-header h4 {
-        font-size: 12px;
-    }
-    
-    .legend-item {
-        font-size: 11px;
-    }
+.apply-indicator i {
+  margin-right: 5px;
 }
+

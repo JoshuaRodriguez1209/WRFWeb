@@ -251,7 +251,7 @@ $(document).on("click", "#btn_atmos", function () {
   // Activar modo mapa
   document.body.classList.add('map-active');
   
-  $("#panel-header-text").text("Pronóstico Meteorológico del Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gatmos.html";
@@ -294,8 +294,8 @@ $(document).on("click", "#btn_aire", function () {
   
   // Activar modo mapa
   document.body.classList.add('map-active');
-  
-  $("#panel-header-text").text("Calidad del Aire del Estado de Puebla");
+
+  $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gchem.html";
@@ -340,7 +340,6 @@ $(document).on("click", "#btn_hist", function () {
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   // Salir del modo mapa para liberar el layout y permitir ancho completo
-  document.body.classList.remove('map-active');
   // Actualizar estado activo de los botones del menú
   try {
     document.querySelectorAll('.menu-btn').forEach(b => {
@@ -605,17 +604,33 @@ function resetHistorialState() {
 function evaluateHistorialScroll() {
   const dash = document.getElementById('historial-dashboard');
   if (!dash) return;
+  
   // Limpiar clases previas de control
   dash.classList.remove('no-scroll','force-scroll');
-  // Pequeño defer para asegurar layout final (charts render, etc.)
-  requestAnimationFrame(() => {
-    const needsScroll = dash.scrollHeight > dash.clientHeight + 2; // tolerancia
-    if (needsScroll) {
+  
+  // Usar un timeout mayor para asegurar que las gráficas se hayan renderizado completamente
+  setTimeout(() => {
+    const chartsHost = document.getElementById('chartsHost');
+    const statsContainer = document.querySelector('.stats-container');
+    
+    // Verificar si hay contenido que requiera scroll
+    const hasCharts = chartsHost && chartsHost.children.length > 0;
+    const hasStats = statsContainer && statsContainer.offsetHeight > 0;
+    
+    if (hasCharts || hasStats) {
       dash.classList.add('force-scroll');
+      // Asegurar que el contenedor tenga el scroll habilitado
+      dash.style.overflowY = 'auto';
     } else {
       dash.classList.add('no-scroll');
     }
-  });
+    
+    // Verificar específicamente si el contenido excede el contenedor
+    const needsScroll = dash.scrollHeight > dash.clientHeight + 5; // tolerancia mayor
+    if (needsScroll) {
+      dash.style.overflowY = 'auto';
+    }
+  }, 500); // Aumentar el tiempo para permitir renderizado completo
 }
 
 // Re-evaluar al cambiar tamaño de la ventana
@@ -653,3 +668,34 @@ $(document).ready(function() {
   // Pequeño delay para asegurar que todos los elementos estén cargados
   setTimeout(updateMenuVisualState, 100);
 });
+
+$(document).ready(function() {
+  $('#read-more-btn').on('click', function(e) {
+    e.preventDefault();
+    $('body').toggleClass('show-more');
+    if ($('body').hasClass('show-more')) {
+      $(this).text('Ver menos...');
+    } else {
+      $(this).text('Ver más...');
+    }
+  });
+});
+
+// Accessibility menu toggle
+function toggleAccessibility() {
+  const menu = document.getElementById('accessibilityMenu');
+  menu.classList.toggle('active');
+}
+
+// Accessibility features
+function toggleFeature(feature) {
+  if (feature === 'large-text') {
+    document.body.classList.remove('small-text');
+  } else if (feature === 'small-text') {
+    document.body.classList.remove('large-text');
+  } else if (feature === 'large-spacing') {
+    document.body.classList.remove('small-spacing');
+  }
+  
+  document.body.classList.toggle(feature);
+}
