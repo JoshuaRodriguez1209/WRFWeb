@@ -860,6 +860,7 @@ var updateVariableSelect = function(variableData) {
   if (variableData.length > 0) {
     setTimeout(procesa_var, 100);
   }
+
 };
 
 var set_atmos = function () {
@@ -1176,8 +1177,40 @@ async function animate_frames() {
         
         const layers = m_map.getLayers();
         
-        if (filter_color) {
-          // Con filtro aplicado
+        // Prioridad: filtro de rango numérico > filtro por color
+        if (filter_range_active && filter_range_min !== null && filter_range_max !== null) {
+          // Con filtro de rango aplicado
+          if (m_dlayer_act.img && m_dlayer_act.img.complete) {
+            try {
+              const filteredLayer = applyRangeMaskToImage(m_dlayer_act.img, filter_range_min, filter_range_max);
+              if (filteredLayer) {
+                // Remover capa anterior (filtrada o normal)
+                if (window.filtered_layer) {
+                  m_map.removeLayer(window.filtered_layer);
+                  window.filtered_layer = null;
+                }
+                if (m_dlayer && m_dlayer.layer) {
+                  m_map.removeLayer(m_dlayer.layer);
+                }
+                
+                // Agregar nueva capa filtrada
+                layers.insertAt(1, filteredLayer);
+                window.filtered_layer = filteredLayer;
+                
+                // Actualizar fecha
+                const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+                if (permanentDateElement) {
+                  permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+                }
+                
+                m_dlayer = m_dlayer_act;
+              }
+            } catch (error) {
+              console.error('Error aplicando filtro de rango:', error);
+            }
+          }
+        } else if (filter_color) {
+          // Con filtro por color aplicado
           if (m_dlayer_act.img && m_dlayer_act.img.complete) {
             try {
               const filteredLayer = applyFilterToImage(m_dlayer_act.img);
@@ -1266,11 +1299,12 @@ var create_style = function (tipo) {
   }
   
   const scale = get_scale();
-  const radius = Math.max(8, 10 * scale); // Radio mínimo de 6px, escalable
+  const radiusCircle = Math.max(10, 12 * scale); // Radio mínimo de 6px, escalable
+  const radiusRegular = Math.max(8, 10 * scale);
   if (tipo === 'cabecera') {
   return new ol.style.Style({
     image: new ol.style.RegularShape({
-      radius: radius,
+      radius: radiusRegular,
       points: 3,
       fill: new ol.style.Fill({
         color: circleColor,
@@ -1283,7 +1317,7 @@ var create_style = function (tipo) {
     }),
     text: new ol.style.Text({
       offsetX: 0,
-      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      offsetY: radiusRegular + 20, // Posicionar debajo del círculo con margen
       textAlign: "center",
       font: "16px Poppins,sans-serif",
       fill: new ol.style.Fill({ color: "#fff" }),
@@ -1297,8 +1331,7 @@ var create_style = function (tipo) {
   } else {
       return new ol.style.Style({
     image: new ol.style.Circle({
-      radius: radius,
-
+      radius: radiusCircle,
       fill: new ol.style.Fill({
         color: circleColor,
       }),
@@ -1310,7 +1343,7 @@ var create_style = function (tipo) {
     }),
     text: new ol.style.Text({
       offsetX: 0,
-      offsetY: radius + 20, // Posicionar debajo del círculo con margen
+      offsetY: radiusCircle + 20, // Posicionar debajo del círculo con margen
       textAlign: "center",
       font: "16px Poppins,sans-serif",
       fill: new ol.style.Fill({ color: "#fff" }),
@@ -2574,6 +2607,10 @@ function downloadCSV(clave) {
   console.warn('downloadCSV: clave no encontrada', clave);
 }
 let filter_color = null;
+let filter_range_active = false;  // Indica si hay un filtro de rango activo
+let filter_range_min = null;      // Valor mínimo del rango
+let filter_range_max = null;      // Valor máximo del rango
+
 const canvas = document.getElementById("dynamic-gradient-canvas");
 canvas.addEventListener("click", function (event) {
   const rect = canvas.getBoundingClientRect();
@@ -2677,6 +2714,59 @@ function put_FilteredImage(filteredLayer) {
   //m_map.addLayer(filteredLayer);
   m_map.getLayers().insertAt(1, filteredLayer);
   window.filtered_layer = filteredLayer;
+}
+
+// Función auxiliar para aplicar filtro de rango a cualquier imagen (usado en animación)
+function applyRangeMaskToImage(img, minVal, maxVal){
+  if (!img || typeof window.gradientMin !== 'number') return null;
+  try {
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return null;
+    canvas.width = img.width; 
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    const cache = new Map();
+    const lookup = window.gradientLookup||[];
+    function nearestVal(r,g,b){
+      const key = (r<<16)|(g<<8)|b;
+      if (cache.has(key)) return cache.get(key);
+      let bestD=1e9, bestV=null;
+      for (const c of lookup){
+        const hx = c.hex.replace('#','');
+        const cr = parseInt(hx.substring(0,2),16);
+        const cg = parseInt(hx.substring(2,4),16);
+        const cb = parseInt(hx.substring(4,6),16);
+        const d = (r-cr)*(r-cr)+(g-cg)*(g-cg)+(b-cb)*(b-cb);
+        if (d<bestD){ bestD=d; bestV=c.value; if (d===0) break; }
+      }
+      cache.set(key,bestV);
+      return bestV;
+    }
+
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const v = nearestVal(r,g,b);
+      if (v < minVal || v > maxVal){
+        data[i+3]=0;
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source:new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
+    });
+    clipLayer(filteredLayer);
+    return filteredLayer;
+  } catch(e){ 
+    console.error('applyRangeMaskToImage error', e); 
+    return null;
+  }
 }
 
 function rgbToLab(r, g, b) {
@@ -4418,6 +4508,9 @@ function clearLegendFilter() {
         filterIndicator.classList.remove('active');
     }
     filter_color = null;          // filtro raster (canvas)
+    filter_range_active = false;   // filtro de rango numérico
+    filter_range_min = null;
+    filter_range_max = null;
     colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
     hideInfo();
     if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
@@ -4527,12 +4620,12 @@ function initDualRangeFilter(){
     const rLow = document.createElement('input');
     Object.assign(rLow, {type:'range', min:0, max:1000, value:0});
     rLow.className='dual-range low';
-    rLow.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent; pointer-events:auto;';
+    rLow.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
     
     const rHigh = document.createElement('input');
     Object.assign(rHigh, {type:'range', min:0, max:1000, value:1000});
     rHigh.className='dual-range high';
-    rHigh.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent; pointer-events:auto;';
+    rHigh.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
     
     sliderContainer.appendChild(rLow);
     sliderContainer.appendChild(rHigh);
@@ -4556,6 +4649,36 @@ function initDualRangeFilter(){
   const rHigh = wrap.querySelector('.dual-range.high');
   const inpMin = wrap.querySelector('.dual-min');
   const inpMax = wrap.querySelector('.dual-max');
+  const sliderContainer = wrap.querySelector('.dual-slider-container');
+
+  // Variables para rastrear el estado de arrastre
+  let isDragging = false;
+  let activeSlider = null;
+  let dragStarted = false;
+  let initialValue = null;
+
+  // Función para ajustar z-index basado en qué slider está más cerca del mouse
+  function updateZIndexByMousePosition(event) {
+    const rect = sliderContainer.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+    
+    const lowVal = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+    
+    // Determinar qué slider está más cerca del mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow < distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }
 
   function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
   function slidersToValues(){
@@ -4587,7 +4710,7 @@ function initDualRangeFilter(){
       lo = clamp(lo, window.gradientMin, window.gradientMax); 
       hi = clamp(hi, window.gradientMin, window.gradientMax); 
     }
-    valuesToSliders(lo,hi); 
+    valuesToSliders(lo,hi);
     scheduleApply(); 
     showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
   }
@@ -4598,6 +4721,9 @@ function initDualRangeFilter(){
       inpMin.value = window.gradientMin.toFixed(1);
       inpMax.value = window.gradientMax.toFixed(1);
       valuesToSliders(window.gradientMin, window.gradientMax);
+      // Z-index inicial: LOW arriba para que sea accesible desde el inicio
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
     } else {
       setTimeout(init,300);
     }
@@ -4615,12 +4741,158 @@ function initDualRangeFilter(){
     },150);
   }
 
-  rLow.addEventListener('input', () => { 
+  // Eventos: actualizar z-index cuando el mouse/touch se mueva sobre el contenedor
+  ['pointerdown','pointermove'].forEach(ev => {
+  sliderContainer.addEventListener(ev, (e) => {
+    const rect = sliderContainer.getBoundingClientRect();
+    let clientX;
+    
+    // Obtener coordenada X según el tipo de evento
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+    } else {
+      clientX = e.clientX !== undefined ? e.clientX : 0;
+    }
+    
+    const mouseX = clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+
+    const lowVal  = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+
+    // Elevar el slider que esté más cerca del toque/mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow <= distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }, {passive: true});
+});
+  
+  // Función para detectar si el clic está en el thumb
+  function isClickOnThumb(slider, event) {
+    const rect = slider.getBoundingClientRect();
+    const sliderWidth = rect.width;
+    const thumbWidth = 16; // Ancho del thumb
+    
+    // Calcular posición del thumb basada en el valor del slider
+    const sliderValue = parseInt(slider.value, 10);
+    const thumbPosition = (sliderValue / 1000) * sliderWidth;
+    
+    // Obtener posición del clic/touch
+    let clickX;
+    if (event.touches && event.touches[0]) {
+      clickX = event.touches[0].clientX - rect.left;
+    } else {
+      clickX = event.clientX - rect.left;
+    }
+    
+    // Verificar si el clic está dentro del área del thumb (con un poco de margen)
+    const thumbStart = thumbPosition - (thumbWidth / 2) - 5; // 5px de margen
+    const thumbEnd = thumbPosition + (thumbWidth / 2) + 5;
+    
+    return clickX >= thumbStart && clickX <= thumbEnd;
+  }
+
+  // Eventos simples para rastrear arrastre - SOLO ARRASTRE, NO CLICS
+  ['mousedown', 'touchstart', 'pointerdown'].forEach(event => {
+    rLow.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rLow, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rLow.value, 10);
+      isDragging = true;
+      activeSlider = 'low';
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    }, { passive: false });
+    
+    rHigh.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rHigh, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rHigh.value, 10);
+      isDragging = true;
+      activeSlider = 'high';
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }, { passive: false });
+  });
+
+  // Prevenir clics directos en el track que cambiarían el valor
+  rLow.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  
+  rHigh.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Interceptar eventos de input para validar que solo vengan de arrastre
+  rLow.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rLow.value = initialValue;
+      }
+      return;
+    }
     syncInputsFromSliders(); 
     scheduleApply(); 
   });
   
-  rHigh.addEventListener('input', () => { 
+  rHigh.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rHigh.value = initialValue;
+      }
+      return;
+    }
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+  });
+  
+  // Eventos para finalizar el arrastre
+  ['mouseup', 'touchend', 'pointerup'].forEach(event => {
+    document.addEventListener(event, () => {
+      if (isDragging) {
+        // Solo actualizar si realmente hubo arrastre
+        syncInputsFromSliders();
+        scheduleApply();
+      }
+      isDragging = false;
+      activeSlider = null;
+      dragStarted = false;
+      initialValue = null;
+    });
+  });
+
+  // Eventos change como respaldo para móvil
+  rLow.addEventListener('change', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+  });
+  
+  rHigh.addEventListener('change', () => { 
     syncInputsFromSliders(); 
     scheduleApply(); 
   });
@@ -4633,6 +4905,12 @@ function initDualRangeFilter(){
 
 function applyRangeMask(minVal, maxVal){
   if (!m_lienzo || !m_lienzo.img || typeof window.gradientMin !== 'number') return;
+  
+  // Activar filtro de rango y guardar valores
+  filter_range_active = true;
+  filter_range_min = minVal;
+  filter_range_max = maxVal;
+  
   // Construir un mapa rápido valor->RGBA usando gradientLookup ordenado por value
   // Para performance mantenemos el mismo método que applyFilterToImage pero revisando rango
   try {
@@ -4685,4 +4963,30 @@ function applyRangeMask(minVal, maxVal){
     m_map.getLayers().insertAt(1, filteredLayer);
     window.filtered_layer = filteredLayer;
   } catch(e){ console.error('applyRangeMask error', e); }
+}
+
+// Llama esto cada vez que cambies de variable (después de updateLegend)
+function resetFilterUIForNewVariable() {
+  // 1) limpiar cualquier filtro aplicado y ocultar etiqueta
+  clearLegendFilter(); // ya hace: filter_color=null, quita capa filtrada, muestra original, etc.
+
+  // 2) resetear sliders e inputs del rango
+  const wrap =
+    document.querySelector('#legend .legend-dual-slider-wrapper') ||
+    document.querySelector('#gradient-container .legend-dual-slider-wrapper');
+
+  if (wrap) {
+    const rLow  = wrap.querySelector('.dual-range.low');
+    const rHigh = wrap.querySelector('.dual-range.high');
+    const inpMin = wrap.querySelector('.dual-min');
+    const inpMax = wrap.querySelector('.dual-max');
+
+    if (rLow)  rLow.value  = 0;
+    if (rHigh) rHigh.value = 1000;
+    if (inpMin) inpMin.value = '';
+    if (inpMax) inpMax.value = '';
+  }
+
+  // 3) quitar el texto de rango debajo del mapa
+  hideInfo();
 }

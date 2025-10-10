@@ -183,10 +183,42 @@ $("#btn_datos").click(function(){
 });
 
 $("#btn_recarga").click(function(){
-	m_map.removeLayer(window.filtered_layer)
-	if (m_dlayer.layer) m_dlayer.layer.setVisible(true);
+	// Limpiar filtro por color
 	filter_color = null;
+	// Limpiar filtro de rango numérico
+	filter_range_active = false;
+	filter_range_min = null;
+	filter_range_max = null;
+	// Remover capa filtrada
+	if (window.filtered_layer) {
+		try { m_map.removeLayer(window.filtered_layer); } catch(e) {}
+		window.filtered_layer = null;
+	}
+	// Mostrar capa original inmediatamente
+	if (m_dlayer && m_dlayer.layer) {
+		try { 
+			// Verificar si la capa está en el mapa
+			const layers = m_map.getLayers();
+			const layersArray = layers.getArray();
+			const isInMap = layersArray.includes(m_dlayer.layer);
+			
+			if (!isInMap) {
+				// Si no está en el mapa, agregarla
+				layers.insertAt(1, m_dlayer.layer);
+			}
+			// Asegurarse de que sea visible
+			m_dlayer.layer.setVisible(true);
+		} catch(e) {
+			console.error('Error al restaurar capa:', e);
+		}
+	}
+	// Ocultar info de filtro
 	hideInfo();
+	// Limpiar indicador visual si existe
+	const filterIndicator = document.getElementById('filter-indicator');
+	if (filterIndicator) {
+		filterIndicator.classList.remove('active');
+	}
 })
 
 // Nuevo: botón Aplicar Cambios (placeholder para lógica futura)
@@ -680,22 +712,3 @@ $(document).ready(function() {
     }
   });
 });
-
-// Accessibility menu toggle
-function toggleAccessibility() {
-  const menu = document.getElementById('accessibilityMenu');
-  menu.classList.toggle('active');
-}
-
-// Accessibility features
-function toggleFeature(feature) {
-  if (feature === 'large-text') {
-    document.body.classList.remove('small-text');
-  } else if (feature === 'small-text') {
-    document.body.classList.remove('large-text');
-  } else if (feature === 'large-spacing') {
-    document.body.classList.remove('small-spacing');
-  }
-  
-  document.body.classList.toggle(feature);
-}

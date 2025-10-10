@@ -46,6 +46,14 @@ body.map-active {
     flex-direction: column;
 }
 
+/* Allow scrolling on mobile when NOT in map mode */
+@media (max-width: 768px) {
+  body:not(.map-active) {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+}
+
 body.map-active #app {
     display: flex !important;
     flex-grow: 1;
@@ -141,7 +149,7 @@ body.map-active #main-content {
 }
 
 .back-btn:hover {
-    background: white;
+    background: #c19862be;
     color: var(--primary-brand-color);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3);
@@ -180,6 +188,14 @@ body.map-active #main-content {
 .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
 .control-group select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
 .control-group hist-select:focus, .control-group input:focus { outline: none; border-color: var(--secondary-brand-color); }
+
+/* Quitar padding solo a los inputs dentro del filtro (gradient-container) */
+#gradient-container .control-group input,
+#gradient-container input {
+  padding: 0;
+  border: none;
+}
+
 .layer-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* siempre 2 botones por fila */
@@ -404,7 +420,7 @@ body.map-active #main-content {
     padding: 25px;
     width: 90%; /* Add this for flexibility */
     height: 90%;
-    /*max-width: 900px;*/ /* Increase this value */
+    max-width: 100%; /* Increase this value */
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -655,7 +671,7 @@ body.map-active #main-content {
     } 
 
     #historial-dashboard {
-        top: 150px;
+        top: -120px;
         left: 0;
         width: 100%;
         padding: 15px;
@@ -680,7 +696,7 @@ body.map-active #main-content {
     
     /* Ensure filter info is visible in mobile */
     #filter-info {
-        top: 250px !important;
+        top: 110px !important;
         right: 50% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100% - 20px) !important;
@@ -955,12 +971,13 @@ body.map-active #main-content {
 }
 
 .modal-content {
+  top: 180px;
   border: none !important;
   border-radius: 16px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
   overflow: visible !important; /* Cambiar de hidden a visible para que se vean las gráficas */
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-  max-height: 90vh !important; /* Altura máxima para permitir scroll */
+  max-height: 77vh !important; /* Altura máxima para permitir scroll */
   width: 100% !important;
   contain: layout; /* evita recálculos que afecten el navbar */
   overscroll-behavior: contain; /* evita scroll bubbling */
@@ -1023,7 +1040,7 @@ body.map-active #main-content {
   padding: 25px !important;
   background: white;
   color: #333;
-  max-height: 70vh !important; /* Altura máxima para el contenido */
+  max-height: 65vh !important; /* Altura máxima para el contenido */
   overflow-y: auto !important; /* Scroll vertical cuando sea necesario */
 }
 
@@ -1311,7 +1328,7 @@ body.map-active #main-content {
   /* Floating toggle already exists (#toggle-controls-btn). Ensure it floats above gradient */
   .map-controls { top:40px !important; } /* raised 20px vs previous 160px */
   /* Search bar reposition to sit inside map with slight offset */
-  #map-top-bar{ top:155px !important; left:8px !important; width:260px !important; }
+  #map-top-bar{ top:185px !important; left:8px !important; width:260px !important; }
   #map-top-bar #municipio-map-control{ box-shadow:0 4px 14px rgba(0,0,0,.18); }
   /* Gradient scale adapt spacing */
   #gradient-container.horizontal-mode.embedded.bottom-floating{ top: auto; bottom:8px; left:8px; width:calc(100% - 16px); z-index: 4000;}
@@ -1321,7 +1338,7 @@ body.map-active #main-content {
 @media (max-width:768px){
   .weather-controls {
     position: fixed !important;
-    top: 160px !important; /* debajo de navbar / search */
+    top: 185px !important; /* debajo de navbar / search */
     right: 8px !important;
     left: auto !important;
     width: min(420px, 92%);
@@ -1423,7 +1440,7 @@ body.map-active #main-content {
 /* === Mobile: colocar los botones del mapa debajo del panel de controles === */
 @media (max-width:768px){
   /* El bloque legacy ponía .map-controls muy arriba; lo forzamos debajo del panel (panel top=160px) */
-  .map-controls { top: 160px !important; }
+  .map-controls { top: 15px !important; }
 }
 
   /* ====== OpenLayers Attribution (hacerlo más pequeño) ====== */
@@ -1494,16 +1511,15 @@ html, body, #app, .container, .row {
 
 /* Asegurar que ningún elemento se extienda fuera del viewport */
 * {
-  max-width: 100% !important;
+  /*max-width: 100% !important;*/
   box-sizing: border-box !important;
 }
 
 /* Map Legend (Simbología estática de cabeceras y estaciones) */
 .map-legend {
     position: absolute;
-    bottom: 20px;
-    left: 100px;
-    width: 220px;
+    bottom: 10px;
+    left: 20px;
     background: white;
     padding: 15px;
     border-radius: 8px;
@@ -1517,12 +1533,10 @@ body.map-active .map-legend {
 }
 
 .legend-header h4 {
-    margin: 0 0 10px 0;
+    margin: 0 0 5px 0;
     font-size: 14px;
     font-weight: 600;
     color: var(--primary-brand-color);
-    border-bottom: 2px solid var(--secondary-brand-color);
-    padding-bottom: 6px;
 }
 
 .legend-content {
@@ -1546,6 +1560,38 @@ body.map-active .map-legend {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+}
+
+.legend-hint {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(193, 152, 98, 0.3);
+    font-size: 11px;
+    color: #666;
+    font-style: italic;
+    animation: fadeInPulse 2s ease-in-out;
+}
+
+.legend-hint span {
+    line-height: 1.3;
+}
+
+@keyframes fadeInPulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes slideInRight {

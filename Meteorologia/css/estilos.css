@@ -15,7 +15,10 @@ body {
     font-family: Arial, sans-serif;
     background: #f5f5f5;
     /* THIS IS THE KEY FIX: Makes space for the fixed header */
-    padding-top: var(--header-height); 
+    padding-top: var(--header-height);
+  overflow-x: hidden;
+  overflow-y: auto; /* siempre permitir scroll del documento */
+    min-height: 100vh;
 }
 
 .header-container {
@@ -75,6 +78,7 @@ body {
     position: relative;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     transition: all 0.3s ease;
+    z-index: 100;
 }
 
 .accessibility-btn::after {
@@ -183,7 +187,7 @@ body {
 .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #8B1538; font-weight: bold; }
 .accessibility-option { display: flex; align-items: center; gap: 12px; padding: 12px 10px; cursor: pointer; transition: background 0.2s; border-radius: 5px; }
 .accessibility-option:hover { background: #f5f5f5; }
-.option-icon { width: 24px; height: 24px; background: #4a90e2; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
+.option-icon { width: 24px; height: 24px; background: #5a1b30; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; }
 .option-text { color: #333; font-size: 14px; }
 
 /* --- Hamburger Menu (Initially hidden on desktop) --- */
@@ -203,6 +207,122 @@ body {
     border-radius: 5px;
 }
 
+/* --- WRF Modal Styles --- */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    margin: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px;
+    border-bottom: 2px solid #f0f0f0;
+    background: linear-gradient(135deg, #5a1b30 0%, #8B1538 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: white;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 30px;
+    color: #333;
+    line-height: 1.6;
+}
+
+.modal-body p {
+    margin-bottom: 15px;
+    font-size: 16px;
+}
+
+.modal-body h3 {
+    color: #5a1b30;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.modal-body ul {
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.modal-body ul li {
+    margin-bottom: 10px;
+    font-size: 15px;
+}
+
+.modal-body ul li strong {
+    color: #5a1b30;
+}
+
+.modal-footer-text {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    font-style: italic;
+    color: #666;
+}
+
+.modal-footer-text a {
+    color: #8B1538;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.modal-footer-text a:hover {
+    text-decoration: underline;
+}
+
 /* --- Responsive Styles for Header --- */
 @media (max-width: 1200px) {
     .top-header, .nav-menu {
@@ -216,9 +336,8 @@ body {
 
 @media (max-width: 992px) {
     /* Hide desktop nav links and show hamburger */
-    .nav-menu .nav-links {
-        display: none;
-    }
+  /* Importante: no ocultar con display:none para permitir el panel deslizante */
+  /* .nav-menu .nav-links { display: none; } */
     .hamburger-menu {
         display: flex;
     }
@@ -227,7 +346,7 @@ body {
         gap: 20px;
     }
     /* Mobile slide-out menu style */
-    .nav-links {
+  .nav-links {
         position: fixed;
         top: 0;
         right: 0;
@@ -240,13 +359,21 @@ body {
         transform: translateX(100%);
         transition: transform 0.3s ease-in-out;
         overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* scroll suave en móviles */
         padding: 20px;
         box-shadow: -5px 0 15px rgba(0,0,0,0.2);
-        z-index: 999;
+        z-index: 10002 !important; /* Higher than map and header */
         display: flex; /* Re-enable display for the slide-out */
+        pointer-events: auto !important;
     }
+  /* Reforzar visibilidad cuando está activo, combinando la especificidad del selector anterior */
+  .nav-menu .nav-links.active {
+    display: flex !important;
+    transform: translateX(0);
+  }
     .nav-links.active {
         transform: translateX(0);
+        z-index: 10002 !important;
     }
     .top-header {
         flex-wrap: wrap;
@@ -307,14 +434,12 @@ body {
   color: white;
   text-align: left;
   margin-left: 20px;
-  padding: 20px;
-  top: 60%;
-  transform: translateY(-50%);
+  padding: 40px 20px;
+  padding-top: 80px;
 }
 
 /* Estilo para el título */
 .banner-title {
-
   font-size: 48px; /* Ajusta el tamaño del título */
   font-weight: bold;
   margin-bottom: 10px;
@@ -364,7 +489,7 @@ body {
 
 /* Imagen de fondo */
 .card-img {
-  height: 500px;
+  height: 350px;
   background-size: cover;
   background-position: center;
   display: flex;
@@ -631,16 +756,21 @@ body {
   }
 }
 
-/* Bloque de estabilización: evita que en modo mapa (body.map-active) haya desplazamientos verticales residuales */
-body.map-active, body.map-active #app, body.map-active #app #map { overscroll-behavior: none; }
+/* Bloque de estabilización: evitar bloqueos de scroll en móvil */
+/* Solo controlar overscroll en el mapa, no en todo el body */
+body.map-active #app #map { overscroll-behavior: contain; }
 @media (max-width:768px){
-  body.map-active #app #map { touch-action: none; }
+  /* Permitir desplazamiento vertical del documento y gestos en el mapa */
+  body { overflow-y: auto; }
+  body.map-active #app #map { touch-action: pan-x pan-y; }
 }
 
 .ol-scale-line {
-  position: absolute !important;
-  bottom: 20px !important; /* deja espacio sobre la leyenda de colores */
-  right: 20px !important; /* movido un poco a la izquierda */
+  position: relative !important;
+  bottom: 200px !important; /* Justo encima del map-legend (que está en bottom: 150px) */
+  left: 50% !important; /* Centrado horizontalmente */
+  transform: translateX(-50%) !important; /* Ajuste para centrar perfectamente */
+  right: auto !important;
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;
@@ -648,7 +778,6 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   font-family: "Poppins", sans-serif !important;
   z-index: 1600 !important;
   pointer-events: none;
-  left: auto !important; /* anula left inline de OL (evita que se estire) */
   width: auto !important; /* tamaño según contenido */
   max-width: 33vw; /* tope si la escala realmente crece demasiado */
   overflow: visible; /* permitir pintar la barra completa (el escalado JS la ajusta) */
@@ -712,6 +841,17 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 .ol-scale-line-inner span { /* si OL genera spans/textos (según versión) */
   position: relative;
   top: -4px;
+}
+
+/* Ocultar la etiqueta de texto (p.ej., "100 km") de la escala de OL, conservando solo la barra */
+#app .ol-scale-line .ol-scale-line-inner,
+.ol-scale-line .ol-scale-line-inner {
+  font-size: 0 !important;      /* oculta el texto sin afectar el canvas/div de la barra */
+  line-height: 0 !important;
+}
+#app .ol-scale-line .ol-scale-line-inner span,
+.ol-scale-line .ol-scale-line-inner span {
+  display: none !important;     /* por si OL inserta spans para el texto */
 }
 
 /* Ticks y etiquetas personalizadas para la barra segmentada */
@@ -785,7 +925,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 }
 .side-menu {
   position: fixed;
-   top: calc(var(--sidebar-width) + 13.5%); /* Correctly positioned below the fixed header */
+   top: calc(var(--sidebar-width) + 11.5%); /* Correctly positioned below the fixed header */
   left: 0;
   height: calc(100vh - var(--header-height));
   width: var(--sidebar-width);
@@ -867,11 +1007,36 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
     display: none !important;
   }
 
-  #app #map {
-    top: 120px;
-    left: 0;
-    width: 100%;
-    height: calc(100vh - 120px);
+  /* Comportamiento condicional: en modo mapa, el mapa ocupa la pantalla debajo del header; fuera de mapa, deja fluir */
+  body.map-active #app #map {
+    position: fixed !important;
+    top: var(--header-height) !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: calc(100vh - var(--header-height)) !important;
+    min-height: calc(100vh - var(--header-height)) !important;
+    pointer-events: auto !important;
+  }
+  body:not(.map-active) #app #map {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  
+  /* Ensure header is above the map */
+  .header-container {
+    pointer-events: auto !important;
+    z-index: 10000 !important;
+  }
+  
+  /* Ensure hamburger menu is clickable */
+  .hamburger-menu {
+    position: relative;
+    z-index: 10001 !important;
+    pointer-events: auto !important;
   }
 
 /* Search bar, now positioned absolutely within #app */
@@ -1063,6 +1228,11 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   pointer-events: auto;
 }
 
+/* Ocultar el canvas de gradiente (ya tenemos el dual-slider-container con el gradiente) */
+#dynamic-gradient-canvas {
+  display: none;
+}
+
 /* Dual slider integrado (no overlay) - sliders debajo del canvas */
 .legend-dual-slider-wrapper {
   width: 100%;
@@ -1075,8 +1245,9 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   height: 22px;
   margin-bottom: 6px;
   border-radius: 6px;
-  background: linear-gradient(90deg, #888, #ccc);
+  background: linear-gradient(90deg, #888, #ccc); /* Placeholder hasta que se cargue el gradiente dinámico */
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: default;
 }
 
 .dual-slider-container input[type=range] {
@@ -1086,23 +1257,43 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   margin: 0;
   width: 100%;
   height: 22px;
-  cursor: pointer;
+  cursor: default;
   position: absolute;
   top: 0;
   left: 0;
-  pointer-events: none;
+  pointer-events: auto; /* Habilitar para poder interceptar eventos */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.dual-slider-container input[type=range]:active {
+  cursor: grabbing;
 }
 
 .dual-slider-container input[type=range]::-webkit-slider-thumb {
   pointer-events: auto;
+  cursor: grab;
+}
+
+.dual-slider-container input[type=range]::-webkit-slider-thumb:active {
+  cursor: grabbing;
 }
 
 .dual-slider-container input[type=range]::-moz-range-thumb {
   pointer-events: auto;
+  cursor: grab;
+}
+
+.dual-slider-container input[type=range]::-moz-range-thumb:active {
+  cursor: grabbing;
 }
 
 .dual-slider-container .low {
-  z-index: 3;
+  z-index: 5; /* Mayor prioridad inicial para el low */
 }
 
 .dual-slider-container .high {
@@ -1114,6 +1305,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   height: 22px;
   background: transparent;
   border: none;
+  pointer-events: auto; /* Habilitar para interceptar */
 }
 
 .dual-slider-container input[type=range]::-moz-range-track {
@@ -1121,6 +1313,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   height: 22px;
   background: transparent;
   border: none;
+  pointer-events: auto; /* Habilitar para interceptar */
 }
 
 .dual-slider-container input[type=range]::-webkit-slider-thumb {
@@ -1133,6 +1326,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   box-shadow: 0 2px 4px rgba(0,0,0,0.35);
   cursor: grab;
   transition: transform .12s, box-shadow .12s;
+  pointer-events: auto; /* Solo el thumb es interactivo */
 }
 
 .dual-slider-container input[type=range]::-moz-range-thumb {
@@ -1143,7 +1337,42 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.35);
   cursor: grab;
-  transition: transform .12s, box-shadow .12s;
+  pointer-events: auto; /* Solo el thumb es interactivo */
+}
+
+/* Estilos específicos para móvil */
+@media (max-width: 768px) {
+  .dual-slider-container {
+    height: 28px; /* Más alto en móvil para mejor toque */
+    margin-bottom: 8px;
+  }
+  
+  .dual-slider-container input[type=range] {
+    height: 28px;
+    /* Asegurar que los eventos táctiles funcionen */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+  
+  .dual-slider-container input[type=range]::-webkit-slider-thumb {
+    width: 20px; /* Thumb más grande para móvil */
+    height: 28px;
+    border-width: 3px;
+  }
+  
+  .dual-slider-container input[type=range]::-moz-range-thumb {
+    width: 20px;
+    height: 28px;
+    border-width: 3px;
+  }
+  
+  .dual-slider-container input[type=range]::-webkit-slider-runnable-track {
+    height: 28px;
+  }
+  
+  .dual-slider-container input[type=range]::-moz-range-track {
+    height: 28px;
+  }
 }
 
 .dual-slider-container input[type=range]:active::-webkit-slider-thumb,
@@ -1168,10 +1397,11 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 
 .dual-inputs {
   display: flex;
-  gap: 8px;
+  justify-content: space-between;
   align-items: flex-end;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-top: 4px;
+  gap: 10px;
 }
 
 .dual-inputs label {
@@ -1278,7 +1508,7 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 
 #filter-info {
   position: absolute;
-  top: calc(var(--header-height) + 10px);
+  top: calc(var(--header-height) - 20px);
   left: 40%;
   z-index: 3001;
   font-weight: 500;
@@ -1459,16 +1689,15 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 /* Estilos para el dashboard histórico */
 #historial-dashboard {
   position: relative;              /* evitar desplazar fuera del flujo */
-  left: 40px;
-  margin: 160px 0 40px 0;         /* sustituye top:150px con margen superior controlado */
-  padding: 30px 40px;             /* espacio interno uniforme */
-  width: calc(100% - 80px);       /* ajustar ancho considerando left offset */
-  max-width: none;                /* permitir ancho completo */
+  left: var(--sidebar-width);      /* alineado con el borde derecho del sidebar */
+  margin: 140px 0 40px 0;          /* sustituye top:150px con margen superior controlado */
+  width: calc(100% - var(--sidebar-width)); /* desde sidebar hasta borde derecho */
+  max-width: none;                 /* permitir ancho completo */
   background-color: #ffffff;
-  min-height: auto;               /* crecer según contenido */
+  min-height: auto;                /* crecer según contenido */
   max-height: calc(100vh - 200px); /* altura máxima para permitir scroll */
-  overflow-y: auto;               /* habilitar scroll vertical por defecto */
-  overflow-x: hidden;             /* evitar scroll horizontal */
+  overflow-y: auto;                /* habilitar scroll vertical por defecto */
+  overflow-x: hidden;              /* evitar scroll horizontal */
   transition: margin .3s ease, padding .3s ease, background .3s ease;
   animation: fadeIn .5s ease;
   box-sizing: border-box;
@@ -2412,18 +2641,20 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 
 /* ==== Ajuste fino de posición de la escala (override final) ==== */
 :root {
-  /* Ajusta estos valores para mover la escala */
-  --scale-offset-bottom: 20px; /* movida más abajo (antes 60px) */
-  --scale-offset-right: 60px;  /* movida más a la izquierda */
+  /* Posición de la escala */
+  --scale-bottom-desktop: 20px;  /* altura desde abajo en desktop */
+  --scale-right-desktop: 30px;   /* separación derecha en desktop */
+  --scale-bottom-mobile: 110px;  /* altura desde abajo en móvil (arriba de map-legend) */
 }
 
 #app .ol-scale-line,
 .ol-scale-line.override-position,
 .ol-scale-line {
-  position: absolute !important; /* Changed from fixed */
-  bottom: 20px !important;
-  right: 20px !important;
-  left: auto !important; /* Ensure left is not set */
+  position: absolute !important;
+  bottom: var(--scale-bottom-desktop) !important;
+  right: var(--scale-right-desktop) !important;
+  left: auto !important;
+  transform: none !important;
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;
@@ -2433,15 +2664,13 @@ body.map-active, body.map-active #app, body.map-active #app #map { overscroll-be
 }
 
 @media (max-width: 768px) {
-  :root {
-    --scale-offset-bottom: 130px; /* versión móvil ligeramente más alta para no tapar controles */
-    --scale-offset-right: auto; /* anular para usar left centrado */
-  }
-  
-  /* Override específico para móvil - centrado */
+  :root { --scale-bottom-mobile: 160px; }
+
+  /* En móvil: centrada y un poco arriba (sobre map-legend) */
   #app .ol-scale-line,
   .ol-scale-line.override-position,
   .ol-scale-line {
+    bottom: var(--scale-bottom-mobile) !important;
     left: 50% !important;
     right: auto !important;
     transform: translateX(-50%) !important;
@@ -2744,14 +2973,14 @@ body::-webkit-scrollbar-thumb:hover {
 /* Leyenda de simbología - POSICIÓN CORREGIDA */
 .map-legend {
   position: absolute;
-  bottom: 10px;
-  left: 20px;
+  bottom: 150px; /* Más arriba para no chocar con gradient */
+  left: calc(var(--sidebar-width) + 20px);
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   padding: 15px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  z-index: 3010;
+  z-index: 3010; /* Por encima del gradient-container que tiene z-index: 3005 */
   font-family: 'Poppins', sans-serif;
   min-width: 220px;
 }
@@ -2844,3 +3073,101 @@ body::-webkit-scrollbar-thumb:hover {
     display: inline;
   }
 }
+
+
+/* --- Accessibility Features Styles --- */
+
+/* Large Text */
+body.large-text {
+  font-size: 120% !important;
+}
+
+body.large-text h1,
+body.large-text h2,
+body.large-text h3,
+body.large-text h4,
+body.large-text p,
+body.large-text span,
+body.large-text a,
+body.large-text button,
+body.large-text label {
+  font-size: 120% !important;
+}
+
+/* Small Text */
+body.small-text {
+  font-size: 85% !important;
+}
+
+body.small-text h1,
+body.small-text h2,
+body.small-text h3,
+body.small-text h4,
+body.small-text p,
+body.small-text span,
+body.small-text a,
+body.small-text button,
+body.small-text label {
+  font-size: 85% !important;
+}
+
+/* Large Spacing */
+body.large-spacing {
+  letter-spacing: 0.1em !important;
+  line-height: 1.8 !important;
+}
+
+body.large-spacing p,
+body.large-spacing span,
+body.large-spacing a {
+  letter-spacing: 0.1em !important;
+  line-height: 1.8 !important;
+}
+
+/* Small Spacing */
+body.small-spacing {
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
+}
+
+body.small-spacing p,
+body.small-spacing span,
+body.small-spacing a {
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
+}
+
+/* Inverted Colors */
+body.inverted {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+body.inverted img,
+body.inverted video,
+body.inverted .ol-layer {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Grayscale */
+body.grayscale {
+  filter: grayscale(100%);
+}
+
+/* Underline Links */
+body.underline-links a {
+  text-decoration: underline !important;
+}
+
+/* Large Cursor */
+body.large-cursor,
+body.large-cursor * {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="10" fill="black" stroke="white" stroke-width="2"/></svg>') 16 16, auto !important;
+}
+
+body.large-cursor a,
+body.large-cursor button,
+body.large-cursor input,
+body.large-cursor select {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="10" fill="blue" stroke="white" stroke-width="2"/></svg>') 16 16, pointer !important;
+}
+

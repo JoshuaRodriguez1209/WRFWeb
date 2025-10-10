@@ -364,6 +364,16 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+  
+  // Aplicar el mismo gradiente al dual-slider-container
+  const sliderContainer = document.querySelector('.dual-slider-container');
+  if (sliderContainer && canvas.classList.contains('gradient-bar-horizontal')) {
+    // Crear CSS gradient string con los mismos colores y stops
+    // Canvas usa gradiente de derecha a izquierda, así que invertimos en CSS: 270deg (right to left)
+    const gradientStops = colors.map((color, i) => `${color} ${stops[i]}%`).join(', ');
+    sliderContainer.style.background = `linear-gradient(270deg, ${gradientStops})`;
+  }
+  
   const varLabel = document.getElementById("gradient-variable-label") || document.getElementById("gradient-title") || document.getElementById("legend-title");
   const unitEl = document.getElementById("gradient-units");
   if (varLabel) {

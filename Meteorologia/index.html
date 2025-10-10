@@ -92,6 +92,38 @@
         </div>
     </div>
 
+    <!-- Modal WRF Info -->
+    <div class="modal-overlay" id="wrfModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>¿Qué es WRF?</h2>
+                <button class="modal-close" onclick="closeWRFModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>WRF (Weather Research and Forecasting)</strong> es un sistema de modelado numérico de última generación diseñado para servir tanto a necesidades de investigación atmosférica como de predicción operacional del tiempo.</p>
+                
+                <h3>Características principales:</h3>
+                <ul>
+                    <li><strong>Alta resolución:</strong> Genera pronósticos meteorológicos detallados con precisión espacial y temporal.</li>
+                    <li><strong>Versatilidad:</strong> Se utiliza para simulaciones desde escalas locales hasta regionales.</li>
+                    <li><strong>Calidad del aire:</strong> Evalúa la dispersión de contaminantes atmosféricos.</li>
+                    <li><strong>Predicción avanzada:</strong> Incorpora física atmosférica compleja y asimilación de datos.</li>
+                </ul>
+
+                <h3>Aplicaciones en Puebla:</h3>
+                <p>En el Estado de Puebla, utilizamos el modelo WRF para:</p>
+                <ul>
+                    <li>Generar pronósticos meteorológicos de alta resolución</li>
+                    <li>Evaluar la dispersión de contaminantes atmosféricos</li>
+                    <li>Proporcionar información actualizada para la toma de decisiones informadas</li>
+                    <li>Monitorear la calidad del aire en tiempo real</li>
+                </ul>
+
+                <p class="modal-footer-text">Para más información, visita <a href="https://www.mmm.ucar.edu/weather-research-and-forecasting-model" target="_blank">el sitio oficial de WRF</a>.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="accessibility-menu" id="accessibilityMenu">
         <div class="accessibility-header">
             <h3>Opciones de accesibilidad</h3>
@@ -160,7 +192,7 @@
       </div>
     </section>
 
-    <div class="row" style="margin: 50px" id="botones1">
+    <div class="row" style="margin: 20px" id="botones1">
       <div class="col-12 col-md-6 mb-4" id="cali">
         <div class="card">
           <a href="#" class="card-link">
@@ -256,125 +288,158 @@
                   <label for="select_var">Variables</label>
                   <select id="select_var"></select>
                 </div>
-
+                
+                <div class="control-group">
                 <div id="gradient-container" >
                   <label>Filtro</label>
                   <div class="gradient-inner">
-                    <div class="gradient-variable" id="gradient-variable-label">
+                    <!--<div class="gradient-variable" id="gradient-variable-label">
                       Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span>
-                    </div>
+                    </div>-->
                     <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
                   </div>
                 </div>
+                </div>
 
-                <div class="animation-controls">
-                  <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
-                    <i class="fa-solid fa-play" id="playIcon"></i>
-                  </button>
-                  <div style="flex-grow: 1;">
-                    <label for="speedSlider" style="font-size: 12px; color: #666; display: block; margin-bottom: 2px;">Animación del pronóstico</label>
-                    <div class="speed-slider">
-                      <input type="range" min="100" max="2000" value="1000" id="speedSlider">
-                    </div>
-                  </div>
-                </div>
-    
-                <div class="controls-footer">
-                  <button class="footer-btn" id="btn_glo">
-                    <i class="fa-solid fa-book"></i> Glosario
-                  </button>
-                  <button class="footer-btn" id="btn_datos">
-                    <i class="fa-solid fa-download"></i> Datos por Municipio
-                  </button>
-                  <button class="footer-btn" id="btn_recarga">
-                    <i class="fa-solid fa-reload"></i> Limpiar Filtro
-                  </button>
-                  <button class="footer-btn" id="btn_aplicar" title="Aplicar los cambios seleccionados">
-                    <i class="fa-solid fa-check"></i> Aplicar Cambios
-                  </button>
-                </div>
+
+            <!-- Animation Controls -->
+<div class="animation-controls">
+  <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
+    <i class="fa-solid fa-play" id="playIcon"></i>
+  </button>
+  <div style="flex-grow: 1;">
+    <label for="speedSlider" style="font-size: 12px; color: #666; display: block; margin-bottom: 2px;">Animación del pronóstico</label>
+    <div class="speed-slider">
+      <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+    </div>
+  </div>
+  </div>
+
+            <!-- Controls Footer -->
+            <div class="controls-footer">
+              <button class="footer-btn" id="btn_glo">
+                <i class="fa-solid fa-book"></i> Glosario
+              </button>
+              <button class="footer-btn" id="btn_datos">
+                <i class="fa-solid fa-download"></i> Datos por Municipio
+              </button>
+              <button class="footer-btn" id="btn_recarga">
+                <i class="fa-solid fa-reload"></i> Limpiar Filtro
+              </button>
+              <button class="footer-btn" id="btn_aplicar" title="Aplicar los cambios seleccionados">
+                <i class="fa-solid fa-check"></i> Aplicar Cambios
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Escala integrada al panel de capas 
+        <div id="gradient-container" class="horizontal-mode embedded bottom-floating">
+          <div class="gradient-inner">
+            <div class="gradient-variable" id="gradient-variable-label">Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span></div>
+            <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
+            <div class="gradient-meta-row">
+              <div class="gradient-horizontal-values horizontal-values" id="gradient-values"></div>
+            </div>
+            <div class="gradient-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:16px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
+              Haz clic para filtrar &bull; Doble clic para limpiar
+            </div>
+          </div>
+        </div>
+        <!-- Agregar después del gradient-container -->
+  <div id="map-legend" class="map-legend">
+    <div class="legend-header">
+      <h4>Simbología</h4>
+    </div>
+    <div class="legend-content">
+      <div class="legend-item">
+        <div class="legend-symbol">
+          <svg width="20" height="20" viewBox="0 0 20 20">
+            <polygon points="10,2 18,18 2,18" fill="#c19862" stroke="#fff" stroke-width="2"/>
+          </svg>
+        </div>
+        <span>Cabeceras Municipales</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-symbol">
+          <svg width="20" height="20" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#5a1b30" stroke="#c19862" stroke-width="2"/>
+          </svg>
+        </div>
+        <span>Estaciones de Monitoreo</span>
+      </div>
+      <div class="legend-hint">
+        <svg width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">
+          <circle cx="8" cy="8" r="7" fill="none" stroke="#c19862" stroke-width="1.5"/>
+          <text x="8" y="11.5" text-anchor="middle" font-size="10" font-weight="bold" fill="#c19862">i</text>
+        </svg>
+        <span>Haz clic sobre las cabeceras o estaciones para ver datos</span>
+      </div>
+    </div>
+  </div>
+
+        <div id="filter-info">
+          <div class="permanent-date"></div>
+        </div>
+      </div>
+      <div id="hist">
+        <!-- Historial Dashboard -->
+        <div id="historial-dashboard" style="display:none;">
+          <div class="dashboard-header">
+            <div class="location-selector">
+              <label for="hist-cabecera-select">Seleccione un municipio</label>
+              <!-- Select original oculto para compatibilidad con menu.js -->
+              <select id="hist-cabecera-select" class="form-control" style="display: none;">
+                <option value="">Seleccione un municipio</option>
+              </select>
+              <!-- Combobox visual -->
+              <div id="hist-combobox">
+                <input type="text" class="form-control" placeholder="Buscar municipio..." autocomplete="off">
+                <ul id="hist-combobox-list" style="display: none;"></ul>
               </div>
             </div>
-    
-            <div id="map-legend" class="map-legend">
-              <div class="legend-header">
-                <h4>Simbología</h4>
-              </div>
-              <div class="legend-content">
-                <div class="legend-item">
-                  <div class="legend-symbol">
-                    <svg width="20" height="20" viewBox="0 0 20 20">
-                      <polygon points="10,2 18,18 2,18" fill="#c19862" stroke="#fff" stroke-width="2"/>
-                    </svg>
-                  </div>
-                  <span>Cabeceras Municipales</span>
-                </div>
-                <div class="legend-item">
-                  <div class="legend-symbol">
-                    <svg width="20" height="20" viewBox="0 0 20 20">
-                      <circle cx="10" cy="10" r="8" fill="#5a1b30" stroke="#c19862" stroke-width="2"/>
-                    </svg>
-                  </div>
-                  <span>Estaciones de Monitoreo</span>
-                </div>
-              </div>
+            <div class="data-type-selector">
+              <label for="hist-tipo-select">Tipo de datos</label>
+              <select id="hist-tipo-select" class="form-control">
+                <option value="meteo">Datos Meteorológicos</option>
+                <option value="chem">Calidad del Aire</option>
+              </select>
             </div>
-    
-            <div id="filter-info">
-              <div class="permanent-date"></div>
+          </div>
+
+          <div class="dashboard-content">
+            <!-- Variable Selection Grid -->
+            <div class="variables-grid" id="variable-toggles">
+              <!-- Variables will be dynamically added here -->
             </div>
-            </div>
-    
-          <div id="hist">
-            <div id="historial-dashboard" style="display:none;">
-              <div class="dashboard-header">
-                <div class="location-selector">
-                  <label for="hist-cabecera-select">Seleccione un municipio</label>
-                  <select id="hist-cabecera-select" class="form-control" style="display: none;">
-                    <option value="">Seleccione un municipio</option>
-                  </select>
-                  <div id="hist-combobox">
-                    <input type="text" class="form-control" placeholder="Buscar municipio..." autocomplete="off">
-                    <ul id="hist-combobox-list" style="display: none;"></ul>
-                  </div>
+
+            <!-- Main Content Area -->
+            <div class="content-wrapper">
+              <div id="hist-content">
+                <div id="chartsHost" class="charts-grid">
+                  <!-- Las gráficas se generarán dinámicamente aquí -->
                 </div>
-                <div class="data-type-selector">
-                  <label for="hist-tipo-select">Tipo de datos</label>
-                  <select id="hist-tipo-select" class="form-control">
-                    <option value="meteo">Datos Meteorológicos</option>
-                    <option value="chem">Calidad del aire</option>
-                  </select>
-                </div>
-              </div>
-    
-              <div class="dashboard-content">
-                <div class="variables-grid" id="variable-toggles"></div>
-                <div class="content-wrapper">
-                  <div id="hist-content">
-                    <div id="chartsHost" class="charts-grid"></div>
-                    <div class="stats-container">
-                      <h4>Resumen Estadístico</h4>
-                      <div class="stats-table-wrapper">
-                        <table class="stats-table">
-                          <thead>
-                            <tr>
-                              <th>Variable</th>
-                              <th>Promedio</th>
-                              <th>Máximo</th>
-                              <th>Mínimo</th>
-                              <th>Unidades</th>
-                            </tr>
-                          </thead>
-                          <tbody id="histStatsTable">
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                <div class="stats-container">
+                  <h4>Resumen Estadístico</h4>
+                  <div class="stats-table-wrapper">
+                    <table class="stats-table">
+                      <thead>
+                        <tr>
+                          <th>Variable</th>
+                          <th>Promedio</th>
+                          <th>Máximo</th>
+                          <th>Mínimo</th>
+                          <th>Unidades</th>
+                        </tr>
+                      </thead>
+                      <tbody id="histStatsTable">
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
       </div>
     </div>
   </body>
@@ -410,5 +475,37 @@
 
         document.body.classList.toggle(feature);
     }
+
+    // WRF Modal functions
+    function openWRFModal() {
+        const modal = document.getElementById('wrfModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevent scrolling
+    }
+
+    function closeWRFModal() {
+        const modal = document.getElementById('wrfModal');
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto'; // Restore scrolling
+    }
+
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('wrfModal');
+        if (event.target === modal) {
+            closeWRFModal();
+        }
+    });
+
+    // Attach event listener to WRF button
+    document.addEventListener('DOMContentLoaded', function() {
+        const wrfBtn = document.getElementById('btn_wrf_info');
+        if (wrfBtn) {
+            wrfBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openWRFModal();
+            });
+        }
+    });
   </script>
   </html>
