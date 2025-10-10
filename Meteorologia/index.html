@@ -79,13 +79,13 @@
             <ul class="nav-links" id="nav-links">
                 <li><a href="#" onclick="location.reload()">INICIO</a></li>
                 <li><a href="https://smadsot.puebla.gob.mx/quienes-somos" target="_blank">QUIENES SOMOS</a></li>
-                <li><a href="#">AVISOS DE PRIVACIDAD</a></li>
+                <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">AVISOS DE PRIVACIDAD</a></li>
                 <li><a href="#" id="btn_wrf_info">¿QUÉ ES WRF?</a></li>
                 <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Meteorología</a></li>
                 <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
                 <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
             </ul>
-            <button class="search-btn" onclick="toggleSearch()">🔍</button>
+            
         </nav>
         <div class="search-container" id="searchContainer">
             <input type="text" class="search-input" placeholder="Buscar...">
@@ -161,17 +161,20 @@
             <div class="option-icon">➤</div>
             <div class="option-text">Cursor grande</div>
         </div>
-        <div class="accessibility-option" onclick="alert('Guía de lectura activada')">
+        <div class="accessibility-option" onclick="toggleReadingGuide()" id="readingGuideBtn">
             <div class="option-icon">☰</div>
             <div class="option-text">Guía de lectura</div>
+            <div class="guide-status" id="guideStatus">Inactivo</div>
         </div>
-        <div class="accessibility-option" onclick="alert('Texto a voz activado')">
+        <div class="accessibility-option" onclick="toggleTextToSpeech()" id="textToSpeechBtn">
             <div class="option-icon">🔊</div>
             <div class="option-text">Texto a voz</div>
+            <div class="tts-status" id="ttsStatus">Inactivo</div>
         </div>
-        <div class="accessibility-option" onclick="alert('Voz a texto activado')">
+        <div class="accessibility-option" onclick="toggleSpeechToText()" id="speechToTextBtn">
             <div class="option-icon">🎤</div>
             <div class="option-text">Voz a texto</div>
+            <div class="stt-status" id="sttStatus">Inactivo</div>
         </div>
     </div>
     <section class="banner" id="banner">
@@ -444,68 +447,12 @@
     </div>
   </body>
   <canvas id="filter-canvas" style="display: none"></canvas>
+  <!-- Guía de lectura -->
+  <div id="readingGuide" class="reading-guide" style="display: none;"></div>
   <script src="./defines.js"></script>
   <script src="./lienzo.js"></script>
   <script src="./utils.js"></script>
   <script src="./app.js"></script>
   <script src="./menu.js"></script>
-
-  <script>
-    function toggleAccessibility() {
-        const menu = document.getElementById('accessibilityMenu');
-        menu.classList.toggle('active');
-    }
-
-    function toggleSearch() {
-        const searchContainer = document.getElementById('searchContainer');
-        searchContainer.classList.toggle('active');
-    }
-
-    function toggleFeature(feature) {
-        // Remove conflicting features
-        if (feature === 'large-text') {
-            document.body.classList.remove('small-text');
-        } else if (feature === 'small-text') {
-            document.body.classList.remove('large-text');
-        } else if (feature === 'large-spacing') {
-            document.body.classList.remove('small-spacing');
-        } else if (feature === 'small-spacing') {
-            document.body.classList.remove('large-spacing');
-        }
-
-        document.body.classList.toggle(feature);
-    }
-
-    // WRF Modal functions
-    function openWRFModal() {
-        const modal = document.getElementById('wrfModal');
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Prevent scrolling
-    }
-
-    function closeWRFModal() {
-        const modal = document.getElementById('wrfModal');
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Restore scrolling
-    }
-
-    // Close modal when clicking outside
-    document.addEventListener('click', function(event) {
-        const modal = document.getElementById('wrfModal');
-        if (event.target === modal) {
-            closeWRFModal();
-        }
-    });
-
-    // Attach event listener to WRF button
-    document.addEventListener('DOMContentLoaded', function() {
-        const wrfBtn = document.getElementById('btn_wrf_info');
-        if (wrfBtn) {
-            wrfBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                openWRFModal();
-            });
-        }
-    });
-  </script>
+  <script src="./accesibility.js"></script>
   </html>

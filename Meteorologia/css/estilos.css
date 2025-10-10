@@ -903,26 +903,6 @@ body.map-active #app #map { overscroll-behavior: contain; }
   font-weight: 400;
   color: #e8e8e8;
 }
-@media (max-width: 768px) {
-  .ol-scale-line {
-    font-size: 22px !important;
-    padding: 8px 12px;
-    bottom: 140px !important;
-    left: 50% !important; /* centrada horizontalmente */
-    right: auto !important;
-    transform: translateX(-50%) !important; /* centrada perfectamente */
-    transform-origin: center center !important; /* crece desde el centro */
-  }
-
-  .ol-scale-line-inner {
-    font-size: 10px !important;
-    transform-origin: center center !important; /* elemento interno también crece desde centro */
-  }
-
-  .ol-scale-line-body {
-    transform-origin: center center !important; /* barra crece desde el centro */
-  }
-}
 .side-menu {
   position: fixed;
    top: calc(var(--sidebar-width) + 11.5%); /* Correctly positioned below the fixed header */
@@ -2671,8 +2651,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   .ol-scale-line.override-position,
   .ol-scale-line {
     bottom: var(--scale-bottom-mobile) !important;
-    left: 50% !important;
-    right: auto !important;
+    left: 20% !important;
     transform: translateX(-50%) !important;
     transform-origin: center center !important;
   }
@@ -3028,7 +3007,7 @@ body::-webkit-scrollbar-thumb:hover {
 /* Responsive */
 @media (max-width: 768px) {
   .map-legend {
-    left: 10px;
+    left: 10px !important;
     bottom: 180px; /* Más espacio en móvil */
     min-width: 180px;
     padding: 12px;

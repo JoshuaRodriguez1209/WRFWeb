@@ -1,7 +1,15 @@
 // Reenviar clicks de las versiones móviles (IDs nuevos) a los botones laterales reales
 $(document).on('click', '#btn_atmos_mobile', function(e){ e.preventDefault(); $('#btn_atmos').trigger('click'); });
 $(document).on('click', '#btn_aire_mobile', function(e){ e.preventDefault(); $('#btn_aire').trigger('click'); });
-$(document).on('click', '#btn_hist_mobile', function(e){ e.preventDefault(); $('#btn_hist').trigger('click'); });
+$(document).on('click', '#btn_hist_mobile', function(e){ 
+  e.preventDefault(); 
+  // Para móviles, primero inicializar el mapa para cargar datos
+  $('#btn_atmos').trigger('click');
+  // Después de un tiempo corto, mostrar el historial
+  setTimeout(function() {
+    $('#btn_hist').trigger('click');
+  }, 1); // 800ms para asegurar que los datos se carguen
+});
 "use strict"
 
 //------------------------------------------------------------------------------------------

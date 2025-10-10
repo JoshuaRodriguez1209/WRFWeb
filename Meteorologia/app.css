@@ -145,7 +145,7 @@ body.map-active #main-content {
     justify-content: center;
     font-size: 24px;
     text-decoration: none;
-    margin: 5px 0;
+    margin-top: 35px;
 }
 
 .back-btn:hover {
@@ -350,7 +350,7 @@ body.map-active #main-content {
     align-items: center;
     gap: 15px;
     border-right: 1px solid var(--border-color);
-    z-index: 1010;
+    z-index: 999;
     flex-shrink: 0;
     height: 100%;
 }
@@ -1608,5 +1608,150 @@ body.map-active .map-legend {
 
 .apply-indicator i {
   margin-right: 5px;
+}
+
+/* ===== Estilos para texto a voz ===== */
+.accessibility-option.tts-active {
+    background-color: var(--secondary-brand-color);
+    color: white;
+    border-radius: 8px;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(193, 152, 98, 0.3);
+}
+
+.accessibility-option.tts-active .option-icon {
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.tts-status {
+    font-size: 10px;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+    text-align: center;
+}
+
+.accessibility-option.tts-active .tts-status {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ===== Guía de lectura ===== */
+.reading-guide {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--primary-brand-color);
+    box-shadow: 0 0 8px rgba(90, 27, 48, 0.5);
+    z-index: 99999;
+    pointer-events: none;
+    transform: translateY(-1px);
+}
+
+.accessibility-option.guide-active {
+    background-color: var(--primary-brand-color);
+    color: white;
+    border-radius: 8px;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(90, 27, 48, 0.3);
+}
+
+.accessibility-option.guide-active .option-icon {
+    color: white;
+}
+
+.guide-status {
+    font-size: 10px;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+    text-align: center;
+}
+
+.accessibility-option.guide-active .guide-status {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* ===== Cursor grande ===== */
+body.large-cursor * {
+    cursor: none !important;
+}
+
+body.large-cursor::after {
+    content: '';
+    position: fixed;
+    top: var(--cursor-y, 0);
+    left: var(--cursor-x, 0);
+    width: 32px;
+    height: 32px;
+    background: url('data:image/svg+xml;charset=utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path d="M2 2l6 12 2-4h4l-12-8z" fill="black"/><path d="M2 2l6 12 2-4h4l-12-8z" fill="none" stroke="white" stroke-width="0.5"/></svg>') no-repeat center center;
+    background-size: contain;
+    pointer-events: none;
+    z-index: 99998;
+    transform: scale(2) translate(-50%, -50%);
+    transform-origin: center;
+}
+
+body.large-cursor {
+    cursor: none !important;
+}
+
+/* ===== Voz a texto ===== */
+.accessibility-option.stt-active {
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 8px;
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.accessibility-option.stt-active .option-icon {
+    color: white;
+    animation: pulse 1.5s infinite;
+}
+
+.stt-status {
+    font-size: 10px;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+    text-align: center;
+}
+
+.accessibility-option.stt-active .stt-status {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.voice-input-active {
+    border: 2px solid #e74c3c !important;
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.3) !important;
+    background-color: rgba(231, 76, 60, 0.05) !important;
+}
+
+.voice-input-active::before {
+    content: "🎤";
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    opacity: 0.7;
+    pointer-events: none;
 }
 
