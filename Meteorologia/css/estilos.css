@@ -37,6 +37,7 @@ body {
     justify-content: space-between;
     padding: 0px 40px; /* Reduced padding for a shorter header */
     border-bottom: 1px solid #e0e0e0;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 6px -1px, rgba(0, 0, 0, 0.1) 0px 6px 4px -1px;
 }
 
 .logos-left {
@@ -57,47 +58,35 @@ body {
     display: flex;
     align-items: center;
     gap: 25px;
+    margin-right: 100px;
+    position: relative; /* Needed for absolute positioning of accessibility logo */
 }
 
 .campaign-logo img {
     height: 100px; /* Reduced size */
 }
-
-.accessibility-btn {
-    width: 50px; /* Reduced size */
-    height: 50px; /* Reduced size */
-    background: #2d8b6e;
-    border-radius: 50% 50% 0 50%;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 24px; /* Reduced size */
-    position: relative;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    transition: all 0.3s ease;
-    z-index: 100;
+.accesibility-logo{
+  position: absolute;
+  top: 50%; /* Center vertically relative to top-header */
+  right: -25px; /* Position outside to the right, overlapping/hugging the header */
+  transform: translateY(-50%); /* Perfect vertical centering */
+  height: 100px; /* Size similar to reference image */
+  width: 100px;
+  cursor: pointer;
+  z-index: 1001; /* Ensure it's above other elements */
 }
 
-.accessibility-btn::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    right: 6px;
-    width: 15px;
-    height: 15px;
-    background: #2d8b6e;
-    clip-path: polygon(0 0, 100% 0, 100% 100%);
-    box-shadow: 3px 3px 6px rgba(0,0,0,0.15);
+.accesibility-logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.accessibility-btn:hover {
-    background: #247a5e;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.25);
+.accesibility-logo:hover {
+  transform: translateY(-50%) scale(1.05); /* Slight scale on hover while maintaining centering */
+  transition: transform 0.3s ease;
 }
+
 
 .nav-menu {
     display: flex;
@@ -408,7 +397,7 @@ body {
 .banner {
   position: relative;
   width: 100%;
-  min-height: 450px;
+  min-height: 300px;
   margin-top: 150px; /* Adjusted to match new header height */
   background-image: url("../images/header/banner-intro-inicio.png");
   background-size: cover;
@@ -3135,6 +3124,15 @@ body.grayscale {
 /* Underline Links */
 body.underline-links a {
   text-decoration: underline !important;
+}
+
+/* Responsive design for accessibility logo */
+@media (max-width: 768px) {
+  .accesibility-logo {
+    right: -15px; /* Adjust position for mobile */
+    height: 50px;
+    width: 50px;
+  }
 }
 
 /* Large Cursor */
