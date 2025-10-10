@@ -1,5 +1,0 @@
-Options +FollowSymLinks -MultiViews
-
-RewriteEngine On
-
-RewriteRule ^([a-zA-Z_-]*)$ api_radar.php?tipo_solicitud=$1

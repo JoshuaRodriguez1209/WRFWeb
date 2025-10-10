@@ -3828,8 +3828,9 @@ function loadMapCabeceras() {
     const r = input.getBoundingClientRect();
     list.style.left = r.left + 'px';
     list.style.top  = (r.bottom + 4) + 'px';
+    list.style.width = r.width + 'px';  // Mismo ancho exacto que el form-control
     list.style.minWidth = r.width + 'px';
-    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+    list.style.maxWidth = r.width + 'px';  // Evitar que se expanda
   }
 
   function render(){

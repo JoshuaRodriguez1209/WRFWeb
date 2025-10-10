@@ -1029,7 +1029,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   /* Ensure header is above the map */
   .header-container {
     pointer-events: auto !important;
-    z-index: 10000 !important;
+    z-index: 1000 !important;
   }
   
   /* Ensure hamburger menu is clickable */
@@ -2558,7 +2558,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
     top: 120px; /* Si la navbar se reduce en móvil */
     left: 10px;
     width: calc(100% - 20px);
-    max-width: 300px;
+    max-width: 250px;
   }
   
   #municipio-map-control {

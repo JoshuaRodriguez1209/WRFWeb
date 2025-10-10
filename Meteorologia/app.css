@@ -971,7 +971,7 @@ body.map-active #main-content {
 }
 
 .modal-content {
-  top: 180px;
+  top: 10px;
   border: none !important;
   border-radius: 16px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
@@ -1239,6 +1239,7 @@ body.map-active #main-content {
   .modal-dialog {
     width: 95% !important;
     margin: 10px auto !important;
+    z-index: 1050; /* Asegura que esté por encima del navbar */
   }
   
   .modal-content {
