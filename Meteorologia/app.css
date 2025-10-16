@@ -610,7 +610,7 @@ body.map-active #main-content {
     .map-controls {
         position: absolute;
         top: 100px;
-        right: 20px;
+        right: 10px;
         display: flex;
         flex-direction: column;
         gap: 10px;
@@ -671,7 +671,7 @@ body.map-active #main-content {
     } 
 
     #historial-dashboard {
-        top: -120px;
+        top: -85px;
         left: 0;
         width: 100%;
         padding: 15px;
@@ -696,7 +696,7 @@ body.map-active #main-content {
     
     /* Ensure filter info is visible in mobile */
     #filter-info {
-        top: 110px !important;
+        top: 160px !important;
         right: 50% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100% - 20px) !important;
@@ -1327,9 +1327,9 @@ body.map-active #main-content {
   .weather-controls:not(.is-open){ transform:translateX(100%) !important; }
   .weather-controls.is-open { box-shadow:-4px 0 18px rgba(0,0,0,.25); }
   /* Floating toggle already exists (#toggle-controls-btn). Ensure it floats above gradient */
-  .map-controls { top:40px !important; } /* raised 20px vs previous 160px */
+  .map-controls { top:65px !important; } /* raised 20px vs previous 160px */
   /* Search bar reposition to sit inside map with slight offset */
-  #map-top-bar{ top:185px !important; left:8px !important; width:260px !important; }
+  #map-top-bar{ top:235px !important; left:8px !important; width:260px !important; }
   #map-top-bar #municipio-map-control{ box-shadow:0 4px 14px rgba(0,0,0,.18); }
   /* Gradient scale adapt spacing */
   #gradient-container.horizontal-mode.embedded.bottom-floating{ top: auto; bottom:8px; left:8px; width:calc(100% - 16px); z-index: 4000;}
@@ -1339,12 +1339,12 @@ body.map-active #main-content {
 @media (max-width:768px){
   .weather-controls {
     position: fixed !important;
-    top: 185px !important; /* debajo de navbar / search */
+    top: 235px !important; /* debajo de navbar / search */
     right: 8px !important;
     left: auto !important;
     width: min(420px, 92%);
     height: auto;               /* alto dinámico */
-    max-height: calc(100vh - 190px); /* ventana menos header y margen inferior */
+    max-height: calc(94vh - 190px); /* ventana menos header y margen inferior */
     border-radius: 16px;        /* apariencia de tarjeta flotante */
     box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
     background: #ffffff !important; /* asegurar fondo sólido durante animación */
@@ -1393,6 +1393,7 @@ body.map-active #main-content {
     box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
     pointer-events: auto;
     visibility: visible;
+    z-index: 6000;
   }
   /* Estado cerrado (override definitivo) */
   .weather-controls:not(.is-open){
@@ -1436,12 +1437,6 @@ body.map-active #main-content {
   body.map-active .wc-backdrop { display:none; }
   body.map-active .weather-controls.is-open + .wc-backdrop { display:block; }
   .wc-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:5990; backdrop-filter:blur(2px); }
-}
-
-/* === Mobile: colocar los botones del mapa debajo del panel de controles === */
-@media (max-width:768px){
-  /* El bloque legacy ponía .map-controls muy arriba; lo forzamos debajo del panel (panel top=160px) */
-  .map-controls { top: 15px !important; }
 }
 
   /* ====== OpenLayers Attribution (hacerlo más pequeño) ====== */

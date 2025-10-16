@@ -4497,6 +4497,7 @@ function applyLegendFilter(minPercent, maxPercent) {
             filter_color = [r, g, b];
             const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
             showInfo(range);
+          notifyFiltering('Filtrando: ' + range);
             const filteredLayer = applyFilterToImage(m_lienzo.img);
             put_FilteredImage(filteredLayer);
         }
@@ -4589,6 +4590,28 @@ function hideInfo() {
   if (rangeElement) {
     rangeElement.remove();
   }
+}
+
+// Notificación breve al usuario al modificar filtros (throttle)
+let _filterNtfTimer = null;
+function notifyFiltering(message){
+  if (!message) message = 'Aplicando filtro…';
+  const el = document.getElementById('filter-info');
+  if (!el) return;
+  // crear o reusar una banda sutil en filter-info
+  let badge = el.querySelector('.modifying-badge');
+  if (!badge){
+    badge = document.createElement('div');
+    badge.className = 'modifying-badge';
+    badge.style.cssText = 'margin-top:4px;font-size:12px;color:#555;background:rgba(193,152,98,.12);border:1px solid rgba(193,152,98,.4);border-radius:6px;padding:4px 8px;display:inline-block;';
+    el.appendChild(badge);
+  }
+  badge.textContent = message;
+  if (_filterNtfTimer) clearTimeout(_filterNtfTimer);
+  _filterNtfTimer = setTimeout(()=>{
+    if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+    _filterNtfTimer = null;
+  }, 1200);
 }
 
 // ================= Rango dual con sliders INTEGRADOS (no overlay) =================
@@ -4738,6 +4761,7 @@ function initDualRangeFilter(){
       if (isFinite(lo) && isFinite(hi)) {
         applyRangeMask(lo,hi);
         showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+        notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
       }
     },150);
   }
@@ -4858,6 +4882,8 @@ function initDualRangeFilter(){
     }
     syncInputsFromSliders(); 
     scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
   });
   
   rHigh.addEventListener('input', (e) => {
@@ -4870,6 +4896,8 @@ function initDualRangeFilter(){
     }
     syncInputsFromSliders(); 
     scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
   });
   
   // Eventos para finalizar el arrastre
@@ -4891,11 +4919,15 @@ function initDualRangeFilter(){
   rLow.addEventListener('change', () => { 
     syncInputsFromSliders(); 
     scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
   });
   
   rHigh.addEventListener('change', () => { 
     syncInputsFromSliders(); 
     scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
   });
   
   inpMin.addEventListener('change', syncSlidersFromInputs);
