@@ -376,17 +376,34 @@ body {
 }
 
 @media (max-width: 576px) {
-    .logos-left, .logos-right {
-        flex-direction: column;
-        align-items: center;
-        gap: 15px;
-    }
-    .gov-logo, .desarrollo-logo {
-        height: 60px;
-    }
-    .campaign-logo img {
-        height: 40px;
-    }
+  /* Mostrar logos principales en una fila móvil para evitar apilar uno encima de otro */
+  .logos-left, .logos-right {
+    flex-direction: row; /* Mantener en fila */
+    align-items: center;
+    gap: 10px;
+  }
+  /* Asegurar que las imágenes escalen y no causen overflow */
+  .logos-left img, .logos-right img {
+    height: 56px; /* tamaño práctico en móviles */
+    max-width: 48%; /* evitar que una imagen crezca demasiado */
+    object-fit: contain;
+    display: inline-block;
+  }
+  .gov-logo { height: 56px; }
+  .desarrollo-logo { height: 56px; }
+  .campaign-logo img {
+    height: 40px;
+  }
+  /* Evitar solapamiento del logo de accesibilidad en pantallas pequeñas */
+  .accesibility-logo {
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    width: 40px;
+    height: 40px;
+    margin-left: 6px;
+  }
 }
 
 
