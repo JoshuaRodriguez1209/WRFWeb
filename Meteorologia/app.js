@@ -675,18 +675,31 @@ var list_runs = function (datos) {
       var pos = str_file.lastIndexOf("/");
       var str_name = str_file.substring(pos + 1);
 
-      var Y = str_name.substring(0, 4);
-      var M = str_name.substring(4, 6);
-      var D = str_name.substring(6, 8);
-      var H = str_name.substring(8, 10);
-      var Etiq = D + "-" + M + "-" + Y + " " + H + "Z";
+      // Extraer año, mes y día
+      const year = str_name.substring(0, 4);
+      const month = str_name.substring(4, 6);
+      const day = str_name.substring(6, 8);
 
-      dir_runs += "<option  value='" + str_file + "'>" + Etiq + "</option>";
+      // Crear un objeto Date. Es importante usar UTC para evitar problemas de zona horaria.
+      const date = new Date(Date.UTC(year, month - 1, day));
+
+      // Formatear la fecha al formato "Día, DD/MM/YYYY"
+      const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' };
+      let fechaFormateada = new Intl.DateTimeFormat('es-ES', options).format(date);
+
+      // Capitalizar el día de la semana
+      fechaFormateada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
+
+      // Reemplazar guiones por diagonales si es necesario
+      fechaFormateada = fechaFormateada.replace(/-/g, '/');
+
+      dir_runs += "<option value='" + str_file + "'>" + fechaFormateada + "</option>";
     }
   }
 
   $("#select_run").html(dir_runs);
 };
+      
 
 //-------------------------------------------------------------------------------
 var selectedParameter = null;
@@ -2206,6 +2219,7 @@ function round10(x) {
   return Number.parseFloat(str_num);
 }
 
+
 function setLabel(str_file, hs) {
   var pos = str_file.lastIndexOf("/");
   var str_name = str_file.substring(pos + 1);
@@ -2225,18 +2239,22 @@ function setLabel(str_file, hs) {
 
   f.setHours(f.getHours() + parseInt(ls[p + 1].substring(0, 2)));
   f.setHours(f.getHours() + hs);
+
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  const dayName = days[f.getUTCDay()];
+
   var fecha_loc =
-    pad(f.getDate(), 2) +
+    dayName +
+    ", " +
+    pad(f.getUTCDate(), 2) +
     "/" +
-    pad(f.getMonth() + 1, 2) +
+    pad(f.getUTCMonth() + 1, 2) +
     "/" +
-    f.getFullYear() +
-    " " +
-    pad(f.getHours(), 2) +
-    "hs";
+    f.getUTCFullYear();
 
   return fecha_loc;
 }
+
 
 function pad(num, size) {
   var s = "000000000" + num;
