@@ -1,54 +1,56 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Glosario</title>
+  <meta charset="utf-8" />
+  <title>Glosario Calidad del Aire</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { --vino:#5a1b30; --dorado:#c19862; --bg:#ffffff; --head-bg:#5a1b30; --row-alt:#faf8f8; --border:#ececec; }
+    body { margin:0; font-family:'Poppins', Arial, sans-serif; background:#fff; color:#333; padding:16px; }
+    h1 { font-size:1.6rem; margin:0 0 18px; color:var(--vino); letter-spacing:.5px; }
+    .glossary-table-wrapper { background:#fff; border:1px solid var(--border); border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.06); overflow:hidden; }
+    table { width:100%; border-collapse:collapse; font-size:14px; line-height:1.35; }
+    thead th { background:var(--head-bg); color:#fff; text-align:left; padding:14px 16px; font-weight:600; letter-spacing:.4px; font-size:13px; position:sticky; top:0; }
+    tbody td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top; }
+    tbody tr:nth-child(even) { background:var(--row-alt); }
+    tbody tr:last-child td { border-bottom:none; }
+    .param { font-weight:600; color:var(--vino); width:25%; min-width:130px; }
+    .def { width:75%; }
+    tbody tr:hover { background:#f5f2f3; }
+    @media (max-width:620px){
+      thead { display:none; }
+      table, tbody, tr, td { display:block; width:100%; }
+      tbody tr { background:#fff; margin:0 0 14px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+      tbody tr:nth-child(even){ background:#fff; }
+      tbody td { border:none; padding:6px 4px 6px 0; }
+      tbody td.param { padding-top:2px; font-size:13px; }
+      tbody td.param::before { content:'Parámetro:'; display:block; font-size:11px; font-weight:600; text-transform:uppercase; color:#777; letter-spacing:.5px; }
+      tbody td.def { font-size:13px; line-height:1.35; padding-bottom:4px; }
+    }
+  </style>
 </head>
-
 <body>
-<table width="100%" border="1">
-  <tbody>
-    <tr>
-      <th width="20%" scope="col">Parámetro</th>
-      <th width="80%" scope="col">Definición</th>
-    </tr>
-    <tr>
-      <td>O<sub>3</sub></td>
-      <td>Ozono.</td>
-    </tr>
-    <tr>
-      <td>NO<sub>2</sub></td>
-      <td>Dióxido de nitrógeno.</td>
-    </tr>
-    <tr>
-      <td>CO</td>
-      <td>Monóxido de carbono.</td>
-    </tr>
-    <tr>
-      <td>SO<sub>2</sub></td>
-      <td>Dióxido de azufre.</td>
-    </tr>
-    <tr>
-      <td>PM 10</td>
-      <td>Partículas menores a 10 micras.</td>
-    </tr>
-    <tr>
-      <td>PM 2.5</td>
-      <td>Partículas menores a 2.5 micras.</td>
-    </tr>
-    <tr>
-      <td>ppm</td>
-      <td>Unidad de medida de concentración (partes por millón).</td>
-    </tr>
-    <tr>
-      <td>ppb</td>
-      <td>Unidad de medida de concentración (partes por billón).</td>
-    </tr>
-    <tr>
-      <td>µg/m<sup>3</sup></td>
-      <td>Unidad de medida de concentración de sustancias en el aire (Microgramo sobre metro cubico).</td>
-    </tr>
-  </tbody>
-</table>
+  <h1>Variables de Calidad del Aire</h1>
+  <div class="glossary-table-wrapper">
+    <table aria-label="Glosario de variables de calidad del aire">
+      <thead>
+        <tr>
+          <th>Parámetro</th>
+          <th>Definición</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="param">O<sub>3</sub></td><td class="def">Ozono troposférico. Componente secundario que se forma por reacciones fotoquímicas.</td></tr>
+        <tr><td class="param">NO<sub>2</sub></td><td class="def">Dióxido de nitrógeno. Gas irritante, precursor de ozono y partículas.</td></tr>
+        <tr><td class="param">CO</td><td class="def">Monóxido de carbono. Gas tóxico producto de combustiones incompletas.</td></tr>
+        <tr><td class="param">SO<sub>2</sub></td><td class="def">Dióxido de azufre. Emisiones industriales y combustibles con azufre.</td></tr>
+        <tr><td class="param">PM10</td><td class="def">Material particulado con diámetro aerodinámico ≤ 10 µm.</td></tr>
+        <tr><td class="param">PM2.5</td><td class="def">Material particulado fino con diámetro aerodinámico ≤ 2.5 µm.</td></tr>
+        <tr><td class="param">ppm</td><td class="def">Partes por millón. Unidad de concentración para algunos gases.</td></tr>
+        <tr><td class="param">ppb</td><td class="def">Partes por billón. Unidad de concentración para trazas de gases.</td></tr>
+        <tr><td class="param">µg/m<sup>3</sup></td><td class="def">Microgramos por metro cúbico. Unidad de concentración para partículas.</td></tr>
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>

@@ -29,7 +29,7 @@
       }
     },
     { "type": "Feature",
-      "geometry": {"type": "Point", "coordinates": [-98.41, 19.31]},
+      "geometry": {"type": "Point", "coordinates": [-98.43, 19.30]},
       "properties": {
         "nombre": "Texmelucan",
 	"clave": "004"
