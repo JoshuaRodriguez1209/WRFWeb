@@ -471,10 +471,11 @@ html {
 /* Ultra pequeño: apilar bloques y ocultar campaña si no hay espacio */
 @media (max-width: 400px) {
   .top-header { flex-direction: column; align-items: center; }
-  .campaign-logo { display: none; }
+  /* Mantener todas las imágenes visibles, reducir tamaños para que quepan */
   .logos-left img, .logos-right img,
-  .gov-logo, .desarrollo-logo { height: clamp(44px, 18vw, 64px); }
-  .accesibility-logo { width: 44px; height: 44px; }
+  .gov-logo, .desarrollo-logo { height: clamp(36px, 14vw, 50px); }
+  .campaign-logo img { height: clamp(34px, 13vw, 46px); }
+  .accesibility-logo { width: 40px; height: 40px; }
 }
 
 
