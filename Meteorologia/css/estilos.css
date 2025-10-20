@@ -1566,7 +1566,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 #filter-info {
   position: absolute;
-  top: calc(var(--header-height) - 65px);
+  top: calc(var(--header-height) - 45px);
   left: 40%;
   z-index: 3001;
   font-weight: 500;
@@ -2526,7 +2526,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 #map-top-bar {
   position: fixed;
-  top: calc(var(--header-height) );
+  top: calc(var(--header-height) + 20px);
   left: calc(var(--sidebar-width) + 20px);
   z-index: 1000;
   display: flex;
