@@ -157,7 +157,7 @@ body.map-active #main-content {
 
 .weather-controls {
     position: absolute;
-    top: 160px; /* antes 180px */
+    top: 150px; /* antes 180px */
     right: 0;
     width: 400px; /* un poco más ancho */
     height: calc(95% - 250px); /* más alto (antes restaba 340px) */
