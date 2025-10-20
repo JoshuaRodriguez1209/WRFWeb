@@ -1,5 +1,5 @@
 :root {
-  --header-height: 210px;
+  --header-height: 190px;
   --sidebar-width: 80px; /* Increased slightly for better spacing */
   --sidebar-expanded-width: 200px;
 }
@@ -113,8 +113,12 @@ body {
 }
 
 .nav-links a:hover {
-    color: #333;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  color: #333;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-color: #5a1b30; /* color de marca */
 }
 
 .search-btn {
@@ -312,7 +316,7 @@ body {
 }
 
 /* --- Responsive Styles for Header --- */
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
     .top-header, .nav-menu {
         padding-left: 20px;
         padding-right: 20px;
@@ -364,7 +368,7 @@ body {
         z-index: 10002 !important;
     }
     .top-header {
-      height: 190px;
+        height: 190px;       /* mantener fijo */
         flex-wrap: wrap;
         justify-content: center;
         gap: 15px;
@@ -375,7 +379,7 @@ body {
     }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 1230px) {
   /* Mostrar logos principales en una fila móvil para evitar apilar uno encima de otro */
   .logos-left, .logos-right {
     flex-direction: row; /* Mantener en fila */
@@ -383,6 +387,30 @@ body {
     gap: 10px;
   }
   /* Asegurar que las imágenes escalen y no causen overflow */
+
+/* ===== Scrollbar Styling (Global) ===== */
+/* Firefox */
+html {
+  scrollbar-width: thin;                 /* auto | thin | none */
+  scrollbar-color: #5a1b30 #c19862be;    /* thumb color, track color */
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+*::-webkit-scrollbar {
+  width: 10px;           /* vertical scrollbar */
+  height: 10px;          /* horizontal scrollbar */
+}
+*::-webkit-scrollbar-track {
+  background: #c19862be; /* track (fondo) */
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #5a1b30; /* thumb (el objeto que se mueve) */
+  border-radius: 8px;
+  border: 2px solid #c19862be; /* pequeño borde para integración visual */
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #4a142a; /* sutil oscurecimiento al hover */
+}
   .logos-left img, .logos-right img {
     /* más grande y responsivo: mínimo 90px, ideal según viewport, máximo 150px */
     height: clamp(90px, 9vw, 150px);
@@ -405,6 +433,48 @@ body {
     height: 56px;
     margin-left: 8px;
   }
+}
+
+/* Ajustes extra para móviles pequeños: evitar desbordes del header */
+@media (max-width: 576px) {
+  .top-header {
+    height: 190px;         /* Mantener altura fija solicitada */
+    padding: 8px 16px;     /* Menos padding lateral */
+    flex-wrap: wrap;       /* Permitir que los bloques se bajen si no caben */
+    gap: 10px;
+  }
+  .logos-left, .logos-right {
+    flex-wrap: wrap;       /* Permitir que los logos se acomoden en 2 filas si es necesario */
+    justify-content: center;
+    gap: 8px;
+  }
+  .logos-left img, .logos-right img,
+  .gov-logo, .desarrollo-logo {
+    height: clamp(48px, 16vw, 72px); /* Reducir altura mínima en móviles pequeños */
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .desarrollo-logo { height: clamp(44px, 15vw, 64px); }
+  .campaign-logo img { height: 44px; }
+  /* Asegurar que el icono de accesibilidad no se superponga */
+  .accesibility-logo {
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    width: 48px;
+    height: 48px;
+    margin-left: 6px;
+  }
+}
+
+/* Ultra pequeño: apilar bloques y ocultar campaña si no hay espacio */
+@media (max-width: 400px) {
+  .top-header { flex-direction: column; align-items: center; }
+  .campaign-logo { display: none; }
+  .logos-left img, .logos-right img,
+  .gov-logo, .desarrollo-logo { height: clamp(44px, 18vw, 64px); }
+  .accesibility-logo { width: 44px; height: 44px; }
 }
 
 
@@ -912,7 +982,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 .side-menu {
   position: fixed;
-   top: calc(var(--sidebar-width) + 11.5%); /* Correctly positioned below the fixed header */
+   top: calc(var(--sidebar-width) + 8.5%); /* Correctly positioned below the fixed header */
   left: 0;
   height: calc(100vh - var(--header-height));
   width: var(--sidebar-width);
@@ -2540,7 +2610,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 
 /* Responsive para móviles */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   #map-top-bar {
     top: 120px; /* Si la navbar se reduce en móvil */
     left: 10px;
