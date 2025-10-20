@@ -696,7 +696,7 @@ body.map-active #main-content {
     
     /* Ensure filter info is visible in mobile */
     #filter-info {
-        top: 160px !important;
+        top: 120px !important;
         right: 50% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100% - 20px) !important;
@@ -1327,7 +1327,7 @@ body.map-active #main-content {
   .weather-controls:not(.is-open){ transform:translateX(100%) !important; }
   .weather-controls.is-open { box-shadow:-4px 0 18px rgba(0,0,0,.25); }
   /* Floating toggle already exists (#toggle-controls-btn). Ensure it floats above gradient */
-  .map-controls { top:65px !important; } /* raised 20px vs previous 160px */
+  .map-controls { top:25px !important; } /* raised 20px vs previous 160px */
   /* Search bar reposition to sit inside map with slight offset */
   #map-top-bar{ top:235px !important; left:8px !important; width:260px !important; }
   #map-top-bar #municipio-map-control{ box-shadow:0 4px 14px rgba(0,0,0,.18); }

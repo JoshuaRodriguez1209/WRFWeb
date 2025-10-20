@@ -1,5 +1,5 @@
 :root {
-  --header-height: 170px;
+  --header-height: 210px;
   --sidebar-width: 80px; /* Increased slightly for better spacing */
   --sidebar-expanded-width: 200px;
 }
@@ -35,7 +35,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0px 40px; /* Reduced padding for a shorter header */
+    padding: 0px 80px; /* Reduced padding for a shorter header */
     border-bottom: 1px solid #e0e0e0;
     box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 6px -1px, rgba(0, 0, 0, 0.1) 0px 6px 4px -1px;
 }
@@ -58,7 +58,6 @@ body {
     display: flex;
     align-items: center;
     gap: 25px;
-    margin-right: 100px;
     position: relative; /* Needed for absolute positioning of accessibility logo */
 }
 
@@ -365,6 +364,7 @@ body {
         z-index: 10002 !important;
     }
     .top-header {
+      height: 190px;
         flex-wrap: wrap;
         justify-content: center;
         gap: 15px;
@@ -384,16 +384,16 @@ body {
   }
   /* Asegurar que las imágenes escalen y no causen overflow */
   .logos-left img, .logos-right img {
-    /* más grande y responsivo: mínimo 56px, ideal según viewport, máximo 100px */
-    height: clamp(56px, 9vw, 100px);
-    max-width: 52%; /* evitar que una imagen crezca demasiado */
+    /* más grande y responsivo: mínimo 90px, ideal según viewport, máximo 150px */
+    height: clamp(90px, 9vw, 150px);
+    max-width: 100%; /* evitar que una imagen crezca demasiado */
     object-fit: contain;
     display: inline-block;
   }
-  .gov-logo { height: clamp(56px, 9vw, 100px); }
+  .gov-logo { height: clamp(90px, 9vw, 150px); }
   .desarrollo-logo { height: clamp(56px, 9vw, 100px); }
   .campaign-logo img {
-    height: 40px;
+    height: 60px;
   }
   /* Evitar solapamiento del logo de accesibilidad en pantallas pequeñas */
   .accesibility-logo {
@@ -416,7 +416,7 @@ body {
   position: relative;
   width: 100%;
   min-height: 300px;
-  margin-top: 150px; /* Adjusted to match new header height */
+  margin-top: var(--header-height); /* Adjusted to match new header height */
   background-image: url("../images/header/banner-intro-inicio.png");
   background-size: cover;
   background-position: center;
