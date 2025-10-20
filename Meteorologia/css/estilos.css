@@ -384,13 +384,14 @@ body {
   }
   /* Asegurar que las imágenes escalen y no causen overflow */
   .logos-left img, .logos-right img {
-    height: 56px; /* tamaño práctico en móviles */
-    max-width: 48%; /* evitar que una imagen crezca demasiado */
+    /* más grande y responsivo: mínimo 56px, ideal según viewport, máximo 100px */
+    height: clamp(56px, 9vw, 100px);
+    max-width: 52%; /* evitar que una imagen crezca demasiado */
     object-fit: contain;
     display: inline-block;
   }
-  .gov-logo { height: 56px; }
-  .desarrollo-logo { height: 56px; }
+  .gov-logo { height: clamp(56px, 9vw, 100px); }
+  .desarrollo-logo { height: clamp(56px, 9vw, 100px); }
   .campaign-logo img {
     height: 40px;
   }
@@ -400,9 +401,9 @@ body {
     right: 0;
     top: 0;
     transform: none;
-    width: 40px;
-    height: 40px;
-    margin-left: 6px;
+    width: 56px; /* un poco más grande para mantener legibilidad */
+    height: 56px;
+    margin-left: 8px;
   }
 }
 
