@@ -33,10 +33,17 @@
     <link rel="stylesheet" href="./css/estilos.css" />
     <link rel="stylesheet" href="app.css" />
 
+    <style>
+      /* Ocultar el layer switcher de OpenLayers */
+      .ol-unselectable.ol-control.layer-switcher {
+        display: none !important;
+      }
+    </style>
+
     <script src="./lib/dom-to-image.js"></script>
 
-    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
-    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+    <script type="text/javascript" src="./lib/ol-ext.js"></script>
+    <link rel="stylesheet" href="./lib/ol-ext.css" />
 
     <script src="./lib/ol3-layerswitcher/ol3-layerswitcher.js"></script>
     <link
@@ -50,62 +57,151 @@
     />
   </head>
   <body>
-    <nav class="navbar">
-      <div class="navbar-container">
-        <a href="index.html" class="navbar-logo">
-          <img src="./images/header/SMADSOTlogo.jpg" alt="Logos" class="navbar-icon" />
-        </a>
-
-        <div class="hamburger-menu" onclick="toggleMenu()">
-          <div class="bar"></div>
-          <div class="bar"></div>
-          <div class="bar"></div>
+    <div class="header-container">
+        <div class="top-header">
+            <div class="logos-left">
+                <img src="./images/header/logo_puebla_gob.png" alt="Puebla Gobierno del Estado 2024-2030" class="gov-logo">
+                <img src="./images/header/desarrollo-sustentable-logo.png" alt="Desarrollo Sustentable - Secretaría de Medio Ambiente" class="desarrollo-logo">
+            </div>
+            <div class="logos-right">
+                <div class="campaign-logo">
+                    <img src="./images/header/puebla_frases_gob.png" alt="Por Amor a Puebla">
+                </div>
+            </div>
+            <div class = "accesibility-logo">
+                <img src="./images/header/logo_accesibilidad.svg" alt="Accesibilidad" onclick="toggleAccessibility()">
+                </div>
         </div>
+        <nav class="nav-menu">
+            <div class="hamburger-menu" onclick="toggleMenu()">
+              <div class="bar"></div>
+              <div class="bar"></div>
+              <div class="bar"></div>
+            </div>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#" onclick="location.reload()">INICIO</a></li>
+                <li><a href="https://smadsot.puebla.gob.mx/quienes-somos" target="_blank">QUIENES SOMOS</a></li>
+                <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">AVISOS DE PRIVACIDAD</a></li>
+                <li><a href="#" id="btn_wrf_info">¿QUÉ ES WRF?</a></li>
+                <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Meteorología</a></li>
+                <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
+                <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
+            </ul>
+            
+        </nav>
+        <div class="search-container" id="searchContainer">
+            <input type="text" class="search-input" placeholder="Buscar...">
+        </div>
+    </div>
 
-        <ul class="nav-links" id="nav-links">
-          <li><a onclick="location.reload()">Inicio</a></li>
-          <li><a href="https://smadsot.puebla.gob.mx/quienes-somos">Quienes Somos</a></li>
-          <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">Avisos de Privacidad</a></li>
-          <li><a href="https://ventanilladigital.puebla.gob.mx/">Trámites</a></li>
-          <li><a href="http://transparencia.puebla.gob.mx/">Transparencia</a></li>
-          <li><a href="https://smadsot.puebla.gob.mx/verificacion">Verificación</a></li>
-          <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Atmósfera</a></li>
-          <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
-          <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
-          <li class="social-icons">
-            <a href="https://twitter.com/AmbienteGobPue" target="_blank">
-              <img src="./images/twitter.svg" alt="Twitter" />
-            </a>
-          </li>
-          <li class="social-icons">
-            <a href="https://www.facebook.com/Medio-Ambiente-Desarrollo-Sustentable-y-Ordenamiento-Territorial-110848296920026/" target="_blank">
-              <img src="./images/facebook.svg" alt="Facebook" />
-            </a>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <!-- Modal WRF Info -->
+    <div class="modal-overlay" id="wrfModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>¿Qué es WRF?</h2>
+                <button class="modal-close" onclick="closeWRFModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>WRF (Weather Research and Forecasting)</strong> es un sistema de modelado numérico de última generación diseñado para servir tanto a necesidades de investigación atmosférica como de predicción operacional del tiempo.</p>
+                
+                <h3>Características principales:</h3>
+                <ul>
+                    <li><strong>Alta resolución:</strong> Genera pronósticos meteorológicos detallados con precisión espacial y temporal.</li>
+                    <li><strong>Versatilidad:</strong> Se utiliza para simulaciones desde escalas locales hasta regionales.</li>
+                    <li><strong>Calidad del aire:</strong> Evalúa la dispersión de contaminantes atmosféricos.</li>
+                    <li><strong>Predicción avanzada:</strong> Incorpora física atmosférica compleja y asimilación de datos.</li>
+                </ul>
 
+                <h3>Aplicaciones en Puebla:</h3>
+                <p>En el Estado de Puebla, utilizamos el modelo WRF para:</p>
+                <ul>
+                    <li>Generar pronósticos meteorológicos de alta resolución</li>
+                    <li>Evaluar la dispersión de contaminantes atmosféricos</li>
+                    <li>Proporcionar información actualizada para la toma de decisiones informadas</li>
+                    <li>Monitorear la calidad del aire en tiempo real</li>
+                </ul>
+
+                <p class="modal-footer-text">Para más información, visita <a href="https://www.mmm.ucar.edu/weather-research-and-forecasting-model" target="_blank">el sitio oficial de WRF</a>.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="accessibility-menu" id="accessibilityMenu">
+        <div class="accessibility-header">
+            <h3>Opciones de accesibilidad</h3>
+            <button class="close-btn" onclick="toggleAccessibility()">✕</button>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('large-text')">
+            <div class="option-icon">↑</div>
+            <div class="option-text">Aumentar el tamaño del texto</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('small-text')">
+            <div class="option-icon">↓</div>
+            <div class="option-text">Disminuir el tamaño del texto</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('large-spacing')">
+            <div class="option-icon">▶</div>
+            <div class="option-text">Aumentar el espaciado del texto</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('small-spacing')">
+            <div class="option-icon">◀</div>
+            <div class="option-text">Disminuir el espaciado del texto</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('inverted')">
+            <div class="option-icon">◐</div>
+            <div class="option-text">Invertir colores</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('grayscale')">
+            <div class="option-icon">●</div>
+            <div class="option-text">Tonos grises</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('underline-links')">
+            <div class="option-icon">_</div>
+            <div class="option-text">Subrayar enlaces</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleFeature('large-cursor')">
+            <div class="option-icon">➤</div>
+            <div class="option-text">Cursor grande</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleReadingGuide()" id="readingGuideBtn">
+            <div class="option-icon">☰</div>
+            <div class="option-text">Guía de lectura</div>
+            <div class="guide-status" id="guideStatus">Inactivo</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleTextToSpeech()" id="textToSpeechBtn">
+            <div class="option-icon">🔊</div>
+            <div class="option-text">Texto a voz</div>
+            <div class="tts-status" id="ttsStatus">Inactivo</div>
+        </div>
+        <div class="accessibility-option" onclick="toggleSpeechToText()" id="speechToTextBtn">
+            <div class="option-icon">🎤</div>
+            <div class="option-text">Voz a texto</div>
+            <div class="stt-status" id="sttStatus">Inactivo</div>
+        </div>
+    </div>
     <section class="banner" id="banner">
       <div class="banner-content">
         <h1 class="banner-title">
-          Pronóstico meteorológico y de calidad del aire para el Estado de Puebla
+          Pronósticos de calidad del aire y meteorología para el Estado de Puebla
         </h1>
         <p class="banner-subtitle">
-          En esta página encontrarás datos sobre la calidad del aire y el pronóstico del clima obtenidos a través del modelo WRF.
+          Encontraras prónosticos de calidad del aire y el clima para el Estado de Puebla para los siguientes 3 días.
         </p>
       </div>
     </section>
 
-    <!-- Tarjetas -->
-
     <div class="row" style="margin: 20px" id="botones1">
       <div class="col-12 col-md-6 mb-4" id="cali">
         <div class="card">
-          <a href="#" class="card-link" onclick="activateMap('meteorologia'); return false;">
-            <div class="card-img" style="background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');">
+          <a href="#" class="card-link">
+            <div
+              class="card-img"
+              style="
+                background-image: url('./images/Tarjetas/nuevo_aire.jpg');
+              "
+            >
               <div class="card-text">
-                <h3>Meteorología</h3>
+                <h3>Calidad del aire</h3>
               </div>
             </div>
           </a>
@@ -114,8 +210,13 @@
       
       <div class="col-12 col-md-6 mb-4" id="meteo">
         <div class="card">
-          <a href="#" class="card-link" onclick="activateMap('calidad'); return false;">
-            <div class="card-img" style="background-image: url('./images/Tarjetas/tarjeta-calidad-aire.avif');">
+          <a href="#" class="card-link">
+            <div
+              class="card-img"
+              style="
+                background-image: url('./images/Tarjetas/nuevo_met.jpg');
+              "
+            >
               <div class="card-text">
                 <h3>Meteorología</h3>
               </div>
@@ -125,7 +226,8 @@
       </div>
     </div>
 
-    <div id="app" style="display: none;">
+
+    <div id="app">
       <div id="side-menu" class="side-menu">
         <button class="back-btn" id="btn_back" title="Volver al inicio" onclick="location.reload()">
           <i class="fa-solid fa-arrow-left"></i>
@@ -143,135 +245,142 @@
       </div>
 
       <div id="main-content">
-        <div id="map"></div>
-
-        <!-- Barra superior dentro del mapa -->
-        <div id="map-top-bar">
-          <div id="municipio-map-control">
-            <label for="hist-cabecera-map">Buscar municipio</label>
-            <select id="hist-cabecera-map" class="form-control"></select>
-          </div>
-        </div>
-        
-        <div class="map-controls">
-          <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
-            <i class="fa-solid fa-layer-group"></i>
-          </button>
-          <button class="control-btn" id="zoom-in-btn" title="Acercar">
-            <i class="fa-solid fa-plus"></i>
-          </button>
-          <button class="control-btn" id="zoom-out-btn" title="Alejar">
-            <i class="fa-solid fa-minus"></i>
-          </button>
-          <button class="control-btn" id="reset-north-btn" title="Orientar al Norte">
-            <i class="fa-solid fa-compass"></i>
-          </button>
-          <button class="control-btn" id="reset-position-btn" title="Posición Inicial">
-            <i class="fa-solid fa-house"></i>
-          </button>
-        </div>
-
-        <div class="weather-controls" id="weather-controls">
-          <div class="controls-header">
-            <h3>Control de Capas</h3>
-            <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
-          </div>
-          <div class="controls-body">
-            <div class="control-group">
-              <label for="select_run">Fecha del Pronóstico</label>
-              <select id="select_run">
-                <option value="2025-08-20">20 Agosto 2025</option>
-                <option value="2025-08-21">21 Agosto 2025</option>
-                <option value="2025-08-22" selected>22 Agosto 2025</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label for="selectHora">Pronósticos a</label>
-              <select id="selectHora">
-                <option value="12">12 horas</option>
-                <option value="24" selected>24 horas</option>
-                <option value="48">48 horas</option>
-                <option value="72">72 horas</option>
-              </select>
-            </div>
-            <!--voy a configurar esto para que tambien funcione como los botones
-            <div class="control-group">
-              <label for="select_dat">Parámetro</label>
-              <select id="select_dat">
-                <option value="meteorologia">Meteorología</option>
-                <option value="calidad">Calidad del aire</option>
-              </select>
-            </div>-->
-            <label for="select_var" style="font-weight: 500;">Sub-parámetro</label>
-              <!--siento que esta parte no es necesarioa porque ya esxisten los botones
-            <div class="control-group">
-              <label for="select_var">Sub-parámetro</label>
-              <select id="select_var">
-                <option value="temperature">Temperatura</option>
-                <option value="humidity">Humedad</option>
-                <option value="precipitation">Precipitación</option>
-                <option value="wind">Viento</option>
-              </select>
-            </div>-->
-            <div class="layer-buttons" id="layer-buttons-meteo">
-              <!--meteorologia-->
-              <button class="layer-btn" data-layer="temperature"><i class="fa-solid fa-temperature-half"></i> Temperatura</button>
-              <button class="layer-btn" data-layer="humidity"><i class="fa-solid fa-droplet"></i> Humedad</button>
-              <button class="layer-btn" data-layer="precipitation"><i class="fa-solid fa-cloud-showers-heavy"></i> Precipitación</button>
-              <button class="layer-btn" data-layer="wind"><i class="fa-solid fa-wind"></i> Viento</button>
-              <button class="layer-btn" data-layer="pressure"><i class="fa-solid fa-gauge-high"></i> Presión</button>
-              <button class="layer-btn" data-layer="radiation"><i class="fa-solid fa-sun"></i> Radiación</button>
-            </div>
-            <div class="layer-buttons" id="layer-buttons-aire" style="display: none;">
-              <!--calidad del aire-->
-              <button class="layer-btn" data-layer="co"><i class="fa-solid fa-smog"></i> CO</button>
-              <button class="layer-btn" data-layer="no2"><i class="fa-solid fa-smog"></i> NO₂</button>
-              <button class="layer-btn" data-layer="o3"><i class="fa-solid fa-smog"></i> O₃</button>
-              <button class="layer-btn" data-layer="pm25"><i class="fa-solid fa-smog"></i> PM2.5</button>
-            </div>
-            <div class="animation-controls">
-              <button class="play-btn" id="playBtn"><i class="fa-solid fa-play" id="playIcon"></i></button>
-              <div class="speed-slider">
-                <label for="speedSlider" style="font-size: 12px; color: #666;">Velocidad</label>
-                <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+          <div id="map">
+            <div id="map-top-bar">
+              <div id="municipio-map-control">
+                <label for="map-search">Buscar municipio</label>
+                <select id="map-search" class="form-control" style="display: none;">
+                  <option value="">Seleccione un municipio</option>
+                </select>
               </div>
             </div>
+    
+            <div class="map-controls">
+              <button class="control-btn" id="toggle-controls-btn" title="Control de Capas">
+                <i class="fa-solid fa-layer-group"></i>
+              </button>
+            </div>
+    
+            <div class="weather-controls" id="weather-controls">
+              <div class="controls-header">
+                <h3 id="controls-header-title"></h3>
+                <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
+              </div>
+    
+              <div class="controls-body">
+                <div class="control-group" style="display:none;">
+                  <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
+                </div>
+    
+                <div class="control-group">
+                  <label for="select_run">Fecha de Pronóstico</label>
+                  <select id="select_run"></select>
+                </div>
+    
+                <div class="control-group">
+                  <label>Parámetros</label>
+                  <div class="layer-buttons" id="parameter-buttons"></div>
+                </div>
+    
+                <div class="control-group" id="variables-container">
+                  <label for="select_var">Variables</label>
+                  <select id="select_var"></select>
+                </div>
+                
+                <div class="control-group">
+                <div id="gradient-container" >
+                  <label>Filtro</label>
+                  <div class="gradient-inner">
+                    <!--<div class="gradient-variable" id="gradient-variable-label">
+                      Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span>
+                    </div>-->
+                    <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
+                  </div>
+                </div>
+                </div>
+
+
+            <!-- Animation Controls -->
+<div class="animation-controls">
+  <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
+    <i class="fa-solid fa-play" id="playIcon"></i>
+  </button>
+  <div style="flex-grow: 1;">
+    <label for="speedSlider" style="font-size: 12px; color: #666; display: block; margin-bottom: 2px;">Animación del pronóstico</label>
+    <!---
+    <div class="speed-slider">
+      <input type="range" min="100" max="2000" value="1000" id="speedSlider">
+    </div>-->
+  </div>
+  </div>
+
+            <!-- Controls Footer -->
             <div class="controls-footer">
-              <button class="footer-btn" id="btn_glosario">
+              <button class="footer-btn" id="btn_glo">
                 <i class="fa-solid fa-book"></i> Glosario
               </button>
               <button class="footer-btn" id="btn_datos">
-                <i class="fa-solid fa-download"></i> Datos
+                <i class="fa-solid fa-download"></i> Datos por Municipio
               </button>
               <button class="footer-btn" id="btn_recarga">
-                <i class="fa-solid fa-reload"></i> Recargar
+                <i class="fa-solid fa-reload"></i> Limpiar Filtro
               </button>
             </div>
           </div>
         </div>
-        
-        <div class="data-panel" id="dataPanel">
-          <h4>Datos Actuales (Puebla, Puebla)</h4>
-          <div class="data-value"><span class="data-label">Temperatura</span><span class="data-number" id="tempValue">--°C</span></div>
-          <div class="data-value"><span class="data-label">Humedad</span><span class="data-number" id="humidityValue">--%</span></div>
-          <div class="data-value"><span class="data-label">Viento</span><span class="data-number" id="windValue">-- km/h</span></div>
-          <div class="data-value"><span class="data-label">Presión</span><span class="data-number" id="pressureValue">-- hPa</span></div>
+        <!-- Escala integrada al panel de capas 
+        <div id="gradient-container" class="horizontal-mode embedded bottom-floating">
+          <div class="gradient-inner">
+            <div class="gradient-variable" id="gradient-variable-label">Variable <span id="gradient-units" class="gradient-inline-unit">(unidades)</span></div>
+            <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
+            <div class="gradient-meta-row">
+              <div class="gradient-horizontal-values horizontal-values" id="gradient-values"></div>
+            </div>
+            <div class="gradient-hint" id="gradient-hint" style="text-align:center;margin-top:6px;font-size:16px;font-family:'Poppins',sans-serif;color:#555;letter-spacing:.4px;user-select:none;">
+              Haz clic para filtrar &bull; Doble clic para limpiar
+            </div>
+          </div>
         </div>
-        
-        <div class="legend" id="legend" style="display: none;">
-          <div class="legend-title">Escala</div>
-          <div class="legend-gradient" id="legend-gradient">
-            <div class="filter-indicator" id="filter-indicator"></div>
-          </div>
-          <div class="legend-labels"></div>
-          <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #666;">
-            Haz clic en la escala para filtrar
-          </div>
+        <!-- Agregar después del gradient-container -->
+  <div id="map-legend" class="map-legend">
+    <div class="legend-header">
+      <h4>Simbología</h4>
+    </div>
+    <div class="legend-content">
+      <div class="legend-item">
+        <div class="legend-symbol">
+          <svg width="20" height="20" viewBox="0 0 20 20">
+            <polygon points="10,2 18,18 2,18" fill="#c19862" stroke="#fff" stroke-width="2"/>
+          </svg>
+        </div>
+        <span>Cabeceras Municipales</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-symbol">
+          <svg width="20" height="20" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="#5a1b30" stroke="#c19862" stroke-width="2"/>
+          </svg>
+        </div>
+        <span>Estaciones de Monitoreo</span>
+      </div>
+      <div class="legend-hint">
+        <svg width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">
+          <circle cx="8" cy="8" r="7" fill="none" stroke="#c19862" stroke-width="1.5"/>
+          <text x="8" y="11.5" text-anchor="middle" font-size="10" font-weight="bold" fill="#c19862">i</text>
+        </svg>
+        <span>Haz clic sobre las cabeceras o estaciones para ver datos</span>
+      </div>
+    </div>
+  </div>
+
+        <div id="filter-info">
+          <div class="permanent-date"></div>
         </div>
       </div>
-
-      <div id="historial-dashboard" style="display: none;">
-        <div class="dashboard-header">
+      <div id="hist">
+        <!-- Historial Dashboard -->
+        <div id="historial-dashboard" style="display:none;">
+          <div class="dashboard-header">
             <div class="location-selector">
               <label for="hist-cabecera-select">Seleccione un municipio</label>
               <!-- Select original oculto para compatibilidad con menu.js -->
@@ -301,9 +410,9 @@
 
             <!-- Main Content Area -->
             <div class="content-wrapper">
-            <div id="hist-content">
-                <div class="visualization-container">
-                <div id="chartsHost"></div>
+              <div id="hist-content">
+                <div id="chartsHost" class="charts-grid">
+                  <!-- Las gráficas se generarán dinámicamente aquí -->
                 </div>
                 <div class="stats-container">
                   <h4>Resumen Estadístico</h4>
@@ -329,9 +438,14 @@
         </div>
       </div>
     </div>
-
-    <script src="app.js" defer></script>
-    <canvas id="filter-canvas" style="display: none"></canvas>
   </body>
-
-</html>
+  <canvas id="filter-canvas" style="display: none"></canvas>
+  <!-- Guía de lectura -->
+  <div id="readingGuide" class="reading-guide" style="display: none;"></div>
+  <script src="./defines.js"></script>
+  <script src="./lienzo.js"></script>
+  <script src="./utils.js"></script>
+  <script src="./app.js"></script>
+  <script src="./menu.js"></script>
+  <script src="./accesibility.js"></script>
+  </html>
