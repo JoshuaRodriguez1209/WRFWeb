@@ -1,5 +1,5 @@
 :root {
-  --header-height: 170px;
+  --header-height: 190px;
   --sidebar-width: 80px; /* Increased slightly for better spacing */
   --sidebar-expanded-width: 200px;
 }
@@ -35,7 +35,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0px 40px; /* Reduced padding for a shorter header */
+    padding: 0px 80px; /* Reduced padding for a shorter header */
     border-bottom: 1px solid #e0e0e0;
     box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 6px -1px, rgba(0, 0, 0, 0.1) 0px 6px 4px -1px;
 }
@@ -58,7 +58,6 @@ body {
     display: flex;
     align-items: center;
     gap: 25px;
-    margin-right: 100px;
     position: relative; /* Needed for absolute positioning of accessibility logo */
 }
 
@@ -114,8 +113,12 @@ body {
 }
 
 .nav-links a:hover {
-    color: #333;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  color: #333;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.15);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  text-decoration-color: #5a1b30; /* color de marca */
 }
 
 .search-btn {
@@ -313,7 +316,7 @@ body {
 }
 
 /* --- Responsive Styles for Header --- */
-@media (max-width: 1200px) {
+@media (max-width: 992px) {
     .top-header, .nav-menu {
         padding-left: 20px;
         padding-right: 20px;
@@ -365,6 +368,7 @@ body {
         z-index: 10002 !important;
     }
     .top-header {
+        height: 190px;       /* mantener fijo */
         flex-wrap: wrap;
         justify-content: center;
         gap: 15px;
@@ -375,7 +379,7 @@ body {
     }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 1230px) {
   /* Mostrar logos principales en una fila móvil para evitar apilar uno encima de otro */
   .logos-left, .logos-right {
     flex-direction: row; /* Mantener en fila */
@@ -383,16 +387,41 @@ body {
     gap: 10px;
   }
   /* Asegurar que las imágenes escalen y no causen overflow */
+
+/* ===== Scrollbar Styling (Global) ===== */
+/* Firefox */
+html {
+  scrollbar-width: thin;                 /* auto | thin | none */
+  scrollbar-color: #5a1b30 #c19862be;    /* thumb color, track color */
+}
+
+/* WebKit (Chrome, Edge, Safari, Opera) */
+*::-webkit-scrollbar {
+  width: 10px;           /* vertical scrollbar */
+  height: 10px;          /* horizontal scrollbar */
+}
+*::-webkit-scrollbar-track {
+  background: #c19862be; /* track (fondo) */
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #5a1b30; /* thumb (el objeto que se mueve) */
+  border-radius: 8px;
+  border: 2px solid #c19862be; /* pequeño borde para integración visual */
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #4a142a; /* sutil oscurecimiento al hover */
+}
   .logos-left img, .logos-right img {
-    height: 56px; /* tamaño práctico en móviles */
-    max-width: 48%; /* evitar que una imagen crezca demasiado */
+    /* más grande y responsivo: mínimo 90px, ideal según viewport, máximo 150px */
+    height: clamp(90px, 9vw, 150px);
+    max-width: 100%; /* evitar que una imagen crezca demasiado */
     object-fit: contain;
     display: inline-block;
   }
-  .gov-logo { height: 56px; }
-  .desarrollo-logo { height: 56px; }
+  .gov-logo { height: clamp(90px, 9vw, 150px); }
+  .desarrollo-logo { height: clamp(56px, 9vw, 100px); }
   .campaign-logo img {
-    height: 40px;
+    height: 60px;
   }
   /* Evitar solapamiento del logo de accesibilidad en pantallas pequeñas */
   .accesibility-logo {
@@ -400,10 +429,53 @@ body {
     right: 0;
     top: 0;
     transform: none;
-    width: 40px;
-    height: 40px;
+    width: 56px; /* un poco más grande para mantener legibilidad */
+    height: 56px;
+    margin-left: 8px;
+  }
+}
+
+/* Ajustes extra para móviles pequeños: evitar desbordes del header */
+@media (max-width: 576px) {
+  .top-header {
+    height: 190px;         /* Mantener altura fija solicitada */
+    padding: 8px 16px;     /* Menos padding lateral */
+    flex-wrap: wrap;       /* Permitir que los bloques se bajen si no caben */
+    gap: 10px;
+  }
+  .logos-left, .logos-right {
+    flex-wrap: wrap;       /* Permitir que los logos se acomoden en 2 filas si es necesario */
+    justify-content: center;
+    gap: 8px;
+  }
+  .logos-left img, .logos-right img,
+  .gov-logo, .desarrollo-logo {
+    height: clamp(48px, 16vw, 72px); /* Reducir altura mínima en móviles pequeños */
+    max-width: 100%;
+    object-fit: contain;
+  }
+  .desarrollo-logo { height: clamp(44px, 15vw, 64px); }
+  .campaign-logo img { height: 44px; }
+  /* Asegurar que el icono de accesibilidad no se superponga */
+  .accesibility-logo {
+    position: relative;
+    right: 0;
+    top: 0;
+    transform: none;
+    width: 48px;
+    height: 48px;
     margin-left: 6px;
   }
+}
+
+/* Ultra pequeño: apilar bloques y ocultar campaña si no hay espacio */
+@media (max-width: 400px) {
+  .top-header { flex-direction: column; align-items: center; }
+  /* Mantener todas las imágenes visibles, reducir tamaños para que quepan */
+  .logos-left img, .logos-right img,
+  .gov-logo, .desarrollo-logo { height: clamp(36px, 14vw, 50px); }
+  .campaign-logo img { height: clamp(34px, 13vw, 46px); }
+  .accesibility-logo { width: 40px; height: 40px; }
 }
 
 
@@ -415,8 +487,8 @@ body {
   position: relative;
   width: 100%;
   min-height: 300px;
-  margin-top: 150px; /* Adjusted to match new header height */
-  background-image: url("../images/header/banner-intro-inicio.png");
+  margin-top: var(--header-height); /* Adjusted to match new header height */
+  background-image: url("../images/header/nuevo_header.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -497,7 +569,7 @@ body {
 .card-img {
   height: 350px;
   background-size: cover;
-  background-position: center;
+  background-position: bottom;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -911,7 +983,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 .side-menu {
   position: fixed;
-   top: calc(var(--sidebar-width) + 11.5%); /* Correctly positioned below the fixed header */
+   top: calc(var(--sidebar-width) + 8.5%); /* Correctly positioned below the fixed header */
   left: 0;
   height: calc(100vh - var(--header-height));
   width: var(--sidebar-width);
@@ -1494,20 +1566,20 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 #filter-info {
   position: absolute;
-  top: calc(var(--header-height) - 20px);
+  top: calc(var(--header-height) - 45px);
   left: 40%;
   z-index: 3001;
   font-weight: 500;
   color: #333;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.9); 
   padding: 10px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  max-width: 80%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
+  max-width: 80%; 
   width: fit-content;
-  font-size: 1.5em;
-  line-height: 1.4;
+  font-size: 1.5em; 
+  line-height: 1.4; 
 }
 
 @media (max-width: 768px) {
@@ -2454,7 +2526,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 #map-top-bar {
   position: fixed;
-  top: calc(var(--header-height) + 50px);
+  top: calc(var(--header-height) + 20px);
   left: calc(var(--sidebar-width) + 20px);
   z-index: 1000;
   display: flex;
@@ -2539,7 +2611,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 
 /* Responsive para móviles */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   #map-top-bar {
     top: 120px; /* Si la navbar se reduce en móvil */
     left: 10px;

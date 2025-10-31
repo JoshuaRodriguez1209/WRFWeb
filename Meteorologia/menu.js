@@ -220,6 +220,29 @@ $("#btn_recarga").click(function(){
 			console.error('Error al restaurar capa:', e);
 		}
 	}
+	
+	// Resetear dual inputs a valores originales
+	const wrap =
+		document.querySelector('#legend .legend-dual-slider-wrapper') ||
+		document.querySelector('#gradient-container .legend-dual-slider-wrapper');
+
+	if (wrap) {
+		const rLow  = wrap.querySelector('.dual-range.low');
+		const rHigh = wrap.querySelector('.dual-range.high');
+		const inpMin = wrap.querySelector('.dual-min');
+		const inpMax = wrap.querySelector('.dual-max');
+
+		// Resetear sliders a posición inicial
+		if (rLow)  rLow.value  = 0;
+		if (rHigh) rHigh.value = 1000;
+		
+		// Establecer valores originales en los inputs
+		if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+			if (inpMin) inpMin.value = window.gradientMin.toFixed(1);
+			if (inpMax) inpMax.value = window.gradientMax.toFixed(1);
+		}
+	}
+	
 	// Ocultar info de filtro
 	hideInfo();
 	// Limpiar indicador visual si existe
@@ -487,21 +510,33 @@ function updateHistoricalView() {
       createVariableToggles(tipo, false); // Mantener selección al cambiar municipio
     }
 
-    // Get the last run from select element
-  const runs = document.getElementById('select_run');
-  const lastRun = runs.options[runs.options.length - 1].value;
-  
-  // Parse the run directory name (e.g., "2024081900")
-  const runDir = lastRun.split('/').pop(); // Get last part of path
-  const runDate = runDir.substring(0, 8);   // "20240819"
-  const runHour = runDir.substring(8, 10);  // "00"
-  
-  // Construct the correct file path
-  const basePath = 'runs';
-  const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
-  const path = `${basePath}/${runDir}/cabeceras/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
+    // ARREGLO: Usar el nuevo sistema de runs
+    if (!window.selectedRunData) {
+      console.error('No hay datos de run seleccionados disponibles');
+      $('#hist-content').html(`
+        <div class="alert alert-warning">
+          <h4>No hay datos disponibles</h4>
+          <p>Por favor, selecciona una fecha de pronóstico primero.</p>
+        </div>
+      `);
+      return;
+    }
+    
+    // Usar los datos de la run seleccionada del nuevo sistema
+    const runData = window.selectedRunData;
+    const runDate = runData.year.toString() + 
+                    String(runData.month).padStart(2, '0') + 
+                    String(runData.day).padStart(2, '0');
+    const runHour = String(runData.hour).padStart(2, '0');
+    const runDir = runData.name; // Nombre completo como "2025103000"
+    
+    // Construct the correct file path
+    const basePath = 'runs';
+    const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
+    const path = `${basePath}/${runDir}/meteogramas/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
 
-  console.log('Loading historical data from:', path);
+    console.log('🔍 Loading historical data from:', path);
+    console.log('📊 Using run data:', runData);
   
   const contentDiv = $('#hist-content');
   contentDiv.empty();
