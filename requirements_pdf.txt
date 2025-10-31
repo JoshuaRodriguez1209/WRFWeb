@@ -1,0 +1,6 @@
+# Dependencias para convertir README.md a PDF
+markdown>=3.4.0
+WeasyPrint>=60.0
+Pillow>=10.0.0
+markdown2>=2.4.0
+xhtml2pdf>=0.2.11
