@@ -1,6 +1,6 @@
-#Documentación proyecto Pagina Web Mesoescalar Actualizacion 30-10-2025
+# Documentación proyecto Pagina Web Mesoescalar Actualizacion 30-10-2025
 
-##Objetivo
+## Objetivo
 El objetivo general de este proyecto es implementar una aplicación web para el sistema de modelación meso escalar de predicción y análisis de la calidad del aire en el estado de Puebla utilizando el modelo WRF-Chem, y su integración en el servidor de la Secretaría de Medio Ambiente, Desarrollo Sustentable y Ordenamiento Territorial (SMADSOT).
 
 ##Objetivos específicos 
