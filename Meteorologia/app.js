@@ -1,19 +1,47 @@
 "use strict";
 
+// Interceptor global para optimizar canvas 2D con willReadFrequently
+(function() {
+  const originalGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function(contextType, contextAttributes) {
+    if (contextType === '2d') {
+      // Asegurar que willReadFrequently esté en true para contextos 2D
+      const attrs = contextAttributes || {};
+      if (!attrs.hasOwnProperty('willReadFrequently')) {
+        attrs.willReadFrequently = true;
+      }
+      return originalGetContext.call(this, contextType, attrs);
+    }
+    return originalGetContext.call(this, contextType, contextAttributes);
+  };
+})();
+
 //------------------------------------------------------------------------------------------
 function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
-  var layer = new ol.layer.Vector({
+  const layer = new ol.layer.Vector({
     opacity: opacidad,
     title: titulo,
     type: tipo,
     visible: bvisible,
     source: new ol.source.Vector({
       url: str_file_kml,
+      // Si tu KML trae estilos y quieres ignorarlos, descomenta la línea de abajo:
+      // format: new ol.format.KML({ extractStyles: false }),
       format: new ol.format.KML(),
     }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255, 255, 255, 1)', // contorno blanco
+        width: 2                           // grosor del contorno
+      }),
+      fill: new ol.style.Fill({
+        color: 'rgba(255, 255, 255, 0)'    // sin relleno (transparente)
+      })
+    })
   });
   return layer;
 }
+
 
 //------------------------------------------------------------------------------------------
 function set_layer(map, str_file_image, tipo, data_layer) {
@@ -22,7 +50,9 @@ function set_layer(map, str_file_image, tipo, data_layer) {
   }
 
   data_layer.layer = new ol.layer.Image({
-    opacity: 0.5,
+    opacity: 1,
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
     source: new ol.source.ImageStatic({
       url: str_file_image,
       crossOrigin: "anonymous",
@@ -30,11 +60,93 @@ function set_layer(map, str_file_image, tipo, data_layer) {
     }),
   });
 
+  clipLayer(data_layer.layer); // Aplicar recorte
+
   data_layer.setParam(str_file_image);
   if (tipo == "add") {
-    map.getLayers().insertAt(1, data_layer.layer);
+    // Insertar las capas de datos debajo de las capas overlay (municipios, estaciones)
+    const layers = map.getLayers();
+    const layersArray = layers.getArray();
+    
+    // Encontrar la posición correcta: después del tile base pero antes de overlays
+    let insertPosition = 1; // Por defecto después del tile base
+    
+    // Buscar capas overlay desde abajo hacia arriba
+    for (let i = layersArray.length - 1; i >= 0; i--) {
+      const layer = layersArray[i];
+      const layerType = layer.get('type');
+      
+      // Si encontramos una capa que NO es overlay ni mask, insertar después de ella
+      if (layerType !== 'overlay' && layerType !== 'mask' && layerType !== 'base') {
+        insertPosition = i + 1;
+        break;
+      }
+      // Si es una capa base, insertar después de ella
+      else if (layerType === 'base') {
+        insertPosition = i + 1;
+        break;
+      }
+    }
+    
+    layers.insertAt(insertPosition, data_layer.layer);
+    
+    // Asegurar que las capas overlay sigan arriba
+    setTimeout(() => {
+      ensureMaskOnTop();
+    }, 10);
   }
 }
+
+//---------------------------------------------------------------------------
+
+// geometry: ol/geom/Polygon o MultiPolygon en EPSG:3857
+function applyMaskToLayer(layer, geometry) {
+  function drawPolygonPath(ctx, geom, transform) {
+    // Soporta Polygon o MultiPolygon
+    const polys = geom.getType() === 'Polygon' ? [geom.getCoordinates()] : geom.getCoordinates();
+    ctx.beginPath();
+    for (const rings of polys) {
+      for (const ring of rings) {
+        for (let i = 0; i < ring.length; i++) {
+          const c = ring[i];
+          const x = c[0] * transform[0] + c[1] * transform[2] + transform[4];
+          const y = c[0] * transform[1] + c[1] * transform[3] + transform[5];
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      }
+    }
+  }
+
+  const pre = (e) => {
+    // Solo Canvas renderer
+    if (!e.context || !e.frameState) return;
+    const ctx = e.context;
+    const t = e.frameState.coordinateToPixelTransform;
+    ctx.save();
+    drawPolygonPath(ctx, geometry, t);
+    ctx.clip(); // <-- recorta TODO lo que pinte esta capa
+  };
+
+  const post = (e) => {
+    if (!e.context) return;
+    e.context.restore();
+  };
+
+  // Evita duplicar listeners si ya estaban puestos
+  layer.un('prerender', pre);
+  layer.un('postrender', post);
+  layer.on('prerender', pre);
+  layer.on('postrender', post);
+
+  // Que actualice mientras interactúas (suaviza el “parpadeo”)
+  // Configuración de renderizado optimizada (las propiedades se configuran en la creación de la capa)
+  if (layer.getSource() && typeof layer.getSource().setRenderReprojectionEdges === 'function') {
+    // opcional: puede ayudar cuando hay reproyección
+    layer.getSource().setRenderReprojectionEdges(true);
+  }
+}
+
 
 //-------------------------------------------------------------------------------
 var m_lyr_tile = new ol.layer.Tile({
@@ -49,11 +161,35 @@ var m_lyr_tile = new ol.layer.Tile({
 //-------------------------------------------------------------------------------
 var m_layer_municipios = create_layer_kml_base(
   "Municipios",
-  "",
+  "overlay",
   "./kml/puebla.kml",
   0.7,
   true
 );
+
+function create_layer_kml_base(titulo, tipo, str_file_kml, opacidad, bvisible) {
+  const layer = new ol.layer.Vector({
+    opacity: opacidad,
+    title: titulo,
+    type: tipo,
+    visible: bvisible,
+    zIndex: 1000, // Asegurar que esté siempre arriba
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
+    source: new ol.source.Vector({
+      url: str_file_kml,
+      format: new ol.format.KML({ extractStyles: false }) // <- importante
+    }),
+    style: new ol.style.Style({
+      stroke: new ol.style.Stroke({
+        color: 'rgba(255,255,255,1)', // contorno blanco
+        width: 2.5
+      }),
+      fill: new ol.style.Fill({ color: 'rgba(0, 0, 0, 0.4)' }) // relleno muy transparente
+    })
+  });
+  return layer;
+}
 
 //------------------------------------------------------------------------------------------
 var mousePositionControl = new ol.control.MousePosition({
@@ -87,8 +223,8 @@ var m_control = new ol.control.Control({ element: notification });
 var m_view = new ol.View({
   projection: "EPSG:4326",
   center: [-97.7711, 19.0105],
-  zoom: 8.3,
-  minZoom: 8.3,
+  zoom: 9,
+  minZoom: 9,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -100,23 +236,30 @@ var m_view = new ol.View({
 
 var scaleLineControl = new ol.control.ScaleLine({
   units: "metric",
-  bar: false,
-  steps: 4,
-  minWidth: 140,
+  bar: true,          // activar barra graduada
+  steps: 4,           // número de segmentos visibles
+  text: true,         // mostrar texto con unidad en cada actualización
+  minWidth: 200,      // un poco más ancha para legibilidad
   className: "ol-scale-line",
   target: null,
 });
+// Guardar pasos en una propiedad estable para uso externo (evita depender de internals de OL)
+scaleLineControl._customSteps = 4;
 
 //-------------------------------------------------------------------------------
 
+// Variable para almacenar la geometría de recorte de Puebla
+let pueblaClippingGeometry = null;
+let maskLayer = null;
+
 var m_map = new ol.Map({
+  renderBuffer: 2000, // Aumentar el búfer para un renderizado más suave
   controls: ol.control.defaults({ zoom: false }).extend([
     mousePositionControl,
     m_notification,
     m_control,
     scaleLineControl,
     new ol.control.LayerSwitcher({
-      //Control de capas
       tipLabel: "Capas",
     }),
   ]),
@@ -124,36 +267,270 @@ var m_map = new ol.Map({
   layers: [m_lyr_tile, m_layer_municipios],
   view: m_view,
 });
+// Construir barra segmentada manual si la implementación bar:true de OL sólo deja el texto
+function ensureCustomScaleBar() {
+  const container = document.querySelector('.ol-scale-line-inner');
+  if (!container) return;
+  // Si OL ya generó un canvas con la barra, no hacemos nada
+  const existingCanvas = container.querySelector('canvas');
+  if (existingCanvas) return;
+  let body = container.querySelector('.ol-scale-line-body');
+  if (!body) {
+    body = document.createElement('div');
+    body.className = 'ol-scale-line-body';
+    container.prepend(body); // barra arriba, texto abajo
+  }
+  // Número de pasos definido en el control
+  const steps = scaleLineControl._customSteps || 4;
+  // Asegurar cantidad de segmentos
+  const needed = steps;
+  const current = body.querySelectorAll('.ol-scale-line-segment').length;
+  if (current !== needed) {
+    body.innerHTML = '';
+    for (let i = 0; i < needed; i++) {
+      const seg = document.createElement('div');
+      seg.className = 'ol-scale-line-segment' + (i % 2 === 1 ? ' alt' : '');
+      body.appendChild(seg);
+    }
+  }
+  // Añadir contenedor de ticks (arriba) si no existe
+  let ticksLayer = container.querySelector('.ol-scale-line-ticks');
+  if (!ticksLayer) {
+    ticksLayer = document.createElement('div');
+    ticksLayer.className = 'ol-scale-line-ticks';
+    container.insertBefore(ticksLayer, body); // arriba de la barra
+  }
+  ticksLayer.innerHTML = '';
+
+  // Calcular distancia real cubierta por la barra
+  const view = m_map.getView();
+  const resolution = view.getResolution(); // grados/pixel (EPSG:4326)
+  const center = view.getCenter();
+  const lat = center ? center[1] : 0;
+  const latRad = lat * Math.PI / 180;
+  const earthRadius = 6378137; // WGS84
+  const metersPerDegree = (Math.PI / 180) * earthRadius * Math.cos(latRad);
+  const widthPx = body.getBoundingClientRect().width;
+  // Longitud en metros representada por la barra
+  const lengthMeters = widthPx * resolution * metersPerDegree;
+  let lengthKm = lengthMeters / 1000;
+  if (!isFinite(lengthKm) || lengthKm <= 0) return;
+
+  // Función para obtener un número "bonito" similar a OL (1,2,5 * 10^n)
+  function niceNumber(x) {
+    const exp = Math.floor(Math.log10(x));
+    const f = x / Math.pow(10, exp);
+    let nf;
+    if (f < 1.5) nf = 1;
+    else if (f < 3) nf = 2;
+    else if (f < 7) nf = 5;
+    else nf = 10;
+    return nf * Math.pow(10, exp);
+  }
+  const niceTotal = niceNumber(lengthKm);
+  const intervalKm = niceTotal / (steps - 1);
+
+  for (let i = 0; i < steps; i++) {
+    // Se generaban ticks para cada segmento; ahora sólo mostraremos 3 (0, mitad, final)
+  }
+  // Limpiar cualquier resto (ya está vacío arriba) y construir solo 3 ticks
+  ticksLayer.innerHTML = '';
+  const q1 = niceTotal / 4;
+  const niceMid = niceTotal / 2;
+  const q3 = (niceTotal * 3) / 4;
+  const tickDefs = [
+    { pct: 0,   val: 0 },
+    { pct: 25,  val: q1 },
+    { pct: 50,  val: niceMid },
+    { pct: 75,  val: q3 },
+    { pct: 100, val: niceTotal }
+  ];
+  // Formateador adaptativo: 3 decimales si la escala total es grande (>=100 km), si no 2.
+  function formatKm(v, isLast) {
+    // Si el total de la escala es menor a 1 km (zoom muy cercano) mostramos 3 decimales para más precisión.
+    // En caso contrario 2 decimales.
+    const decimals = niceTotal < 1 ? 3 : 2;
+    let str = v.toFixed(decimals);
+    // Quitar .00 o ceros finales innecesarios
+    str = str.replace(/\.0+$/, '');               // 10.00 -> 10
+    str = str.replace(/\.(\d*[1-9])0+$/, '.$1'); // 2.50 -> 2.5, 3.230 -> 3.23
+    if (isLast) str += ' km';
+    return str;
+  }
+  tickDefs.forEach((t, idx) => {
+    const tick = document.createElement('div');
+    tick.className = 'scale-tick';
+    tick.style.left = t.pct + '%';
+    const lbl = document.createElement('div');
+    lbl.className = 'scale-tick-label';
+    lbl.textContent = formatKm(t.val, idx === tickDefs.length - 1);
+    tick.appendChild(lbl);
+    ticksLayer.appendChild(tick);
+  });
+  // Ocultar texto original de OL si existe para evitar superposición
+  container.querySelectorAll('span').forEach(sp => sp.style.display = 'none');
+}
+
+// Hook en eventos de mapa para asegurar que la barra exista tras cada render
+m_map.on('postrender', () => ensureCustomScaleBar());
+setTimeout(ensureCustomScaleBar, 500);
+setTimeout(ensureCustomScaleBar, 1200);
+// Ajuste dinámico del ancho visible de la escala (máx 1/3 viewport)
+function constrainScaleLine() {
+  const el = document.querySelector('.ol-scale-line');
+  if (!el) return;
+  const inner = el.querySelector('.ol-scale-line-inner');
+  if (!inner) return;
+  // En móvil NO reducimos la escala; permitimos que use su tamaño natural
+  const isMobileViewport = window.innerWidth < 768;
+  inner.style.transform = 'none';
+  if (isMobileViewport) {
+    // Asegurar ancho mínimo para legibilidad
+    if (inner.getBoundingClientRect().width < 200) {
+      inner.style.minWidth = '220px';
+    }
+    return; // no aplicar reducción
+  }
+  // Desktop: limitar a 1/3 del viewport si excede
+  const maxPx = window.innerWidth / 3;
+  const actual = inner.getBoundingClientRect().width;
+  if (actual > maxPx) {
+    const ratio = maxPx / actual;
+    inner.style.transformOrigin = 'right center';
+    inner.style.transform = `scale(${ratio})`;
+  }
+}
+
+window.addEventListener('resize', constrainScaleLine);
+// Llamar después de un pequeño delay para asegurar render de OL
+setTimeout(constrainScaleLine, 800);
+m_map.on('moveend', () => setTimeout(constrainScaleLine, 50));
+
+// Función para aplicar el recorte a una capa
+const clipLayer = (layer) => {
+  if (!pueblaClippingGeometry || !layer) return;
+
+  const preRenderHandler = (e) => {
+    if (!e.context) return;
+    const vectorContext = ol.render.getVectorContext(e);
+    e.context.globalCompositeOperation = 'destination-in';
+    vectorContext.drawFeature(
+      new ol.Feature(pueblaClippingGeometry),
+      new ol.style.Style({
+        fill: new ol.style.Fill({ color: 'black' }),
+      })
+    );
+    e.context.globalCompositeOperation = 'source-over';
+  };
+
+  // Remover listeners previos para evitar duplicados
+  layer.un('postrender', preRenderHandler);
+  layer.on('postrender', preRenderHandler);
+};
+
+// Función para crear la máscara con configuraciones optimizadas
+const createMaskLayer = (pueblaCoords) => {
+  pueblaClippingGeometry = new ol.geom.Polygon(pueblaCoords);
+  
+  // Crear geometría de máscara más eficiente
+  const extent = [-180, -90, 180, 90];
+  const outerPolygon = ol.geom.Polygon.fromExtent(extent);
+  const pueblaLinearRing = pueblaClippingGeometry.getLinearRing(0);
+  outerPolygon.appendLinearRing(pueblaLinearRing);
+
+  const maskFeature = new ol.Feature({
+    geometry: outerPolygon,
+  });
+
+  maskLayer = new ol.layer.Vector({
+    renderBuffer: 500, // Buffer más grande para evitar fallos en movimientos rápidos
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
+    source: new ol.source.Vector({
+      features: [maskFeature],
+    }),
+    style: new ol.style.Style({
+      fill: new ol.style.Fill({
+        color: 'rgba(151, 151, 151, 1)',
+      }),
+    }),
+    title: 'Mascara Puebla',
+    type: 'mask',
+    zIndex: 999 // Asegurar que siempre esté arriba
+  });
+  
+  return maskLayer;
+};
+
+// Cargar la geometría de Puebla una sola vez con manejo mejorado
+fetch('./puebla_state_boundary.json')
+  .then(response => response.json())
+  .then(pueblaCoords => {
+    const mask = createMaskLayer(pueblaCoords);
+    
+    // Insertar la máscara en el índice correcto
+    m_map.getLayers().insertAt(1, mask);
+    
+    // Forzar renderizado inmediato y continuo
+    m_map.render();
+    
+    // Asegurar que la máscara se re-renderice en cada frame durante animaciones
+    m_map.on('movestart', () => {
+      if (maskLayer) {
+        maskLayer.setVisible(true);
+        m_map.render();
+      }
+    });
+    
+    m_map.on('moveend', () => {
+      if (maskLayer) {
+        m_map.render();
+      }
+    });
+    
+    // Re-renderizar durante zoom
+    m_view.on('change:resolution', () => {
+      if (maskLayer) {
+        setTimeout(() => {
+          m_map.render();
+        }, 10);
+      }
+    });
+  })
+  .catch(error => console.error('Error loading Puebla boundary:', error));
+
 
 var m_dlayer = new CDataLayer(m_map);
+
+// Agregar manejadores adicionales para asegurar que la máscara siempre funcione
+m_map.on('precompose', function(event) {
+  // Asegurar que la máscara esté en la posición correcta antes de cada renderizado
+  ensureMaskOnTop();
+});
+
+m_map.on('rendercomplete', function(event) {
+  // Verificar después de cada renderizado completo
+  if (maskLayer && !maskLayer.getVisible()) {
+    maskLayer.setVisible(true);
+  }
+});
+
+// Manejador para interacciones del usuario (arrastrar, zoom, etc.)
+m_map.getView().on('change', function(event) {
+  if (maskLayer) {
+    // Forzar re-renderizado de la máscara durante cambios de vista
+    maskLayer.getSource().changed();
+  }
+  
+  // Asegurar orden de capas durante interacciones
+  setTimeout(() => {
+    ensureMaskOnTop();
+  }, 5);
+});
+
 //-------------------------------------------------------------------------------
 
 const isMobile = window.innerWidth < 768;
-const graticule = new ol.Graticule({
-  showLabels: true,
-  wrapX: false,
-  lonLabelPosition: isMobile ? 0.93 : 0.99,
-  latLabelPosition: isMobile ? 0.79 : 0.93, // posición más dentro del canvas
-  targetSize: 200,
-  strokeStyle: new ol.style.Stroke({
-    color: "rgba(100,100,100,0.7)",
-    width: 2,
-    lineDash: [2, 4],
-  }),
-  lonLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-    textBaseline: "top",
-  }),
-  latLabelStyle: new ol.style.Text({
-    font: "bold 16px Arial, sans-serif",
-    textAlign: "left", // alinea texto hacia dentro
-    fill: new ol.style.Fill({ color: "#222" }),
-    stroke: new ol.style.Stroke({ color: "#fff", width: 3 }),
-  }),
-});
-graticule.setMap(m_map);
 
 //-------------------------------------------------------------------------------
 m_map.on("postcompose", function (event) {
@@ -201,6 +578,12 @@ $(function () {
 
   pollForNewRuns();
   setInterval(pollForNewRuns, 43200000);
+  
+  // NUEVO SISTEMA: Event listener para cambio de fecha de pronóstico
+  $(document).on('change', '#select_run', function() {
+    console.log('🎯 Cambio de fecha detectado:', $(this).val());
+    loadHoursForSelectedDay();
+  });
 });
 //-------------------------------------------------------------------------------
 function pollForNewRuns() {
@@ -261,6 +644,7 @@ var make_animation = function (datos) {
   var list_files = datos.split("|");
 
   m_frames = [];
+  
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
 
@@ -268,9 +652,17 @@ var make_animation = function (datos) {
       str_file = str_file.substring(1); //Recorrer el string para quitar el ../
 
       var frame_kms = new CDataLayer(m_map, "create", str_file);
+      
+      // Cargar imagen para filtros si es necesario
+      frame_kms.img = new Image();
+      frame_kms.img.crossOrigin = "anonymous";
+      frame_kms.img.src = str_file;
+      
       m_frames.push(frame_kms);
     }
   }
+  
+  console.log('Frames creados:', m_frames.length);
   check_loaded();
 };
 
@@ -279,97 +671,523 @@ var make_animation = function (datos) {
 var m_dir_runs = "";
 
 var list_runs = function (datos) {
+  // En lugar de mostrar runs, vamos a mostrar fechas de pronóstico
   var dir_runs = "";
   var list_files = datos.split("|");
-
-  for (var i = list_files.length - 1; i >= 0; i--) {
+  
+  // Obtener fechas objetivo: hoy, mañana y pasado mañana
+  var today = new Date(); // Fecha fija para pruebas
+  
+  var tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  var dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(today.getDate() + 2);
+  
+  // Función para verificar si una run contiene pronósticos para nuestras fechas objetivo
+  function runCoversTargetDates(runDate) {
+    var runEndDate = new Date(runDate);
+    runEndDate.setDate(runDate.getDate() + 3);
+    return (runDate <= dayAfterTomorrow && runEndDate >= today);
+  }
+  
+  // Encontrar la run más reciente que cubra nuestro período
+  var bestRun = null;
+  var bestRunData = null;
+  
+  for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
-
+    
     if (str_file != "") {
       var pos = str_file.lastIndexOf("/");
       var str_name = str_file.substring(pos + 1);
-
-      var Y = str_name.substring(0, 4);
-      var M = str_name.substring(4, 6);
-      var D = str_name.substring(6, 8);
-      var H = str_name.substring(8, 10);
-      var Etiq = D + "-" + M + "-" + Y + " " + H + "Z";
-
-      dir_runs += "<option  value='" + str_file + "'>" + Etiq + "</option>";
+      
+      var runYear = parseInt(str_name.substring(0, 4));
+      var runMonth = parseInt(str_name.substring(4, 6));
+      var runDay = parseInt(str_name.substring(6, 8));
+      var runHour = parseInt(str_name.substring(8, 10));
+      
+      var runDate = new Date(runYear, runMonth - 1, runDay);
+      
+      if (runCoversTargetDates(runDate)) {
+        var runScore = runDate.getTime() + (runHour * 60 * 60 * 1000); // Preferir runs más recientes y horas más tardías
+        
+        if (!bestRun || runScore > bestRun) {
+          bestRun = runScore;
+          bestRunData = {
+            file: str_file,
+            date: runDate,
+            year: runYear,
+            month: runMonth,
+            day: runDay,
+            hour: runHour,
+            name: str_name
+          };
+        }
+      }
     }
+  }
+  
+  // Guardar la run seleccionada globalmente para usar en otras funciones
+  window.selectedRunData = bestRunData;
+  
+  if (bestRunData) {
+    // Ahora crear opciones para fechas de pronóstico (no runs)
+    var dayLabels = [
+      { date: today, label: "Hoy", offset: 0 },
+      { date: tomorrow, label: "Mañana", offset: 24 }, 
+      { date: dayAfterTomorrow, label: "Pasado mañana", offset: 48 }
+    ];
+    
+    dayLabels.forEach(function(dayInfo) {
+      var dateStr = String(dayInfo.date.getDate()).padStart(2, '0') + "-" + 
+                    String(dayInfo.date.getMonth() + 1).padStart(2, '0') + "-" + 
+                    dayInfo.date.getFullYear();
+      
+      var fullLabel = dayInfo.label + " (" + dateStr + ")";
+      
+      // El value incluye tanto el archivo base como el offset de horas
+      var valueData = bestRunData.file + "|" + dayInfo.offset;
+      
+      dir_runs += "<option value='" + valueData + "'>" + fullLabel + "</option>";
+    });
+  } else {
+    dir_runs = "<option value=''>No hay pronósticos disponibles</option>";
   }
 
   $("#select_run").html(dir_runs);
+  
+  // Trigger para cargar las horas del primer día seleccionado
+  if (bestRunData) {
+    loadHoursForSelectedDay();
+  }
 };
 
 //-------------------------------------------------------------------------------
+// NUEVA FUNCIÓN: Cargar horas para el día seleccionado
+function loadHoursForSelectedDay() {
+  var selectedValue = $("#select_run").val();
+  if (!selectedValue || !selectedValue.includes("|")) return;
+  
+  var parts = selectedValue.split("|");
+  var runFile = parts[0];
+  var hourOffset = parseInt(parts[1]);
+  
+  if (!window.selectedRunData || !selectedVariable) {
+    console.log('⚠️ Faltan datos: selectedRunData o selectedVariable');
+    return;
+  }
+  
+  // Construir la ruta de la variable actual
+  var varPath = runFile + "/" + selectedVariable + "/";
+  
+  console.log('🔄 Cargando horas para:', {
+    dia: selectedValue,
+    variable: selectedVariable,
+    offset: hourOffset,
+    path: varPath
+  });
+  
+  // Hacer petición para obtener archivos de esa variable
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=listado_var",
+    "variable=" + varPath,
+    function(datos) {
+      console.log('📁 Archivos recibidos:', datos);
+      loadHoursForDay(datos, hourOffset);
+    },
+    function() {
+      console.error('❌ Error cargando archivos para:', varPath);
+      showDialog_Error();
+    }
+  );
+}
+
+// NUEVA FUNCIÓN: Procesar archivos y filtrar por día
+function loadHoursForDay(datos, hourOffset) {
+  var dir_var = "";
+  var list_files = datos.split("|");
+  
+  console.log('🕐 Procesando archivos para offset:', hourOffset, 'Total archivos:', list_files.length);
+  console.log('📁 Variable actual:', selectedVariable);
+  
+  // Detectar si es una variable de resumen diario (24h, 48h, 72h)
+  var isDailySummaryVariable = selectedVariable && (
+    selectedVariable.includes('temmax') || 
+    selectedVariable.includes('temmin') || 
+    selectedVariable.includes('precacum')
+  );
+  
+  var validHours = [];
+  
+  if (isDailySummaryVariable) {
+    console.log('📊 Variable de resumen diario detectada');
+    
+    // Para variables diarias, mapear correctamente los días a las horas de resumen
+    var targetHour;
+    var dayName = "";
+    
+    if (hourOffset === 0) {
+      // Hoy = resumen a las 24 horas
+      targetHour = 24;
+      dayName = "Hoy";
+    } else if (hourOffset === 24) {
+      // Mañana = resumen a las 48 horas  
+      targetHour = 48;
+      dayName = "Mañana";
+    } else if (hourOffset === 48) {
+      // Pasado mañana = resumen a las 72 horas
+      targetHour = 72;
+      dayName = "Pasado mañana";
+    } else {
+      console.error('❌ Offset no válido para variable diaria:', hourOffset);
+      return;
+    }
+    
+    // Buscar archivo - probar con y sin ceros al inicio
+    var targetHourStr = String(targetHour).padStart(3, '0'); // "072", "048", "024"
+    var targetHourStr2 = String(targetHour); // "72", "48", "24"
+    
+    var foundFile = null;
+    for (var i = 0; i < list_files.length; i++) {
+      var str_file = list_files[i];
+      if (str_file && (str_file.includes('_' + targetHourStr + '.png') || str_file.includes('_' + targetHourStr2 + '.png'))) {
+        foundFile = str_file.substring(1); // Quitar ../
+        break;
+      }
+    }
+    
+    if (foundFile) {
+      validHours.push({
+        hour: targetHour,
+        file: foundFile,
+        label: `Resumen de ${dayName.toLowerCase()}`
+      });
+      console.log('✅ Encontrado resumen diario:', targetHourStr, 'o', targetHourStr2, '→', foundFile);
+    } else {
+      console.log('❌ No encontrado resumen diario:', targetHourStr, 'ni', targetHourStr2);
+    }
+    
+  } else {
+    console.log('⏰ Variable horaria detectada (cada 3 horas)');
+    
+    // Para variables horarias normales (cada 3 horas)
+    for (var h = 0; h < 24; h += 3) {
+      var targetHour = hourOffset + h;
+      var targetHourStr = String(targetHour).padStart(3, '0');
+      
+      // Buscar archivo que coincida con esta hora
+      var foundFile = null;
+      for (var i = 0; i < list_files.length; i++) {
+        var str_file = list_files[i];
+        if (str_file && str_file.includes('_' + targetHourStr + '.png')) {
+          foundFile = str_file.substring(1); // Quitar ../
+          break;
+        }
+      }
+      
+      if (foundFile) {
+        validHours.push({
+          hour: h,
+          file: foundFile,
+          label: String(h).padStart(2, '0') + ':00'
+        });
+        console.log('✅ Encontrado:', targetHourStr, '→', foundFile);
+      } else {
+        console.log('❌ No encontrado:', targetHourStr);
+      }
+    }
+  }
+  
+  console.log('📊 Horas válidas encontradas:', validHours.length);
+  
+  if (validHours.length === 0) {
+    console.error('❌ No se encontraron archivos válidos para este día/variable');
+    $("#selectHora").html("<option value=''>No hay datos disponibles para este día</option>");
+    return;
+  }
+  
+  // Crear dropdown de horas
+  validHours.forEach(function(hourData) {
+    dir_var += "<option value='" + hourData.file + "'>" + hourData.label + "</option>";
+  });
+  
+  // ARREGLO: Preparar frames para animación usando las horas válidas del día
+  m_frames = [];
+  validHours.forEach(function(hourData) {
+    var frame_kms = new CDataLayer(m_map, "create", hourData.file);
+    
+    // Cargar imagen para filtros si es necesario
+    frame_kms.img = new Image();
+    frame_kms.img.crossOrigin = "anonymous";
+    frame_kms.img.src = hourData.file;
+    
+    m_frames.push(frame_kms);
+  });
+  
+  console.log('🎬 Frames de animación creados para el día:', m_frames.length);
+  
+  // ==========================================
+  // Selector de horas del día / resumen
+  /*
+  // Crear el select de horas si no existe
+  var hoursContainer = document.getElementById('hours-container');
+  if (!hoursContainer) {
+    // Buscar dónde insertar el selector de horas
+    var variablesContainer = document.getElementById('variables-container');
+    if (variablesContainer) {
+      hoursContainer = document.createElement('div');
+      hoursContainer.className = 'control-group';
+      hoursContainer.id = 'hours-container';
+      hoursContainer.innerHTML = `
+        <label for="selectHora">${isDailySummaryVariable ? 'Resumen' : 'Hora del día'}</label>
+        <select id="selectHora"></select>
+      `;
+      
+      // Insertar después del contenedor de variables
+      variablesContainer.parentNode.insertBefore(hoursContainer, variablesContainer.nextSibling);
+    }
+  } else {
+    // Actualizar label si ya existe
+    var label = hoursContainer.querySelector('label');
+    if (label) {
+      label.textContent = isDailySummaryVariable ? 'Resumen' : 'Hora del día';
+    }
+  }
+  
+  $("#selectHora").html(dir_var);
+  
+  // Agregar event listener para cuando cambie la hora
+  $("#selectHora").off('change.dayHours').on('change.dayHours', function() {
+    update_var();
+  });
+  */
+  // ==========================================
+  
+  // Cargar la primera hora automáticamente
+  if (validHours.length > 0) {
+    // Llamar check_loaded para habilitar botón de animación
+    check_loaded();
+    
+    // TEMPORAL: Cargar directamente la primera hora disponible (sin selector)
+    var firstFile = validHours[0].file;
+    set_layer(m_map, firstFile, "add", m_dlayer);
+    var img = new Image();
+    img.onload = function () {
+      m_lienzo = new CLienzo(img);
+      if (filter_color) {
+        const filteredLayer = applyFilterToImage(m_lienzo.img);
+        put_FilteredImage(filteredLayer);
+      }
+    };
+    img.src = firstFile;
+    
+    console.log('📷 Cargando imagen directamente:', firstFile);
+  }
+}
+
+//-------------------------------------------------------------------------------
+var selectedParameter = null;
+var selectedVariable = null;
+
+// Crear botones de parámetros principales
+var createParameterButtons = function(parameterData) {
+  var container = document.getElementById('parameter-buttons');
+  container.innerHTML = '';
+  selectedParameter = null;
+  
+  parameterData.forEach(function(param, index) {
+    var button = document.createElement('button');
+    button.className = 'layer-btn';
+    button.setAttribute('data-parameter', param.value);
+    button.innerHTML = '<i class="' + param.icon + '"></i> ' + param.label;
+    
+    button.addEventListener('click', function() {
+      // Remover active de todos los botones
+      document.querySelectorAll('#parameter-buttons .layer-btn').forEach(function(btn) {
+        btn.classList.remove('active');
+      });
+      
+      // Activar el botón clickeado
+      this.classList.add('active');
+      selectedParameter = param.value;
+      
+      // Resetear filtro y dual inputs al cambiar de layer
+      resetFilterUIForNewVariable();
+      
+      procesa_dat();
+    });
+    
+    container.appendChild(button);
+    
+    // Activar el primer botón por defecto
+    if (index === 0) {
+      button.classList.add('active');
+      selectedParameter = param.value;
+    }
+  });
+  
+  // Procesar la primera opción automáticamente
+  if (parameterData.length > 0) {
+    procesa_dat();
+  }
+};
+
+// Actualizar select de variables según parámetro seleccionado
 var procesa_dat = function () {
-  var val_dat = "";
-  switch ($("#select_dat").val()) {
+  var variableData = [];
+  switch (selectedParameter) {
     case "temp":
-      val_dat = '<option value="temmax">Temperatura max</option>';
-      val_dat += '<option value="temmin">Temperatura min</option>';
-      val_dat += '<option value="temp/700">Temperatura a 700mb</option>';
-      val_dat += '<option value="temp/600">Temperatura a 600mb</option>';
-      val_dat += '<option value="temp/500">Temperatura a 500mb</option>';
-      val_dat += '<option value="temp/400">Temperatura a 400mb</option>';
-      val_dat += '<option value="temp/300">Temperatura a 300mb</option>';
-      val_dat += '<option value="temp/200">Temperatura a 200mb</option>';
+      variableData = [
+        {value: "temmax", label: "Temperatura máxima"},
+        {value: "temmin", label: "Temperatura mínima"},
+        {value: "temp/700", label: "Temperatura 700mb"},
+        {value: "temp/600", label: "Temperatura 600mb"},
+        {value: "temp/500", label: "Temperatura 500mb"},
+        {value: "temp/400", label: "Temperatura 400mb"},
+        {value: "temp/300", label: "Temperatura 300mb"},
+        {value: "temp/200", label: "Temperatura 200mb"}
+      ];
       break;
-    case "quim":
-      val_dat = '<option value="CO/sfc">Monóxido de Carbono</option>';
-      val_dat += '<option value="NO2/sfc">Dióxido de Nitrógeno</option>';
-      val_dat += '<option value="O3/sfc">Ozono</option>';
-      val_dat += '<option value="SO2/sfc">Dióxido de Azufre</option>';
-      val_dat += '<option value="PM10/sfc">Partículas PM 10</option>';
-      val_dat += '<option value="PM25/sfc">Partículas PM 2.5</option>';
+    case "CO":
+      variableData = [
+        {value: "CO/sfc", label: "Monóxido de Carbono en superficie"}
+      ];
+      break;
+    case "NO2":
+      variableData = [
+        {value: "NO2/sfc", label: "Dióxido de Nitrógeno en superficie"}
+      ];
+      break;
+    case "O3":
+      variableData = [
+        {value: "O3/sfc", label: "Ozono en superficie"}
+      ];
+      break;
+    case "SO2":
+      variableData = [
+        {value: "SO2/sfc", label: "Dióxido de Azufre en superficie"}
+      ];
+      break;
+    case "PM25":
+      variableData = [
+        {value: "PM25/sfc", label: "PM 2.5 en superficie"}
+      ];
+      break;
+    case "PM10":
+      variableData = [
+        {value: "PM10/sfc", label: "PM 10 en superficie"}
+      ];
       break;
     case "hum":
-      val_dat = '<option value="hum/sfc">Humedad en superficie</option>';
+      variableData = [
+        {value: "hum/sfc", label: "Humedad en superficie"}
+      ];
       break;
     case "prec":
-      val_dat = '<option value="precacum">Precipitación acumulada</option>';
+      variableData = [
+        {value: "precacum", label: "Precipitación acumulada"}
+      ];
       break;
     case "rad":
-      val_dat = '<option value="radsw/sfc">Radiación de onda corta</option>';
-      val_dat += '<option value="radlw/sfc">Radiación de onda larga</option>';
+      variableData = [
+        {value: "radsw/sfc", label: "Radiación onda corta"},
+        {value: "radlw/sfc", label: "Radiación onda larga"}
+      ];
       break;
     case "wind":
-      val_dat = '<option value="wnd/sfc">Viento en superficie</option>';
-      val_dat += '<option value="wnd/700">Viento a 700mb</option>';
-      val_dat += '<option value="wnd/600">Viento a 600mb</option>';
-      val_dat += '<option value="wnd/500">Viento a 500mb</option>';
-      val_dat += '<option value="wnd/400">Viento a 400mb</option>';
-      val_dat += '<option value="wnd/300">Viento a 300mb</option>';
-      val_dat += '<option value="wnd/200">Viento a 200mb</option>';
+      variableData = [
+        {value: "wnd/sfc", label: "Viento superficie"},
+        {value: "wnd/700", label: "Viento 700mb"},
+        {value: "wnd/600", label: "Viento 600mb"},
+        {value: "wnd/500", label: "Viento 500mb"},
+        {value: "wnd/400", label: "Viento 400mb"},
+        {value: "wnd/300", label: "Viento 300mb"},
+        {value: "wnd/200", label: "Viento 200mb"}
+      ];
       break;
     case "psfc":
-      val_dat = '<option value="psfc">Presión barométrica</option>';
+      variableData = [
+        {value: "psfc", label: "Presión barométrica"}
+      ];
       break;
   }
 
-  $("#select_var").html(val_dat);
-  procesa_var();
+  updateVariableSelect(variableData);
+};
+
+// Actualizar select de variables
+var updateVariableSelect = function(variableData) {
+  var select = document.getElementById('select_var');
+  var selectContainer = document.getElementById('variables-container');
+  
+  // Si solo hay una variable, ocultar el select y usar directamente
+  if (variableData.length <= 1) {
+    // Aun cuando lo ocultemos, creamos la opción para que otras funciones puedan leer su label
+    select.innerHTML = '';
+    if (variableData.length === 1) {
+      const single = variableData[0];
+      const option = document.createElement('option');
+      option.value = single.value;
+      option.textContent = single.label;
+      select.appendChild(option);
+      select.selectedIndex = 0;
+      selectedVariable = single.value;
+      window.currentVariableLabel = single.label; // almacenar etiqueta actual
+    } else {
+      selectedVariable = null;
+      window.currentVariableLabel = null;
+    }
+    selectContainer.style.display = 'none';
+  } else {
+    // Múltiples variables: mostrar select
+    selectContainer.style.display = 'block';
+    select.innerHTML = '';
+    
+    variableData.forEach(function(variable, index) {
+      var option = document.createElement('option');
+      option.value = variable.value;
+      option.textContent = variable.label;
+      select.appendChild(option);
+      
+      // Seleccionar la primera opción por defecto
+      if (index === 0) {
+        selectedVariable = variable.value;
+        window.currentVariableLabel = variable.label;
+      }
+    });
+  }
+  
+  // Procesar la primera variable automáticamente
+  if (variableData.length > 0) {
+    setTimeout(procesa_var, 100);
+  }
+
 };
 
 var set_atmos = function () {
-  var val_dat = '<option value="temp">Temperatura</option>';
-
-  val_dat += '<option value="hum">Humedad</option>';
-  val_dat += '<option value="prec">Precipitación</option>';
-  val_dat += '<option value="rad">Radiación</option>';
-  val_dat += '<option value="wind">Viento</option>';
-  val_dat += '<option value="psfc">Presión</option>';
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "temp", label: "Temperatura", icon: "fa-solid fa-temperature-half"},
+    {value: "hum", label: "Humedad", icon: "fa-solid fa-droplet"},
+    {value: "prec", label: "Precipitación", icon: "fa-solid fa-cloud-rain"},
+    {value: "rad", label: "Radiación", icon: "fa-solid fa-sun"},
+    {value: "wind", label: "Viento", icon: "fa-solid fa-wind"},
+    {value: "psfc", label: "Presión", icon: "fa-solid fa-gauge"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 var set_chem = function () {
-  var val_dat = (val_dat = '<option value="quim">Contaminantes</option>');
-
-  $("#select_dat").html(val_dat);
-  procesa_dat();
+  var parameterData = [
+    {value: "CO", label: "CO", icon: "fa-solid fa-smog"},
+    {value: "NO2", label: "NO₂", icon: "fa-solid fa-smog"},
+    {value: "O3", label: "O₃", icon: "fa-solid fa-smog"},
+    {value: "SO2", label: "SO₂", icon: "fa-solid fa-smog"},
+    {value: "PM25", label: "PM2.5", icon: "fa-solid fa-circle-dot"},
+    {value: "PM10", label: "PM10", icon: "fa-solid fa-circle"}
+  ];
+  
+  createParameterButtons(parameterData);
 };
 
 //-------------------------------------------------------------------------------
@@ -380,25 +1198,41 @@ var list_var = async function (datos) {
   //	for (var i = list_files.length - 1; i >= 0; i--){					//Reversa
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
+    if(!str_file || typeof str_file !== 'string') continue;
+    str_file = str_file.substring(1); // quitar ../ inicial
+    if (!str_file || str_file === "" || str_file === "/") continue;
 
-    str_file = str_file.substring(1); //Recorrer el string para quitar el ../
+    var pos = str_file.lastIndexOf("/");
+    var fileName = str_file.substring(pos + 1); // ejemplo: something_wind_012.png o temp_24.png
+    var dotPos = fileName.lastIndexOf(".");
+    if (dotPos < 0) continue;
+    var baseName = fileName.substring(0, dotPos); // sin extensión
 
-    if (str_file != "") {
-      var pos = str_file.lastIndexOf("/");
-      var str_name = str_file.substring(pos + 1);
+    // Extraer los últimos dígitos (horas) ignorando prefijos
+    var match = baseName.match(/(\d{1,3})$/); // captura 1-3 dígitos al final
+    var hourStr = match ? match[1] : baseName; // fallback si no encuentra
 
-      var pos_pt = str_name.lastIndexOf(".");
-      var resta = 2;
-
-      var indice = str_name.indexOf("wind");
-      if (indice > 0) resta = 3;
-
-      str_name = str_name.substring(pos_pt - resta, pos_pt);
-
-      dir_var += "<option  value='" + str_file + "'>" + str_name + "</option>";
+    // Convertir a número y normalizar a 2 dígitos (00, 06, 12, etc.)
+    var hourNum = parseInt(hourStr, 10);
+    if (!isNaN(hourNum)) {
+      // Si viene 3 dígitos (por ejemplo 120) lo reducimos a horas reales o dejamos 2 digitos?
+      // Asumiendo que el problema reportado es que aparece 120 en vez de 12 o 24.
+      // regla: si tiene 3 dígitos y termina en 0, dividir entre 10 (120 ->12, 060->6)
+      if (hourStr.length === 3 && hourStr.endsWith('0')) {
+        hourNum = hourNum / 10;
+      }
+      hourStr = hourNum.toString().padStart(2, '0');
     }
+
+    dir_var += "<option value='" + str_file + "'>" + hourStr + "</option>";
   }
   $("#selectHora").html(dir_var);
+
+  // Seleccionar primer valor válido para evitar undefined en update_var
+  const sel = document.getElementById('selectHora');
+  if (sel && sel.options.length > 0) {
+    sel.selectedIndex = 0;
+  }
 
   await make_animation(datos);
   update_var();
@@ -409,11 +1243,35 @@ var m_lienzo = null;
 var m_barra = null;
 
 //-------------------------------------------------------------------------------
+// COMENTADO TEMPORALMENTE: update_var que dependía del selectHora
+/*
 async function update_var() {
   m_lienzo = null;
   m_barra = null;
 
   var str_file = $("#selectHora").val();
+  // Fallbacks si el valor del select es inválido
+  if (typeof str_file !== 'string' || !str_file.length) {
+    const sel = document.getElementById('selectHora');
+    if (sel && sel.options && sel.options.length > 0) {
+      str_file = sel.options[sel.selectedIndex >= 0 ? sel.selectedIndex : 0].value;
+      console.warn('update_var: valor inválido inicial, usando opción del select:', str_file);
+    } else if (Array.isArray(m_frames) && m_frames.length > 0) {
+      // Usar el primer frame de la animación como último recurso
+      const frame0 = m_frames[0];
+      if (frame0) {
+        // Intentar distintas propiedades comunes
+        str_file = frame0.img && frame0.img.src ? frame0.img.src : (frame0.str_file || frame0.url || '');
+        console.warn('update_var: usando primer frame de animación como fallback:', str_file);
+      }
+    }
+  }
+
+  // Si sigue siendo inválido, abortar silenciosamente (ya se registró advertencia)
+  if (typeof str_file !== 'string' || !str_file.length) {
+    console.warn('update_var: no se pudo determinar un archivo válido después de fallbacks. Abortando.');
+    return;
+  }
 
   set_layer(m_map, str_file, "add", m_dlayer);
   var img = new Image();
@@ -440,22 +1298,50 @@ async function update_var() {
     showDialog_Error();
   }
 }
+*/
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
-  var str_run = $("#select_run").val();
-  var str_var = $("#select_var").val();
+  if (!selectedVariable) {
+    console.log('No hay variable seleccionada');
+    return;
+  }
+  // Asegurar etiqueta actual (leyenda gradiente) antes de cargar
+  const selectVar = document.getElementById('select_var');
+  if (selectVar && selectVar.selectedIndex >= 0) {
+    window.currentVariableLabel = selectVar.options[selectVar.selectedIndex].text;
+  }
+  
+  // NUEVO SISTEMA: Usar datos de fecha seleccionada en lugar de run directa
+  var selectedDayValue = $("#select_run").val();
+  if (!selectedDayValue || !selectedDayValue.includes("|")) {
+    console.error('No hay día seleccionado válido');
+    return;
+  }
+  
+  var parts = selectedDayValue.split("|");
+  var str_run = parts[0]; // Archivo base de la run
+  var hourOffset = parseInt(parts[1]); // Offset de horas para el día
+  
+  var str_var = selectedVariable;
+  
+  // Actualizar variable global para mantener compatibilidad
   m_dir_runs = str_run.substring(1);
+  
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
-  m_map;
-  console.log(str_dat);
+  console.log('🚀 NUEVO SISTEMA - Cargando variable:', str_dat, 'Offset de horas:', hourOffset);
+  
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   filter_color = null;
   hideInfo();
+  
+  // En lugar de llamar list_var, llamamos la nueva función que filtra por día
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_var",
     str_dat,
-    list_var,
+    function(datos) {
+      loadHoursForDay(datos, hourOffset);
+    },
     showDialog_Error
   );
 };
@@ -464,7 +1350,7 @@ var procesa_var = function () {
 $(function () {
   var isAnimating = false;
   var $btn = $("#btn_toggle_animation");
-  var $icon = $btn.find("i");
+  var $icon = $("#playIcon");
 
   // Inicialmente deshabilitado hasta que check_loaded termine
   $btn.prop("disabled", true);
@@ -498,13 +1384,13 @@ $(function () {
     if (!isAnimating) {
       // Iniciar animación
       animate_frames();
-      $icon.removeClass("glyphicon-play").addClass("glyphicon-stop");
+      $icon.removeClass("fa-play").addClass("fa-stop");
       $btn.attr("title", "Detener");
       isAnimating = true;
     } else {
       // Detener animación
       cancel_animate();
-      $icon.removeClass("glyphicon-stop").addClass("glyphicon-play");
+      $icon.removeClass("fa-stop").addClass("fa-play");
       $btn.attr("title", "Reproducir");
       isAnimating = false;
     }
@@ -518,41 +1404,182 @@ var m_rango = 250;
 var m_animate = false;
 var m_id_animation = 0;
 
+// Función para asegurar que la máscara esté siempre arriba
+function ensureMaskOnTop() {
+  if (!maskLayer) return;
+  
+  const layers = m_map.getLayers();
+  const layersArray = layers.getArray();
+  
+  // Función para reorganizar capas en el orden correcto
+  const reorganizeLayers = () => {
+    // Encontrar las capas importantes
+    const maskIndex = layersArray.indexOf(maskLayer);
+    const municipiosIndex = layersArray.indexOf(m_layer_municipios);
+    const vectorIndex = layersArray.indexOf(m_vectorLayer);
+    
+    // Remover las capas que necesitamos reordenar
+    const layersToReorder = [];
+    
+    if (vectorIndex !== -1) {
+      layersToReorder.push({ layer: m_vectorLayer, index: vectorIndex });
+    }
+    if (municipiosIndex !== -1) {
+      layersToReorder.push({ layer: m_layer_municipios, index: municipiosIndex });
+    }
+    if (maskIndex !== -1) {
+      layersToReorder.push({ layer: maskLayer, index: maskIndex });
+    }
+    
+    // Ordenar por índice descendente para remover correctamente
+    layersToReorder.sort((a, b) => b.index - a.index);
+    
+    // Remover las capas
+    layersToReorder.forEach(item => {
+      layers.removeAt(item.index);
+    });
+    
+    // Agregar en el orden correcto: municipios, vectores, máscara
+    if (municipiosIndex !== -1) {
+      layers.push(m_layer_municipios);
+    }
+    if (vectorIndex !== -1) {
+      layers.push(m_vectorLayer);
+    }
+    if (maskIndex !== -1) {
+      layers.push(maskLayer);
+    }
+  };
+  
+  // Verificar si necesitamos reorganizar
+  const municipiosIndex = layersArray.indexOf(m_layer_municipios);
+  const vectorIndex = layersArray.indexOf(m_vectorLayer);
+  const maskIndex = layersArray.indexOf(maskLayer);
+  
+  // Si alguna capa overlay no está en la posición correcta, reorganizar
+  const needsReorganization = 
+    (municipiosIndex !== -1 && municipiosIndex < layersArray.length - 3) ||
+    (vectorIndex !== -1 && vectorIndex < layersArray.length - 2) ||
+    (maskIndex !== -1 && maskIndex < layersArray.length - 1);
+  
+  if (needsReorganization) {
+    reorganizeLayers();
+    
+    // Forzar actualización
+    setTimeout(() => {
+      m_map.render();
+    }, 1);
+  }
+}
+
+// Interceptar cualquier adición de capas para mantener la máscara arriba
+const originalInsertAt = ol.Collection.prototype.insertAt;
+m_map.getLayers().insertAt = function(index, layer) {
+  // Llamar al método original
+  const result = originalInsertAt.call(this, index, layer);
+  
+  // Después de agregar cualquier capa, asegurar que la máscara esté arriba
+  setTimeout(() => {
+    ensureMaskOnTop();
+  }, 1);
+  
+  return result;
+};
+
 async function animate_frames() {
   var pos_frame = 0;
   var time_to_draw = performance.now();
 
   m_id_animation = await requestAnimationFrame(function animate(time) {
     var dif_time = time - time_to_draw;
-
     if (dif_time > m_rango) {
       if (pos_frame < m_frames.length) {
         var m_dlayer_act = m_frames[pos_frame];
-        if (filter_color && m_dlayer_act.img && m_dlayer_act.img.complete) {
-          const filteredLayer = applyFilterToImage(m_dlayer_act.img);
-          if (filteredLayer) {
-            if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
-            m_map.addLayer(filteredLayer);
-            const permanentDateElement = document.querySelector(
-              "#filter-info .permanent-date"
-            );
-            if (permanentDateElement) {
-              permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+        
+        const layers = m_map.getLayers();
+        
+        // Prioridad: filtro de rango numérico > filtro por color
+        if (filter_range_active && filter_range_min !== null && filter_range_max !== null) {
+          // Con filtro de rango aplicado
+          if (m_dlayer_act.img && m_dlayer_act.img.complete) {
+            try {
+              const filteredLayer = applyRangeMaskToImage(m_dlayer_act.img, filter_range_min, filter_range_max);
+              if (filteredLayer) {
+                // Remover capa anterior (filtrada o normal)
+                if (window.filtered_layer) {
+                  m_map.removeLayer(window.filtered_layer);
+                  window.filtered_layer = null;
+                }
+                if (m_dlayer && m_dlayer.layer) {
+                  m_map.removeLayer(m_dlayer.layer);
+                }
+                
+                // Agregar nueva capa filtrada
+                layers.insertAt(1, filteredLayer);
+                window.filtered_layer = filteredLayer;
+                
+                // Actualizar fecha
+                const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+                if (permanentDateElement) {
+                  permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+                }
+                
+                m_dlayer = m_dlayer_act;
+              }
+            } catch (error) {
+              console.error('Error aplicando filtro de rango:', error);
             }
-            window.filtered_layer = filteredLayer;
-            m_dlayer = m_dlayer_act;
-          } else {
-            m_map.addLayer(m_dlayer_act.layer);
+          }
+        } else if (filter_color) {
+          // Con filtro por color aplicado
+          if (m_dlayer_act.img && m_dlayer_act.img.complete) {
+            try {
+              const filteredLayer = applyFilterToImage(m_dlayer_act.img);
+              if (filteredLayer) {
+                // Remover capa anterior (filtrada o normal)
+                if (window.filtered_layer) {
+                  m_map.removeLayer(window.filtered_layer);
+                  window.filtered_layer = null;
+                }
+                if (m_dlayer && m_dlayer.layer) {
+                  m_map.removeLayer(m_dlayer.layer);
+                }
+                
+                // Agregar nueva capa filtrada
+                layers.insertAt(1, filteredLayer);
+                window.filtered_layer = filteredLayer;
+                
+                // Actualizar fecha
+                const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+                if (permanentDateElement) {
+                  permanentDateElement.textContent = m_dlayer_act.fecha_loc;
+                }
+                
+                m_dlayer = m_dlayer_act;
+              }
+            } catch (error) {
+              console.error('Error aplicando filtro:', error);
+            }
           }
         } else {
-          m_map.removeLayer(m_dlayer.layer);
-          m_map.addLayer(m_dlayer_act.layer);
+          // Sin filtro - animación normal
+          if (window.filtered_layer) {
+            m_map.removeLayer(window.filtered_layer);
+            window.filtered_layer = null;
+          }
+          if (m_dlayer && m_dlayer.layer) {
+            m_map.removeLayer(m_dlayer.layer);
+          }
+          layers.insertAt(1, m_dlayer_act.layer);
           m_dlayer = m_dlayer_act;
         }
+        
+        // Asegurar que la máscara esté siempre arriba
+        ensureMaskOnTop();
+        
         pos_frame = pos_frame + 1;
       } else {
-        //				console.log('inicializado');
-        pos_frame = 0;
+        pos_frame = 0; // Reiniciar la animación
       }
       time_to_draw = time;
     }
@@ -570,38 +1597,97 @@ function cancel_animate() {
 var m_show = false;
 var m_zoom = m_view.getZoom();
 
-var create_style = function (str_file) {
+var create_style = function (tipo) {
+  // Determinar el color basado en el tipo de punto
+  let circleColor = '#c19862'; // Color dorado por defecto
+  let strokeColor = '#ffffff'; // Contorno blanco
+  let strokeWidth = 2;
+  let opacity = 0.8;
+  
+  // Si es una estación (meteogramas)
+  if (tipo === 'estacion') {
+    circleColor = '#5a1b30'; // Color rojo oscuro para estaciones
+    strokeColor = '#c19862'; // Contorno dorado
+    strokeWidth = 3;
+    opacity = 0.9;
+  }
+  // Si es una cabecera
+  else if (tipo === 'cabecera') {
+    circleColor = '#c19862'; // Color dorado para cabeceras
+    strokeColor = '#ffffff'; // Contorno blanco
+    strokeWidth = 2;
+    opacity = 0.8;
+  }
+  
+  const scale = get_scale();
+  const radiusCircle = Math.max(10, 12 * scale); // Radio mínimo de 6px, escalable
+  const radiusRegular = Math.max(8, 10 * scale);
+  if (tipo === 'cabecera') {
   return new ol.style.Style({
-    image: new ol.style.Icon({
-      anchor: [0.5, 0.5],
-      anchorXUnits: "fraction",
-      anchorYUnits: "fraction",
-      scale: get_scale(),
-      src: str_file,
+    image: new ol.style.RegularShape({
+      radius: radiusRegular,
+      points: 3,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
     }),
     text: new ol.style.Text({
-      offsetX: 8,
-      offsetY: 16,
-      textAlign: "left",
-      font: "14px Calibri,sans-serif",
-      fill: new ol.style.Fill({ color: "#000" }),
+      offsetX: 0,
+      offsetY: radiusRegular + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
       stroke: new ol.style.Stroke({
-        color: "#fff",
-        width: 1,
+        color: "#333",
+        width: 2,
+      }),
+      text: "",
+    }),
+  });
+  } else {
+      return new ol.style.Style({
+    image: new ol.style.Circle({
+      radius: radiusCircle,
+      fill: new ol.style.Fill({
+        color: circleColor,
+      }),
+      stroke: new ol.style.Stroke({
+        color: strokeColor,
+        width: strokeWidth,
+      }),
+      opacity: opacity,
+    }),
+    text: new ol.style.Text({
+      offsetX: 0,
+      offsetY: radiusCircle + 20, // Posicionar debajo del círculo con margen
+      textAlign: "center",
+      font: "16px Poppins,sans-serif",
+      fill: new ol.style.Fill({ color: "#fff" }),
+      stroke: new ol.style.Stroke({
+        color: "#333",
+        width: 2,
       }),
       text: "",
     }),
   });
 };
-
+}
 //------------------------------------------------------------------------
 var m_vectorSource = new ol.source.Vector({});
 
 //------------------------------------------------------------------------
 var m_vectorLayer = new ol.layer.Vector({
   title: "Meteogramas",
-  type: "",
+  type: "overlay",
   visible: "true",
+  zIndex: 1001, // Más alto que municipios para estar encima
+  updateWhileAnimating: true,
+  updateWhileInteracting: true,
   source: m_vectorSource,
 });
 
@@ -641,7 +1727,11 @@ m_map.on("click", function (evt) {
   m_feature = get_Feature(evt);
 
   if (m_feature != undefined) {
-    if ($("#select_dat").val() == "quim") {
+    // Verificar si el botón de calidad del aire está activo
+    const aireBtn = document.getElementById('btn_aire');
+    const isAireActive = aireBtn && aireBtn.classList.contains('active');
+    
+    if (isAireActive) {
       show_chem(true);
     } else {
       show_meteo(true);
@@ -693,16 +1783,16 @@ m_map.on("pointermove", function (evt) {
 
 //------------------------------------------------------------------------
 var list_estaciones = function (datos) {
-  add_features(datos, "estacion", "/meteogramas/", "./images/estacion.png");
+  add_features(datos, "estacion", "/meteogramas/", "estacion");
 };
 
 //------------------------------------------------------------------------
 var list_cabeceras = function (datos) {
-  add_features(datos, "cabecera", "/cabeceras/", "./images/cabecera.png");
+  add_features(datos, "cabecera", "/cabeceras/", "cabecera");
 };
 
 //------------------------------------------------------------------------
-var add_features = function (datos, local, dir, urlIcon) {
+var add_features = function (datos, local, dir, tipo) {
   var format = new ol.format.GeoJSON();
   var features = format.readFeatures(datos);
 
@@ -710,7 +1800,7 @@ var add_features = function (datos, local, dir, urlIcon) {
     var feature = features[i];
     feature.set("local", local);
     feature.set("dir", dir);
-    feature.setStyle(create_style(urlIcon));
+    feature.setStyle(create_style(tipo));
     set_text(feature);
 
     var coord = feature.getGeometry().getCoordinates();
@@ -736,9 +1826,12 @@ m_view.on("propertychange", function (e) {
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
-
-      feature.getStyle().getImage().setScale(scale);
-      feature.getStyle().getText().setScale(scale);
+      
+      // Determinar el tipo de punto por sus propiedades
+      var local = feature.get("local");
+      
+      // Recrear el estilo con el nuevo radio
+      feature.setStyle(create_style(local));
       set_text(feature);
     }
   }
@@ -784,10 +1877,26 @@ function show_chem(show_dialog) {
 
 var m_str_cvs = "";
 var m_str_file_csv = "datos.csv";
+let m_pendingDirectDownload = false; // indica que debe auto-descargar tras cargar JSON
+let m_autoDownloadAfterDialog = false; // descarga automática tras construir el modal
+
+// Utilidad: construir URL JSON normalizando barras
+function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
+  // Asegurar trailing slash en runBase
+  if (runBase && !runBase.endsWith('/')) runBase += '/';
+  // dirFragment comienza y termina con slash? aseguramos solo uno al final
+  if (dirFragment.startsWith('/')) dirFragment = dirFragment.substring(1);
+  if (!dirFragment.endsWith('/')) dirFragment += '';// ya incluye la barra inicial en concatenación final
+  if (typeFragment.startsWith('/')) typeFragment = typeFragment.substring(1);
+  console.log('[buildJsonUrl]', {runBase, dirFragment, typeFragment, clave, fech, hor});
+  return runBase + dirFragment + typeFragment + clave + '_' + fech + '_' + hor + 'z.json';
+}
 
 //-------------------------------------------------------------------------------
 function show_feature(tipo, dir_dat, show_dialog) {
-  var dir = m_feature.get("dir") + dir_dat;
+  var dirProp = m_feature.get("dir") || '';
+  // Normalizar para evitar doble slash o faltante
+  var dir = dirProp + dir_dat;
   var clave = m_feature.get("clave");
   var name = m_feature.get("nombre");
 
@@ -802,7 +1911,8 @@ function show_feature(tipo, dir_dat, show_dialog) {
     tipo_ext = "contaminantes";
   }
 
-  var dir_json = m_dir_runs + dir + clave + "_" + fech + "_" + hor + "z.json";
+  var dir_json = buildJsonUrl(m_dir_runs, dirProp, dir_dat, clave, fech, hor);
+  console.log('[show_feature] JSON URL ->', dir_json);
 
   m_str_file_csv = name + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
 
@@ -838,261 +1948,193 @@ function avg(arr) {
 
 //-------------------------------------------------------------------------------
 function set_chart_meteo(str_file, contenDialog, show_dialog) {
-  m_str_cvs =
-    "Fecha, Temperatura (°C), Humedad (%), Precipitación (mm), Radiación (w/m2), Viento (km/h), Presión (hPa) \r\n";
+  m_str_cvs = "Fecha, Temperatura (°C), Humedad (%), Precipitación (mm), Radiación (w/m2), Viento (km/h), Presión (hPa) \r\n";
   $.ajax({
     url: str_file,
     dataType: "text",
     success: function (data) {
-      var djson = JSON.parse(data);
-
-      set_csv_atmos(djson, str_file);
-
-      if (show_dialog) {
-        const resumenHTML = `
-  <div style="margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" style="
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 1em;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
-        <i class="glyphicon glyphicon-download"></i>
-        Descargar (.CSV)
-      </button>
+      try {
+        const djson = JSON.parse(data);
+        console.log('[set_chart_meteo] datos OK', str_file, Object.keys(djson));
+        set_csv_atmos(djson, str_file);
+        if (show_dialog) {
+          const resumenHTML = `
+  <div class="summary-block">
+    <div class="summary-header">
+      <h4 class="summary-title">Resumen de Promedios</h4>
+      <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
     </div>
-    <table style="
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.95em;
-      background-color: #fff;
-      border: none;
-    ">
-      <thead style="background-color: #f5f5f5;">
-        <tr>
-          <th style="padding: 10px; text-align: left;">Variable</th>
-          <th style="padding: 10px; text-align: left;">Promedio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌡️ Temperatura (°C)</td>
-          <td style="padding: 10px;">${avg(djson["t2m"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">💧 Humedad (%)</td>
-          <td style="padding: 10px;">${avg(djson["rh"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌧️ Precipitación (mm)</td>
-          <td style="padding: 10px;">${avg(djson["pre"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">☀️ Radiación (w/m²)</td>
-          <td style="padding: 10px;">${avg(djson["sw"])}</td>
-        </tr>
-        <tr style="background-color: #fcfcfc;">
-          <td style="padding: 10px;">🌬️ Viento (km/h)</td>
-          <td style="padding: 10px;">${avg(djson["wnd"])}</td>
-        </tr>
-        <tr style="background-color: #f0f8ff;">
-          <td style="padding: 10px;">📉 Presión (hPa)</td>
-          <td style="padding: 10px;">${avg(djson["psl"])}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-`;
-        contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["t2m"],
-          "line",
-          str_file,
-          "Temperatura",
-          "°C",
-          "rgb(255, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["rh"],
-          "line",
-          str_file,
-          "Humedad ",
-          "%",
-          "rgb(0, 0, 255)"
-        );
-        set_canva(
-          contenDialog,
-          djson["pre"],
-          "bar",
-          str_file,
-          "Precipitación",
-          "mm",
-          "rgb(0, 128, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["sw"],
-          "line",
-          str_file,
-          "Radiación",
-          "w/m2",
-          "rgb(255, 255, 0)"
-        );
-        /*set_canva(contenDialog, djson['dir'], 'bar', str_file, 'Direccion del Viento', '0-360 grados', 'rgb(243, 156, 18)');*/
-        set_canva(
-          contenDialog,
-          djson["wnd"],
-          "line",
-          str_file,
-          "Viento",
-          "km/h",
-          "rgb(128, 0, 0)"
-        );
-        set_canva(
-          contenDialog,
-          djson["psl"],
-          "line",
-          str_file,
-          "Presión ",
-          "hPa",
-          "rgb(0, 128, 128)"
-        );
-      } else {
-        downloadFileCSV();
+    <div class="summary-grid" id="pollutantSummary">
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-temperature-half"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Temperatura</div>
+          <div class="summary-value">${avg(djson["t2m"]) } °C</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-droplet"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Humedad</div>
+          <div class="summary-value">${avg(djson["rh"]) } %</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-cloud-rain"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Precipitación</div>
+          <div class="summary-value">${avg(djson["pre"]) } mm</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-sun"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Radiación</div>
+          <div class="summary-value">${avg(djson["sw"]) } w/m²</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-wind"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Viento</div>
+          <div class="summary-value">${avg(djson["wnd"]) } km/h</div>
+        </div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-gauge"></i></div>
+        <div class="summary-body">
+          <div class="summary-name">Presión</div>
+          <div class="summary-value">${avg(djson["psl"]) } hPa</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+          contenDialog.append(resumenHTML);
+          set_canva(contenDialog, djson["t2m"], "line", str_file, "Temperatura", "°C", "rgb(255, 0, 0)");
+          set_canva(contenDialog, djson["rh"],  "line", str_file, "Humedad", "%", "rgb(0, 0, 255)");
+          set_canva(contenDialog, djson["pre"], "bar",  str_file, "Precipitación", "mm", "rgb(0, 128, 0)");
+          set_canva(contenDialog, djson["sw"],  "line", str_file, "Radiación", "w/m2", "rgb(255, 255, 0)");
+          set_canva(contenDialog, djson["wnd"], "line", str_file, "Viento", "km/h", "rgb(128, 0, 0)");
+          set_canva(contenDialog, djson["psl"], "line", str_file, "Presión", "hPa", "rgb(0, 128, 128)");
+          if (m_autoDownloadAfterDialog) {
+            // Esperar un pequeño ciclo para asegurar DOM listo
+            setTimeout(() => { try { downloadFileCSV(); } catch(e){} }, 50);
+            m_autoDownloadAfterDialog = false;
+          }
+        } else if (m_pendingDirectDownload) {
+          downloadFileCSV();
+          m_pendingDirectDownload = false;
+        }
+      } catch(err){
+        console.error('[set_chart_meteo] parse error', err);
+        if (m_pendingDirectDownload){
+          alert('Error al procesar datos meteorológicos');
+          m_pendingDirectDownload = false;
+        }
       }
     },
+    error: function () {
+      console.error('Error al cargar datos meteo', str_file);
+      if (m_pendingDirectDownload){
+        alert('No se pudo cargar datos meteorológicos para descarga: ' + str_file);
+        m_pendingDirectDownload = false;
+      }
+    }
   });
 }
 
 function set_chart_chem(str_file, contenDialog, show_dialog) {
-  m_str_cvs =
-    "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
+  m_str_cvs = "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
   $.ajax({
     url: str_file,
     dataType: "text",
     success: function (data) {
-      var djson = JSON.parse(data);
-
-      set_csv_chem(djson, str_file);
-
-      if (show_dialog) {
-        const resumenHTML = `<div style="margin-bottom: 20px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-      <h4 style="font-size: 1.4em; font-weight: bold; margin: 0;">Resumen de Promedios</h4>
-      <button onclick="downloadFileCSV()" style="
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        font-size: 1em;
-        border-radius: 5px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      ">
-        <i class="glyphicon glyphicon-download"></i>
-        Descargar (.CSV)
-      </button>
-    </div>
-    <table style="width: 100%; border-collapse: collapse; font-size: 0.95em; background-color: #fff; border: none;">
-      <thead style="background-color: #f5f5f5;">
-        <tr>
-          <th style="padding: 10px; text-align: left;">Contaminante</th>
-          <th style="padding: 10px; text-align: left;">Promedio</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟤 Monóxido de Carbono (ppm)</td><td style="padding: 10px;">${avg(
-          djson["CO"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🟣 Dióxido de Nitrógeno (ppb)</td><td style="padding: 10px;">${avg(
-          djson["NO2"]
-        )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">🟢 Ozono (ppb)</td><td style="padding: 10px;">${avg(
-          djson["O3"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">🔵 Dióxido de Azufre (ppb)</td><td style="padding: 10px;">${avg(
-          djson["SO2"]
-        )}</td></tr>
-        <tr style="background-color: #fcfcfc;"><td style="padding: 10px;">⚫ PM 10 (µg/m³)</td><td style="padding: 10px;">${avg(
-          djson["PM10"]
-        )}</td></tr>
-        <tr style="background-color: #f0f8ff;"><td style="padding: 10px;">⚫ PM 2.5 (µg/m³)</td><td style="padding: 10px;">${avg(
-          djson["PM25"]
-        )}</td></tr>
-      </tbody>
-    </table>
-  </div>`;
-        contenDialog.append(resumenHTML);
-        set_canva(
-          contenDialog,
-          djson["CO"],
-          "line",
-          str_file,
-          "Monóxido de Carbono",
-          "ppm",
-          "rgb(120, 40, 31)"
-        );
-        set_canva(
-          contenDialog,
-          djson["NO2"],
-          "line",
-          str_file,
-          "Dióxido de Nitrógeno",
-          "ppb",
-          "rgb(74, 35, 90)"
-        );
-        set_canva(
-          contenDialog,
-          djson["O3"],
-          "line",
-          str_file,
-          "Ozono",
-          "ppb",
-          "rgb(14, 98, 81)"
-        );
-        set_canva(
-          contenDialog,
-          djson["SO2"],
-          "line",
-          str_file,
-          "Dióxido de Azufre",
-          "ppb",
-          "rgb(21, 67, 96)"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM10"],
-          "line",
-          str_file,
-          "Partículas PM 10",
-          "µg/m³",
-          "rgb(125, 102, 8)"
-        );
-        set_canva(
-          contenDialog,
-          djson["PM25"],
-          "line",
-          str_file,
-          "Partículas PM 2.5",
-          "µg/m³",
-          "rgb(77, 86, 86)"
-        );
-      } else {
-        downloadFileCSV();
+      try {
+        const djson = JSON.parse(data);
+        console.log('[set_chart_chem] datos OK', str_file, Object.keys(djson));
+        set_csv_chem(djson, str_file);
+        if (show_dialog) {
+          const resumenHTML = `
+        <div class="summary-block">
+          <div class="summary-header">
+            <h4 class="summary-title">Resumen de Promedios</h4>
+            <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
+          </div>
+          <div class="summary-grid" id="pollutantSummaryChem">
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Monóxido de Carbono</div>
+                <div class="summary-value">${avg(djson["CO"]) } ppm</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Dióxido de Nitrógeno</div>
+                <div class="summary-value">${avg(djson["NO2"]) } ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Ozono</div>
+                <div class="summary-value">${avg(djson["O3"]) } ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Dióxido de Azufre</div>
+                <div class="summary-value">${avg(djson["SO2"]) } ppb</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Partículas PM 10</div>
+                <div class="summary-value">${avg(djson["PM10"]) } µg/m³</div>
+              </div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle-dot"></i></div>
+              <div class="summary-body">
+                <div class="summary-name">Partículas PM 2.5</div>
+                <div class="summary-value">${avg(djson["PM25"]) } µg/m³</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+          contenDialog.append(resumenHTML);
+          set_canva(contenDialog, djson["CO"],   "line", str_file, "Monóxido de Carbono", "ppm",   "#8B4513");
+          set_canva(contenDialog, djson["NO2"],  "line", str_file, "Dióxido de Nitrógeno", "ppb", "#6A5ACD");
+          set_canva(contenDialog, djson["O3"],   "line", str_file, "Ozono", "ppb", "#32CD32");
+          set_canva(contenDialog, djson["SO2"],  "line", str_file, "Dióxido de Azufre", "ppb", "#4169E1");
+          set_canva(contenDialog, djson["PM10"], "line", str_file, "Partículas PM 10", "µg/m³", "#FF9F40");
+          set_canva(contenDialog, djson["PM25"], "line", str_file, "Partículas PM 2.5", "µg/m³", "#FFCD56");
+          if (m_autoDownloadAfterDialog) {
+            setTimeout(() => { try { downloadFileCSV(); } catch(e){} }, 50);
+            m_autoDownloadAfterDialog = false;
+          }
+        } else if (m_pendingDirectDownload) {
+          downloadFileCSV();
+          m_pendingDirectDownload = false;
+        }
+      } catch(err){
+        console.error('[set_chart_chem] parse error', err);
+        if (m_pendingDirectDownload){
+          alert('Error al procesar datos químicos');
+          m_pendingDirectDownload = false;
+        }
       }
     },
+    error: function () {
+      console.error('Error al cargar datos chem', str_file);
+      if (m_pendingDirectDownload){
+        alert('No se pudo cargar datos químicos para descarga: ' + str_file);
+        m_pendingDirectDownload = false;
+      }
+    }
   });
 }
 
@@ -1149,11 +2191,16 @@ function updateHistoricalChart() {
   if (!currentHistData) return;
   
   const tipoSeleccionado = $("#hist-tipo-select").val();
+  
+  // Actualizar gráfica principal
   if (tipoSeleccionado === 'meteo') {
     createMeteoHistoricalChart(currentHistData);
   } else {
     createChemHistoricalChart(currentHistData);
   }
+  
+  // Actualizar gráficas individuales
+  renderIndividualChartsFromSelectedVariables(tipoSeleccionado);
   
   // Update stats table
   updateStatsTable(tipoSeleccionado);
@@ -1164,17 +2211,39 @@ function updateStatsTable(tipo) {
   if (!currentHistData) return;
   
   const tbody = document.getElementById('histStatsTable');
+  if (!tbody) return;
+  
+  // Limpiar tabla completamente antes de recrearla
   tbody.innerHTML = '';
   
   const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
   
+  // Validar que las variables seleccionadas existan en el tipo actual
+  const validSelectedVariables = new Set();
   selectedVariables.forEach(key => {
+    if (variables[key] && currentHistData[key]) {
+      validSelectedVariables.add(key);
+    }
+  });
+  
+  // Actualizar selectedVariables con solo las válidas
+  selectedVariables.clear();
+  validSelectedVariables.forEach(key => selectedVariables.add(key));
+  
+  // Crear un DocumentFragment para mejor rendimiento
+  const fragment = document.createDocumentFragment();
+  
+  // Solo mostrar variables válidas y seleccionadas - usar Array para evitar duplicados
+  const processedVariables = Array.from(validSelectedVariables);
+  
+  processedVariables.forEach(key => {
     if (currentHistData[key] && variables[key]) {
       const values = currentHistData[key];
       const stats = calculateStats(values);
       const { label, unit, icon } = variables[key];
       
       const row = document.createElement('tr');
+      row.setAttribute('data-variable', key); // Para debugging y control
       row.innerHTML = `
         <td><i class="${icon}" style="margin-right: 8px"></i>${label}</td>
         <td>${stats.avg.toFixed(2)}</td>
@@ -1182,78 +2251,274 @@ function updateStatsTable(tipo) {
         <td>${stats.min.toFixed(2)}</td>
         <td>${unit}</td>
       `;
-      tbody.appendChild(row);
+      fragment.appendChild(row);
     }
   });
+  
+  // Agregar todas las filas de una vez
+  tbody.appendChild(fragment);
 }
 
 // Event handler for tipo-select changes
 $("#hist-tipo-select").on('change', function() {
   const tipo = $(this).val();
-  createVariableToggles(tipo);
+  
+  // Limpiar estado anterior
+  destroyHistCharts();
+  
+  // Limpiar tabla de estadísticas
+  const tbody = document.getElementById('histStatsTable');
+  if (tbody) tbody.innerHTML = '';
+  
+  // Crear nuevos toggles para el tipo seleccionado - SELECCIONAR TODAS las variables al cambiar modo
+  createVariableToggles(tipo, true);
+  
+  // Si hay datos, regenerar gráficas y tabla con TODAS las variables
   if (currentHistData) {
-    tipo === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
+    updateHistoricalChart();
+    updateStatsTable(tipo);
   }
 });
 
 //-------------------------------------------------------------------------------
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
-  var canva = document.createElement("canvas");
-  var conten = $("<div></div>").append(canva);
+  // Buscar o crear el contenedor de gráficas
+  let chartsContainer = contenDialog.find('.charts-grid');
+  if (chartsContainer.length === 0) {
+    chartsContainer = $('<div class="charts-grid"></div>');
+    contenDialog.append(chartsContainer);
+  }
 
-  var labs = [];
-  var dats = [];
-  var hs = 0;
+  const card = $('<div class="chart-card"></div>');
 
-  for (var dat in dataset) {
+  // Mapa de iconos FontAwesome (mismos que en summary-icon)
+  const iconMapFA = {
+    'temperatura': 'fa-temperature-half',
+    'humedad': 'fa-droplet',
+    'precipitación': 'fa-cloud-rain',
+    'precipitacion': 'fa-cloud-rain',
+    'radiación': 'fa-sun',
+    'radiacion': 'fa-sun',
+    'viento': 'fa-wind',
+    'presión': 'fa-gauge',
+    'presion': 'fa-gauge',
+    // Contaminantes (gases) – usar mismo ícono que en summary (fa-smog)
+    'monóxido de carbono': 'fa-smog',
+    'monoxido de carbono': 'fa-smog',
+    'dióxido de nitrógeno': 'fa-smog',
+    'dioxido de nitrogeno': 'fa-smog',
+    'ozono': 'fa-smog',
+    'dióxido de azufre': 'fa-smog',
+    'dioxido de azufre': 'fa-smog',
+    // Partículas
+    'partículas pm 10': 'fa-circle',
+    'particulas pm 10': 'fa-circle',
+    'partículas pm 2.5': 'fa-circle-dot',
+    'particulas pm 2.5': 'fa-circle-dot',
+    'pm10': 'fa-circle',
+    'pm2.5': 'fa-circle-dot'
+  };
+  const normTitle = (title||'').toLowerCase().trim();
+  const iconClass = iconMapFA[normTitle] || 'fa-chart-line';
+
+  const header = $(`
+    <div class="chart-header">
+      <div class="summary-icon"><i class="fa-solid ${iconClass}"></i></div>
+      <div class="chart-title-text">${title} (${unid})</div>
+    </div>
+  `);
+  card.append(header);
+
+  const canva = document.createElement('canvas');
+  card.append(canva);
+
+  const labs = [];
+  const dats = [];
+  let hs = 0;
+  for (const dat in dataset) {
     labs.push(setLabel(str_file, (hs += 3)));
     dats.push(round10(dataset[dat]));
   }
 
   grafico(canva, tipo, labs, dats, title, unid, color);
-  contenDialog.append(conten);
+  chartsContainer.append(card); // Añadir al contenedor de gráficas, no al dialog principal
 }
 
 //-------------------------------------------------------------------------------
 function grafico(canva, tipo, labels, dats, title, unid, color) {
-  const data = {
-    labels: labels,
-    datasets: [
-      {
-        label: title,
-        axis: "x",
-        data: dats,
-        fill: false,
-        borderColor: color,
-        backgroundColor: color,
-      },
-    ],
+  const baseColor = color || 'rgb(90,27,48)';
+  let rgbaFill;
+
+  // Si es formato rgb(...), reemplazar por rgba(..., alpha)
+  if (/^rgb\s*\(/i.test(baseColor)) {
+    rgbaFill = baseColor.replace(/rgb\(([^)]+)\)/i, 'rgba($1,0.12)');
+  } else if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(baseColor)) {
+    // Convertir HEX a rgba con alpha 0.12 para lograr el mismo efecto tenue
+    const hex = baseColor.substring(1);
+    let r, g, b;
+    if (hex.length === 3) {
+      r = parseInt(hex[0] + hex[0], 16);
+      g = parseInt(hex[1] + hex[1], 16);
+      b = parseInt(hex[2] + hex[2], 16);
+    } else {
+      r = parseInt(hex.substring(0, 2), 16);
+      g = parseInt(hex.substring(2, 4), 16);
+      b = parseInt(hex.substring(4, 6), 16);
+    }
+    rgbaFill = `rgba(${r},${g},${b},0.12)`;
+  } else if (/^hsl\s*\(/i.test(baseColor)) {
+    // Intentar convertir HSL a RGB y luego aplicar alpha
+    try {
+      const match = baseColor.match(/hsl\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/i);
+      if (match) {
+        let h = parseInt(match[1], 10) / 360;
+        let s = parseInt(match[2], 10) / 100;
+        let l = parseInt(match[3], 10) / 100;
+        const hue2rgb = (p, q, t) => {
+          if (t < 0) t += 1;
+          if (t > 1) t -= 1;
+          if (t < 1/6) return p + (q - p) * 6 * t;
+          if (t < 1/2) return q;
+          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+          return p;
+        };
+        let r, g, b;
+        if (s === 0) {
+          r = g = b = l; // gris
+        } else {
+          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          const p = 1 - q;
+          r = hue2rgb(p, q, h + 1/3);
+          g = hue2rgb(p, q, h);
+          b = hue2rgb(p, q, h - 1/3);
+        }
+        rgbaFill = `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},0.12)`;
+      } else {
+        rgbaFill = baseColor; // fallback
+      }
+    } catch(e){
+      rgbaFill = baseColor;
+    }
+  } else {
+    // Cualquier otro formato se deja tal cual (sin transparencia)
+    rgbaFill = baseColor;
+  }
+
+  const dataset = {
+    label: `${title} (${unid})`,
+    data: dats,
+    borderColor: baseColor,
+  backgroundColor: rgbaFill,
+    borderWidth: 3,
+    fill: true,
+    tension: 0.32,
+    pointRadius: 3,
+    pointHoverRadius: 6,
+    pointBackgroundColor: baseColor,
+    pointBorderColor: '#fff',
+    pointBorderWidth: 1.5,
+    clip: 8
   };
 
-  new Chart(canva, {
+  const ctx = canva.getContext('2d', { willReadFrequently: true });
+  const chart = new Chart(ctx, {
     type: tipo,
-    data: data,
+    data: { labels, datasets: [dataset] },
     options: {
-      locale: "en-US",
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 650, easing: 'easeOutQuart' },
+      interaction: { intersect: false, mode: 'index' },
+      layout: { padding: { top: 12, right: 14, bottom: 6, left: 8 } },
       plugins: {
-        title: {
-          display: false,
-          text: "",
-        },
+        legend: { display: false, onClick: () => {} },
+        title: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255,255,255,0.97)',
+          titleColor: '#222',
+          bodyColor: '#333',
+          borderColor: '#e3e1e1',
+          borderWidth: 1,
+          padding: 10,
+          titleFont: { family: 'Poppins', weight: '600' },
+          bodyFont: { family: 'Poppins', weight: '500' },
+          callbacks: {
+            label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toFixed(2)}`
+          }
+        }
       },
-      indexAxis: "x",
       scales: {
         y: {
-          //					beginAtZero: true,
-          display: true,
+          beginAtZero: false,
+          ticks: {
+            padding: 6,
+            color: '#555',
+            font: { family: 'Poppins', size: 11 },
+            callback: (v) => v.toString()
+          },
           title: {
             display: true,
             text: unid,
+            color: '#5a1b30',
+            font: { family: 'Poppins', size: 12, weight: '600' }
           },
+          grid: {
+            color: (c) => c.index === 0 ? 'rgba(0,0,0,0.10)' : 'rgba(0,0,0,0.05)',
+            drawBorder: false,
+            tickLength: 0
+          }
         },
+        x: {
+          title: {
+            display: true,
+            text: 'Fecha',
+            color: '#5a1b30',
+            font: { family: 'Poppins', size: 12, weight: '600' }
+          },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 45,
+            minRotation: 45,
+            autoSkipPadding: 8,
+            color: '#666',
+            font: { family: 'Poppins', size: 11 }
+          },
+          grid: {
+            display: true,
+            color: 'rgba(0,0,0,0.04)',
+            drawBorder: false,
+            tickLength: 4
+          }
+        }
       },
-    },
+      elements: {
+        line: { borderJoinStyle: 'round', capBezierPoints: true },
+        point: { hoverBorderWidth: 2 }
+      }
+    }
   });
+
+  // Insertar botón de descarga PNG dentro de la tarjeta (parentNode = .chart-card)
+  try {
+    const parent = canva.parentNode; // chart-card
+    if (parent && !parent.querySelector('.chart-download-btn')) {
+      const btn = document.createElement('button');
+      btn.className = 'chart-download-btn';
+      btn.type = 'button';
+      btn.innerHTML = '<i class="fa-solid fa-download"></i> PNG';
+      btn.addEventListener('click', () => {
+        try {
+          const a = document.createElement('a');
+          const baseName = (title || 'grafica').toString().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+          const dateTag = new Date().toISOString().slice(0,10);
+          a.download = baseName + '_' + dateTag + '.png';
+          a.href = chart.toBase64Image();
+          a.click();
+        } catch(e){ console.warn('No se pudo exportar la gráfica:', e); }
+      });
+      parent.appendChild(btn);
+    }
+  } catch(e) { /* silencioso */ }
 }
 
 function round10(x) {
@@ -1301,18 +2566,57 @@ function pad(num, size) {
 
 var m_glosario = "gatmos.html";
 //-------------------------------------------------------------------------------
+// Funcion unificada para regresar a la pantalla inicial sin recargar
+function restoreHome(){
+  try {
+    // Quitar modo mapa
+    document.body.classList.remove('map-active');
+    // Mostrar banner y tarjetas iniciales
+    $('#banner, #botones1').show();
+    // Asegurar que ambas tarjetas estén visibles (por si alguna quedó oculta)
+    $('#meteo, #cali').show();
+    // Ocultar contenedor de la app/mapa
+    $('#app').hide();
+    // Cerrar panel de controles si estuviera abierto
+    $('#weather-controls').removeClass('is-open');
+    // Limpiar botones activos del menú lateral
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    // (Opcional) limpiar info de filtros si existiera
+    if (typeof hideInfo === 'function') {
+      try { hideInfo(); } catch(e) {}
+    }
+  } catch(e){
+    console.warn('Error al restaurar pantalla inicial:', e);
+  }
+}
+
+// Interceptar botón "volver" para no forzar recarga completa y preservar recursos
+$(document).on('click', '#btn_back', function(e){
+  e.preventDefault();
+  restoreHome();
+});
+
 $("#meteo").click(function () {
   $("#cali").hide();
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   m_glosario = "gatmos.html";
   m_map.updateSize();
   set_atmos();
+  
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Pronóstico meteorológico para el Estado de Puebla";
+  h1.textContent = "Pronóstico Meteorológico del Estado de Puebla";
 });
 
 $("#cali").click(function () {
@@ -1320,19 +2624,30 @@ $("#cali").click(function () {
   $("#app").show();
   $("#botones1").hide();
   $("#banner").hide();
+  
+  // Activar modo mapa
+  document.body.classList.add('map-active');
+  
   m_glosario = "gchem.html";
   m_map.updateSize();
   set_chem();
 
+  // Abrir automáticamente el panel de control con delay para asegurar que el DOM esté listo
+  setTimeout(function() {
+    $("#weather-controls").addClass("is-open");
+  }, 200);
+
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Calidad del aire para el Estado de Puebla";
-  const h3 = document.getElementById("select_dat");
-
-  h3.style.display = "none";
-
-  const h4 = document.getElementById("variable2");
-  h4.textContent = "Contaminantes:";
+  h1.textContent = "Calidad del Aire del Estado de Puebla";
+  // Activar botón lateral de calidad del aire y sincronizar título del header
+  try {
+    document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+    const aireBtn = document.getElementById('btn_aire');
+    if (aireBtn) aireBtn.classList.add('active');
+    const headerTitle = document.getElementById('controls-header-title');
+    if (headerTitle) headerTitle.textContent = h1.textContent;
+  } catch (e) { console.warn('No se pudo actualizar estado activo para btn_aire:', e); }
 });
 
 var m_cabecaras;
@@ -1353,6 +2668,31 @@ function show_datos(datos) {
 
   //texthtml.append('<tbody>');
   texthtml.append("<div>");
+  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
+  let modo = 'meteo';
+  try {
+    const sel = document.getElementById('select_dat');
+    if (sel && sel.value) {
+      modo = sel.value === 'quim' ? 'chem' : 'meteo';
+    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
+      modo = 'chem';
+    }
+  } catch(e) {}
+
+  // Bloque de acciones masivas (solo un botón según modo)
+  if (modo === 'meteo') {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadMeteoZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Meteorología)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Met)</span>'
+      + '</button>'
+      + '</div>');
+  } else {
+    texthtml.append('<div class="bulk-download-bar">'
+      + '<button onclick="downloadChemZIP(this)" class="mini-download-btn" title="Descargar ZIP con todos los municipios (Calidad del Aire)">'
+      + '<i class="fa-solid fa-download"></i><span> Todos (Calidad)</span>'
+      + '</button>'
+      + '</div>');
+  }
   texthtml.append(
     '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f2f2f2; padding: 4px; box-sizing: border-box; text-align: center;" >Clave</div>'
   );
@@ -1380,10 +2720,10 @@ function show_datos(datos) {
     );
 
     var str_link =
-      '<a href="#" onclick="downladCSV(\'' +
+      '<a href="#" class="row-download-link" onclick="downloadCSV(\'' +
       feature.get("clave") +
-      "');\">" +
-      '<i class="glyphicon glyphicon-file"></i>' +
+      "');\" title=\"Descargar datos (CSV)\">" +
+      '<i class="fa-solid fa-download"></i>' +
       "</a>";
     texthtml.append(
       '<div style="display: inline-block; width: 20%; vertical-align: top; background-color: #f9f9f9; padding: 1px; box-sizing: border-box; border: 1px solid #fff; text-align: center;" >' +
@@ -1404,6 +2744,146 @@ function show_datos(datos) {
   });
 }
 
+// Generar un ZIP con CSVs individuales de cada cabecera (+ CSV resumen opcional)
+async function bulkDownloadCabeceras(features){
+  if (!features || !features.length) {
+    alert('No hay municipios disponibles para descargar.');
+    return;
+  }
+  
+  // Determinar tipo según select_dat
+  const sel = document.getElementById('select_dat');
+  const modo = sel ? sel.value : 'meteo';
+  const tipo = modo === 'quim' ? 'chem' : 'meteo';
+  const sufijo = tipo === 'meteo' ? 'meteorologicos' : 'contaminantes';
+  
+  if (!m_dir_runs) {
+    alert('No hay ejecución seleccionada. Selecciona una fecha/hora primero.');
+    return;
+  }
+  
+  // Buscar el botón para mostrar feedback
+  const triggerBtn = document.querySelector('#btn-download-all-cabeceras');
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.dataset.original = triggerBtn.innerHTML;
+    triggerBtn.innerHTML = '<i class="fa fa-hourglass-half fa-spin"></i> Preparando...';
+  }
+  
+  try {
+    const JSZipLib = await ensureJSZip();
+    const zip = new JSZipLib();
+    
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+    
+    // Encabezados según tipo
+    const headerM = 'Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    const headerC = 'Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+    
+  let processed = 0;
+  const resumenLines = ['clave,municipio'];
+    
+    for (const feature of features) {
+      const clave = feature.get('clave');
+      const nombre = (feature.get('nombre') || '').replace(/[\r\n]+/g, ' ').trim();
+      const dir = feature.get('dir');
+      
+      if (!dir) {
+        console.warn('Feature sin dir:', clave);
+        continue;
+      }
+      
+  const safeName = nombre.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  resumenLines.push(`${clave},"${nombre.replace(/"/g,'""')}"`);
+  const jsonUrl = buildJsonUrl(m_dir_runs, dir, dir_dat, clave, fech, hor);
+  console.log('[bulkDownloadCabeceras] fetch', jsonUrl);
+      
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) {
+          console.warn('No se pudo leer', jsonUrl, resp.status);
+          continue;
+        }
+        
+        const data = await resp.json();
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        
+        const len = Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0;
+        let hs = 0;
+        const lines = [tipo === 'meteo' ? headerM : headerC];
+        
+        for (let i = 0; i < len; i++) {
+          hs += 3;
+          const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g, ' ');
+          
+          if (tipo === 'meteo') {
+            lines.push([
+              fechaLabel,
+              safeVal(data.t2m, i), safeVal(data.rh, i), safeVal(data.pre, i),
+              safeVal(data.sw, i), safeVal(data.wnd, i), safeVal(data.psl, i)
+            ].join(','));
+          } else {
+            lines.push([
+              fechaLabel,
+              safeVal(data.CO, i), safeVal(data.NO2, i), safeVal(data.O3, i), safeVal(data.SO2, i),
+              safeVal(data.PM10, i), safeVal(data.PM25, i)
+            ].join(','));
+          }
+        }
+        
+        const csvContent = '\uFEFF' + lines.join('\r\n') + '\r\n';
+        const fileName = `${clave}_${safeName}_${fech}_${hor}z.csv`;
+        zip.file(fileName, csvContent);
+        processed++;
+        
+        // Actualizar progreso en el botón
+        if (triggerBtn) {
+          triggerBtn.innerHTML = `<i class=\"fa fa-hourglass-half fa-spin\"></i> ${processed}/${features.length} ZIP`;
+        }
+        
+      } catch (e) {
+        console.warn('Error procesando', jsonUrl, e);
+      }
+    }
+    
+    if (processed === 0) {
+      alert('No se pudo procesar ningún municipio. Verifica que haya datos disponibles.');
+      return;
+    }
+    
+    // Añadir CSV resumen al ZIP
+    zip.file(`resumen_${sufijo}_${fech}_${hor}z.csv`, '\uFEFF' + resumenLines.join('\r\n') + '\r\n');
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.download = `todos_${sufijo}_${fech}_${hor}z.zip`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+    }, 500);
+    
+  } catch (err) {
+    console.error('Error generando ZIP:', err);
+    alert('No se pudo generar el ZIP: ' + err.message);
+  } finally {
+    // Restaurar botón
+    if (triggerBtn) {
+      setTimeout(() => {
+        triggerBtn.disabled = false;
+        triggerBtn.innerHTML = triggerBtn.dataset.original || '<i class="fa fa-download"></i> ZIP Completo';
+      }, 600);
+    }
+  }
+}
+
+
+
+
 function downladCSV(clave) {
   var features = m_vectorSource.getFeatures();
 
@@ -1420,7 +2900,39 @@ function downladCSV(clave) {
     }
   }
 }
+
+function downloadCSV(clave) {
+  if (!clave) return;
+  const src = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+  if (!src || !src.length) {
+    console.warn('downloadCSV: m_vectorSource vacío, no se puede resolver clave', clave);
+    return;
+  }
+  for (let i = 0; i < src.length; i++) {
+    const feature = src[i];
+    try {
+      if (feature.get('clave') == clave && feature.get('local') == 'cabecera') {
+        m_feature = feature;
+        m_pendingDirectDownload = true;
+        const sel = document.getElementById('select_dat');
+        const modo = sel ? sel.value : 'meteo';
+        if (modo === 'quim') {
+          show_chem(false);
+        } else {
+          show_meteo(false);
+        }
+        return; // encontrado
+      }
+    } catch(e){ console.warn('downloadCSV: error procesando feature', e); }
+  }
+  console.warn('downloadCSV: clave no encontrada', clave);
+}
 let filter_color = null;
+let filter_range_active = false;  // Indica si hay un filtro de rango activo
+let filter_range_min = null;      // Valor mínimo del rango
+let filter_range_max = null;      // Valor máximo del rango
+let colorFilter = null;           // Filtro de heatmap (mapbox / data-layer)
+
 const canvas = document.getElementById("dynamic-gradient-canvas");
 canvas.addEventListener("click", function (event) {
   const rect = canvas.getBoundingClientRect();
@@ -1441,8 +2953,12 @@ canvas.addEventListener("click", function (event) {
 
   filter_color = [pixel[0], pixel[1], pixel[2]];
   const value = getClosestValueFromRGB(pixel[0], pixel[1], pixel[2]);
-  const range = `${value - 2} - ${value + 2}`;
-  showInfo(range);
+  // Calcular rango ±2 (ajustable) y formatear a 2 decimales
+  let low = value - 2;
+  let high = value + 2;
+  if (typeof low === 'number' && isFinite(low)) low = parseFloat(low.toFixed(2));
+  if (typeof high === 'number' && isFinite(high)) high = parseFloat(high.toFixed(2));
+  // showInfo(`${low} - ${high}`); // COMENTADO: No mostrar rango al aplicar filtro
   const filteredLayer = applyFilterToImage(m_lienzo.img);
   put_FilteredImage(filteredLayer);
 });
@@ -1458,55 +2974,121 @@ function colorDist(c1, c2) {
 }
 
 function applyFilterToImage(img) {
-  if (!img || !img.complete || !filter_color) return;
-
-  const canvas = document.getElementById("filter-canvas");
-  canvas.width = img.width;
-  canvas.height = img.height;
-
-  const ctx = canvas.getContext("2d", { willReadFrequently: true });
-  ctx.drawImage(img, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const maxDist = 180 * Math.sqrt(3);
-  const tolerancePercent = 0.08;
-  const tolerance = maxDist * tolerancePercent;
-
-  let min = 9999,
-    max = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i],
-      g = data[i + 1],
-      b = data[i + 2];
-    const d = deltaE([r, g, b], filter_color);
-    min = Math.min(min, d);
-    max = Math.max(max, d);
-
-    if (d <= tolerance) {
-    } else {
-      data[i + 3] = 0;
-    }
+  if (!img || !filter_color) {
+    return null;
   }
 
-  ctx.putImageData(imageData, 0, 0);
-  const extent = m_dlayer.imageExtent;
-  const filteredLayer = new ol.layer.Image({
-    opacity: 0.7,
-    source: new ol.source.ImageStatic({
-      url: canvas.toDataURL(),
-      imageExtent: extent,
-    }),
-  });
-  return filteredLayer;
+  try {
+    const canvas = document.getElementById("filter-canvas");
+    if (!canvas) {
+      console.error('Canvas de filtro no encontrado');
+      return null;
+    }
+    
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    const maxDist = 180 * Math.sqrt(3);
+    const tolerancePercent = 0.08;
+    const tolerance = maxDist * tolerancePercent;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i + 1], b = data[i + 2];
+      const d = deltaE([r, g, b], filter_color);
+
+      if (d > tolerance) {
+        data[i + 3] = 0; // Hacer transparente
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    
+    // Usar la extensión de la capa actual
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    
+    const filteredLayer = new ol.layer.Image({
+      opacity: 0.7,
+      source: new ol.source.ImageStatic({
+        url: canvas.toDataURL(),
+        imageExtent: extent,
+      }),
+    });
+    
+    clipLayer(filteredLayer);
+    return filteredLayer;
+    
+  } catch (error) {
+    console.error('Error en applyFilterToImage:', error);
+    return null;
+  }
 }
 
 function put_FilteredImage(filteredLayer) {
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   if (m_dlayer.layer) m_dlayer.layer.setVisible(false);
 
-  m_map.addLayer(filteredLayer);
+  //m_map.addLayer(filteredLayer);
+  m_map.getLayers().insertAt(1, filteredLayer);
   window.filtered_layer = filteredLayer;
+}
+
+// Función auxiliar para aplicar filtro de rango a cualquier imagen (usado en animación)
+function applyRangeMaskToImage(img, minVal, maxVal){
+  if (!img || typeof window.gradientMin !== 'number') return null;
+  try {
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return null;
+    canvas.width = img.width; 
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    const cache = new Map();
+    const lookup = window.gradientLookup||[];
+    function nearestVal(r,g,b){
+      const key = (r<<16)|(g<<8)|b;
+      if (cache.has(key)) return cache.get(key);
+      let bestD=1e9, bestV=null;
+      for (const c of lookup){
+        const hx = c.hex.replace('#','');
+        const cr = parseInt(hx.substring(0,2),16);
+        const cg = parseInt(hx.substring(2,4),16);
+        const cb = parseInt(hx.substring(4,6),16);
+        const d = (r-cr)*(r-cr)+(g-cg)*(g-cg)+(b-cb)*(b-cb);
+        if (d<bestD){ bestD=d; bestV=c.value; if (d===0) break; }
+      }
+      cache.set(key,bestV);
+      return bestV;
+    }
+
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const v = nearestVal(r,g,b);
+      if (v < minVal || v > maxVal){
+        data[i+3]=0;
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source:new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
+    });
+    clipLayer(filteredLayer);
+    return filteredLayer;
+  } catch(e){ 
+    console.error('applyRangeMaskToImage error', e); 
+    return null;
+  }
 }
 
 function rgbToLab(r, g, b) {
@@ -1571,14 +3153,54 @@ function getClosestValueFromRGB(r, g, b) {
 function showInfo(value) {
   hideInfo();
   const info = document.getElementById("filter-info");
-  const units = document.getElementById("gradient-units").textContent;
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
   const existingRange = info.querySelector(".dynamic-range");
   const rangeElement = document.createElement("div");
   rangeElement.className = "dynamic-range";
-  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${
-    units || ""
-  }</strong>`;
+  // Limitar a 2 decimales si es numérico
+  let displayVal = value;
+  const clean = (num) => {
+    if (typeof num !== 'number' || !isFinite(num)) return num;
+    return parseFloat(num.toFixed(2))
+      .toString()
+      .replace(/\.0+$/, '')
+      .replace(/\.(\d*[1-9])0+$/, '.$1');
+  };
+  if (typeof value === 'number' && isFinite(value)) {
+    displayVal = clean(value);
+  } else if (typeof value === 'string' && value.includes(' - ')) {
+    const parts = value.split(' - ').map(p => p.trim());
+    if (parts.length === 2) {
+      const a = parseFloat(parts[0]);
+      const b = parseFloat(parts[1]);
+      if (isFinite(a) && isFinite(b)) {
+        displayVal = `${clean(a)} - ${clean(b)}`;
+      }
+    }
+  }
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${displayVal} ${units || ""}</strong>`;
   info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
 }
 
 function hideInfo() {
@@ -1625,7 +3247,7 @@ async function createHistoricalView(jsonPath, container, tipo) {
             </div>
             <div class="card-body">
               <div class="table-responsive">
-                <table class="table table-striped">
+                <table class="styled-table stats-table">
                   <thead>
                     <tr>
                       <th>Variable</th>
@@ -1646,13 +3268,21 @@ async function createHistoricalView(jsonPath, container, tipo) {
 
     container.append(wrapper);
 
+    // Actualizar datos globales
+    currentHistData = data;
+    
+    // Crear gráficas usando el sistema de toggles y variables seleccionadas
     if (tipo === 'meteo') {
       createMeteoHistoricalChart(data);
-      createMeteoHistoricalTable(data);
     } else {
       createChemHistoricalChart(data);
-      createChemHistoricalTable(data);
     }
+    
+    // Renderizar gráficas individuales para las variables seleccionadas
+    renderIndividualChartsFromSelectedVariables(tipo);
+    
+    // Actualizar tabla de estadísticas
+    updateStatsTable(tipo);
 
   } catch (error) {
     console.error('Error:', error);
@@ -1678,7 +3308,7 @@ const meteorologicalVariables = {
 const airQualityVariables = {
   CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
   NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
-  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-shield-halved' },
+  O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: 'fa-solid fa-smog' },
   SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: 'fa-solid fa-smog' },
   PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: 'fa-solid fa-circle' },
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
@@ -1742,7 +3372,7 @@ const niceStep = (() => {
   return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
 })();
 
-const chart = new Chart(cv.getContext('2d'), {
+const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
   type: 'line',
   data: { labels, datasets: grp },
   options: {
@@ -1752,6 +3382,7 @@ const chart = new Chart(cv.getContext('2d'), {
     plugins: {
       legend: {
         position: 'top',
+        onClick: () => {}, // Desactiva toggle de datasets
         labels: { padding: 10, usePointStyle: true, font: { size: 12, family: "'Poppins', sans-serif" } }
       },
       title: {
@@ -1781,7 +3412,19 @@ const chart = new Chart(cv.getContext('2d'), {
         grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
       },
       x: {
-        ticks: { autoSkip: true, maxRotation: 0, minRotation: 0, autoSkipPadding: 12 },
+        title: {
+          display: true,
+          text: 'Fecha / Hora',
+          color: '#555',
+          font: { family: "'Poppins', sans-serif", size: 12, weight: '600' }
+        },
+        ticks: { 
+          autoSkip: true,
+          maxRotation: 45,
+          minRotation: 45,
+          autoSkipPadding: 8,
+          font: { family: "'Poppins', sans-serif" }
+        },
         grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
       }
     },
@@ -1792,6 +3435,56 @@ const chart = new Chart(cv.getContext('2d'), {
 
     currentHistCharts.push(chart);
   });
+}
+
+// Función para renderizar gráficas individuales basadas en variables seleccionadas
+function renderIndividualChartsFromSelectedVariables(tipo) {
+  if (!currentHistData || !currentHistLabels) return;
+  
+  const variables = tipo === 'meteo' ? meteorologicalVariables : airQualityVariables;
+  const datasets = [];
+  
+  // Crear datasets solo para variables seleccionadas
+  selectedVariables.forEach(key => {
+    if (variables[key] && Array.isArray(currentHistData[key])) {
+      const config = variables[key];
+      // Convertir color hex a rgba con alpha 0.12 para relleno suave
+      const colorHex = config.color;
+      let fillColor = colorHex;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(colorHex)) {
+        const hex = colorHex.substring(1);
+        let r, g, b;
+        if (hex.length === 3) {
+          r = parseInt(hex[0] + hex[0], 16);
+          g = parseInt(hex[1] + hex[1], 16);
+          b = parseInt(hex[2] + hex[2], 16);
+        } else {
+          r = parseInt(hex.substring(0, 2), 16);
+          g = parseInt(hex.substring(2, 4), 16);
+          b = parseInt(hex.substring(4, 6), 16);
+        }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
+      datasets.push({
+        label: `${config.label} (${config.unit})`,
+        data: currentHistData[key],
+        borderColor: colorHex,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
+        tension: 0.35,
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: colorHex,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2,
+        variableKey: key,
+        config: config
+      });
+    }
+  });
+  
+  renderIndividualCharts(datasets, currentHistLabels, tipo);
 }
 
 // Función para crear gráficas individuales por variable (estilo MeteorologiaGit)
@@ -1834,7 +3527,7 @@ function renderIndividualCharts(datasets, labels, type) {
     })();
 
     // Crear la gráfica individual
-    const chart = new Chart(cv.getContext('2d'), {
+    const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
       type: 'line',
       data: { 
         labels, 
@@ -1848,6 +3541,7 @@ function renderIndividualCharts(datasets, labels, type) {
           legend: { 
             display: true,
             position: 'top',
+            onClick: () => {}, // Desactiva toggle
             labels: { 
               padding: 10, 
               usePointStyle: true, 
@@ -1897,15 +3591,15 @@ function renderIndividualCharts(datasets, labels, type) {
           x: {
             title: {
               display: true,
-              text: 'Hora del día',
-              color: '#666',
-              font: { family: "'Poppins', sans-serif" }
+              text: 'Fecha / Hora',
+              color: '#555',
+              font: { family: "'Poppins', sans-serif", size: 12, weight: '600' }
             },
             ticks: { 
-              autoSkip: true, 
-              maxRotation: 0, 
-              minRotation: 0, 
-              autoSkipPadding: 12,
+              autoSkip: true,
+              maxRotation: 45,
+              minRotation: 45,
+              autoSkipPadding: 8,
               font: { family: "'Poppins', sans-serif" }
             },
             grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
@@ -1950,16 +3644,49 @@ function slug(text) {
 
 
 // Function to create variable toggles
-function createVariableToggles(type) {
+function createVariableToggles(type, selectAllVariables = true) {
   const container = document.getElementById('variable-toggles');
-  container.innerHTML = ''; // Clear existing toggles
-  selectedVariables.clear(); // Reset selected variables
+  if (!container) return;
+  
+  // Guardar variables seleccionadas anteriores si no se debe seleccionar todo
+  const previouslySelected = selectAllVariables ? new Set() : new Set(selectedVariables);
+  
+  // Limpiar contenedor
+  container.innerHTML = '';
+  
+  // Si se debe seleccionar todo, limpiar variables seleccionadas
+  if (selectAllVariables) {
+    selectedVariables.clear();
+  }
+  
+  // Limpiar gráficas anteriores solo si no hay datos aún
+  if (!currentHistData || selectAllVariables) {
+    destroyHistCharts();
+    const chartsHost = document.getElementById('chartsHost');
+    if (chartsHost) {
+      chartsHost.innerHTML = '<p style="text-align:center; color:#777; padding:20px;">Seleccione un municipio para ver los datos.</p>';
+    }
+  }
   
   const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
   
   Object.entries(variables).forEach(([key, config]) => {
     const toggle = document.createElement('div');
-    toggle.className = 'variable-toggle active';
+    
+    // Determinar si este toggle debería estar activo
+    let isActive;
+    if (selectAllVariables) {
+      isActive = true; // Seleccionar todo
+      selectedVariables.add(key);
+    } else {
+      // Mantener selección previa si la variable existe en el nuevo tipo
+      isActive = previouslySelected.has(key);
+      if (isActive) {
+        selectedVariables.add(key);
+      }
+    }
+    
+    toggle.className = isActive ? 'variable-toggle active' : 'variable-toggle';
     toggle.dataset.variable = key;
     toggle.innerHTML = `
       <div class="icon"><i class="${config.icon}"></i></div>
@@ -1974,10 +3701,10 @@ function createVariableToggles(type) {
         selectedVariables.delete(key);
       }
       updateHistoricalChart();
+      updateStatsTable(type);
     });
     
     container.appendChild(toggle);
-    selectedVariables.add(key); // Initially select all variables
   });
 }
 
@@ -1988,14 +3715,29 @@ function createMeteoHistoricalChart(data) {
   const datasets = [];
   Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      // Convertir color a rgba para relleno suave
+      let fillColor = cfg.color;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) {
+        const hex = cfg.color.slice(1);
+        const parse = (h) => parseInt(h,16);
+        let r,g,b;
+        if (hex.length === 3){ r=parse(hex[0]+hex[0]); g=parse(hex[1]+hex[1]); b=parse(hex[2]+hex[2]); }
+        else { r=parse(hex.substring(0,2)); g=parse(hex.substring(2,4)); b=parse(hex.substring(4,6)); }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
       datasets.push({
         label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
-        backgroundColor: `${cfg.color}20`,
-        borderWidth: 2,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
         tension: 0.35,
-        fill: false
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: cfg.color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2
       });
     }
   });
@@ -2032,14 +3774,28 @@ function createChemHistoricalChart(data) {
   const datasets = [];
   Object.entries(airQualityVariables).forEach(([key, cfg]) => {
     if (selectedVariables.has(key) && Array.isArray(data[key])) {
+      let fillColor = cfg.color;
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(cfg.color)) {
+        const hex = cfg.color.slice(1);
+        const parse = (h) => parseInt(h,16);
+        let r,g,b;
+        if (hex.length === 3){ r=parse(hex[0]+hex[0]); g=parse(hex[1]+hex[1]); b=parse(hex[2]+hex[2]); }
+        else { r=parse(hex.substring(0,2)); g=parse(hex.substring(2,4)); b=parse(hex.substring(4,6)); }
+        fillColor = `rgba(${r},${g},${b},0.12)`;
+      }
       datasets.push({
         label: `${cfg.label} (${cfg.unit})`,
         data: data[key],
         borderColor: cfg.color,
-        backgroundColor: `${cfg.color}20`,
-        borderWidth: 2,
+        backgroundColor: fillColor,
+        borderWidth: 2.5,
         tension: 0.35,
-        fill: false
+        fill: true,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointBackgroundColor: cfg.color,
+        pointBorderColor: '#fff',
+        pointBorderWidth: 1.2
       });
     }
   });
@@ -2289,11 +4045,14 @@ function calculateStats(values) {
   // Agregar event listener para conectar con la API real (menu.js)
   // Verificamos que la función updateHistoricalView esté disponible
   if (typeof updateHistoricalView === 'function') {
+    // Remover listener previo para evitar duplicados
+    sel.removeEventListener('change', updateHistoricalView);
     sel.addEventListener('change', updateHistoricalView);
   } else {
     // Si no está disponible, intentamos más tarde cuando se cargue menu.js
     document.addEventListener('DOMContentLoaded', () => {
       if (typeof updateHistoricalView === 'function') {
+        sel.removeEventListener('change', updateHistoricalView);
         sel.addEventListener('change', updateHistoricalView);
       }
     });
@@ -2313,4 +4072,1289 @@ window.clearHistCombobox = function () {
   const list = document.getElementById('hist-combobox-list');
   if (list) list.style.display = 'none';
 };
+
+// Los botones se inicializan automáticamente desde set_atmos() o set_chem()
+
 //-------------------------------------------------------------------------------
+
+function loadMapCabeceras() {
+  if (!municipalitiesData) return;
+  const select = document.getElementById('map-search');
+  if (!select) return;
+
+  select.innerHTML = ''; // limpiar
+
+  const cabeceras = municipalitiesData.features
+    .sort((a, b) => a.properties.nombre.localeCompare(b.properties.nombre, 'es', {sensitivity:'base'}));
+
+  cabeceras.forEach(feature => {
+    const option = document.createElement('option');
+    option.value = feature.properties.clave;
+    option.textContent = feature.properties.nombre;
+    select.appendChild(option);
+  });
+}
+
+(function makeMapComboboxRobusto(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // UI
+  const wrap = document.createElement('div');
+  wrap.id = 'map-combobox';
+  wrap.style.position = 'relative';
+  wrap.style.display = 'flex';
+  wrap.style.alignItems = 'stretch';
+  wrap.style.gap = '.5rem';
+  wrap.style.marginTop = '.25rem';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'form-control';
+  input.placeholder = 'Escribe para buscar municipio…';
+  input.autocomplete = 'off';
+
+  const list = document.createElement('ul');
+  list.id = 'map-combobox-list';           // OJO: ID distinto al del historial
+  list.setAttribute('role','listbox');
+  Object.assign(list.style, {
+    position:'fixed', maxHeight:'260px', overflowY:'auto',
+    margin:'0', padding:'0', listStyle:'none', display:'none',
+    background:'#fff', border:'1px solid rgba(0,0,0,.15)',
+    borderRadius:'8px', boxShadow:'0 8px 24px rgba(0,0,0,.15)', zIndex:'50000'
+  });
+  document.body.appendChild(list);
+
+  // Oculta select y monta wrapper
+  sel.style.display = 'none';
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(input);
+  wrap.appendChild(sel);
+
+  // Lógica
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [], filtered = [], open = false, active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '')
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.width = r.width + 'px';  // Mismo ancho exacto que el form-control
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = r.width + 'px';  // Evitar que se expanda
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.background = (idx===active) ? 'rgba(0,0,0,.06)' : '';
+      li.addEventListener('mouseenter', () => { active=idx; render(); });
+      li.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); choose(idx); });
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){ if (!filtered.length) return; positionList(); list.style.display='block'; open = true; }
+  function closeList(){ list.style.display='none'; open = false; active = -1; }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+function choose(idx) {
+  if (idx < 0 || idx >= filtered.length) return;
+  const it = filtered[idx];
+  input.value = it.label;
+  sel.value = it.value;
+
+  sel.dispatchEvent(new Event('change',{ bubbles:true}));
+
+  // Centrar el mapa en el municipio seleccionado
+  const municipio = mapSearchMunicipiosData.find(
+    m => m.clave === it.value
+  );
+  
+  if (municipio && m_map) {
+    // Obtener las coordenadas directamente del municipio
+    const coords = municipio.coordinates; // [lng, lat]
+    console.log(coords);
+    // Centrar el mapa en esas coordenadas usando OpenLayers
+    const view = m_map.getView();
+    view.animate({zoom: 12}, {center:[coords[0],coords[1]]}); // Zoom más cercano para ver el municipio
+  }
+
+  closeList();
+}
+
+  // Aislar clicks internos
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+    el.addEventListener('pointerdown',e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir/filtrar/teclado
+  input.addEventListener('focus', () => { filtered = items.slice(); render(); openList(); });
+  input.addEventListener('click',  () => { if (!open){ filtered = items.slice(); render(); openList(); } });
+  input.addEventListener('input',  () => { filterNow(input.value); filtered.length ? openList() : closeList(); });
+
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown': e.preventDefault(); if (!open){ openList(); break; } active = Math.min(filtered.length-1, active+1); render(); break;
+      case 'ArrowUp':   e.preventDefault(); if (!open){ openList(); break; } active = Math.max(0, active-1); render(); break;
+      case 'Enter':     e.preventDefault(); if (!open){ const nq=norm(input.value); const exacts=items.filter(m=>norm(m.label)===nq); const cands=exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq)); if (cands.length===1){ filtered=cands; choose(0);} else { openList(); } } else { if (active<0 && filtered.length===1) active=0; choose(active);} break;
+      case 'Escape':    if (open) { closeList(); } else { input.select(); } break;
+      case 'Tab':       closeList(); break;
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial + observer (igual que historial, pero para el select del MAPA)
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => { snapshotItems(); if (open) { render(); positionList(); } });
+  mo.observe(sel, { childList: true });
+})();
+
+window.clearMapCombobox = function () {
+  const sel   = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap  = sel.parentElement;
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  sel.dispatchEvent(new Event('change', { bubbles: true }));
+  const list = document.getElementById('map-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Datos de municipios para map-search
+let mapSearchMunicipiosData = [];
+
+// Función para cargar municipios para map-search
+async function loadMapSearchMunicipios() {
+  try {
+    const response = await fetch('./cabeceras.json');
+    const data = await response.json();
+    
+    mapSearchMunicipiosData = data.features.map(feature => ({
+      nombre: feature.properties.nombre,
+      clave: feature.properties.clave,
+      coordinates: feature.geometry.coordinates // [lng, lat]
+    }));
+    
+    populateMapSearch();
+    console.log(`Map-search: Cargados ${mapSearchMunicipiosData.length} municipios`);
+  } catch (error) {
+    console.error('Error cargando municipios para map-search:', error);
+  }
+}
+
+// Función para centrar el mapa en un municipio
+function centerMapOnMunicipioSearch(municipioClave) {
+  const municipio = mapSearchMunicipiosData.find(m => m.clave === municipioClave);
+  if (!municipio || !m_map) return;
+  
+  const [lng, lat] = municipio.coordinates;
+  const view = m_map.getView();
+  
+  // Centrar el mapa en las coordenadas del municipio
+  view.animate({
+    center: ol.proj.fromLonLat([lng, lat]),
+    zoom: 12, // Zoom más cercano para ver el municipio
+    duration: 1000 // Animación de 1 segundo
+  });
+  
+  console.log(`Mapa centrado en: ${municipio.nombre} [${lng}, ${lat}]`);
+}
+
+// Map Search Combobox - Basado en el sistema del historial
+(function makeMapSearchCombobox(){
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+
+  // ----- UI básica -----
+  const wrap = document.getElementById('map-search-combobox');
+  if (!wrap) return;
+
+  const input = wrap.querySelector('input.form-control');
+  if (!input) return;
+
+  // Lista como "portal" en <body>
+  const list = document.getElementById('map-search-combobox-list');
+  if (!list) return;
+
+  // Inserta UI y oculta el select original
+  sel.style.display = 'none';
+
+  // ----- Lógica -----
+  const norm = s => (s||'').toString()
+    .normalize('NFD').replace(/\p{Diacritic}/gu,'')
+    .toLowerCase().replace(/\s+/g,' ').trim();
+
+  let items = [];          // [{value,label}]
+  let filtered = [];
+  let open = false;
+  let active = -1;
+
+  function snapshotItems(){
+    items = Array.from(sel.options)
+      .filter(o => (o.value ?? '').toString().trim() !== '') // omite "Seleccione..."
+      .map(o => ({ value:o.value, label:o.text }))
+      .sort((a,b)=>a.label.localeCompare(b.label,'es',{sensitivity:'base'}));
+    filtered = items.slice();
+  }
+
+  function positionList(){
+    const r = input.getBoundingClientRect();
+    list.style.left = r.left + 'px';
+    list.style.top  = (r.bottom + 4) + 'px';
+    list.style.minWidth = r.width + 'px';
+    list.style.maxWidth = Math.max(r.width, 260) + 'px';
+  }
+
+  function render(){
+    list.innerHTML = '';
+    filtered.forEach((it, idx) => {
+      const li = document.createElement('li');
+      li.textContent = it.label;
+      li.style.padding = '8px 10px';
+      li.style.cursor = 'pointer';
+      li.style.listStyle = 'none';
+      li.style.backgroundColor = idx === active ? '#e9ecef' : 'white';
+      li.style.borderBottom = '1px solid #eee';
+      
+      li.addEventListener('click', () => choose(idx));
+      li.addEventListener('mouseenter', () => { active = idx; render(); });
+      
+      list.appendChild(li);
+    });
+  }
+
+  function openList(){
+    if (!items.length) snapshotItems();
+    if (!items.length) return;
+    
+    list.style.display = 'block';
+    list.style.position = 'fixed';
+    list.style.zIndex = '9999';
+    list.style.backgroundColor = 'white';
+    list.style.border = '1px solid #ccc';
+    list.style.borderRadius = '4px';
+    list.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    list.style.maxHeight = '200px';
+    list.style.overflowY = 'auto';
+    list.style.margin = '0';
+    list.style.padding = '0';
+    
+    positionList();
+    render();
+    open = true;
+  }
+
+  function closeList(){
+    list.style.display = 'none';
+    open = false;
+    active = -1;
+  }
+
+  function filterNow(q){
+    const nq = norm(q);
+    filtered = nq ? items.filter(m => norm(m.label).includes(nq)) : items.slice();
+    const exact = filtered.findIndex(m => norm(m.label) === nq);
+    active = exact >= 0 ? exact : -1;
+    render();
+    if (open && !filtered.length) closeList();
+  }
+
+  function choose(idx){
+    if (idx < 0 || idx >= filtered.length) return;
+    const it = filtered[idx];
+    input.value = it.label;
+    sel.value = it.value;
+    sel.dispatchEvent(new Event('change', { bubbles:true }));
+    closeList();
+    
+    // Centrar el mapa en el municipio seleccionado
+    if (it.value) {
+      centerMapOnMunicipioSearch(it.value);
+    }
+  }
+
+  // ----- Eventos -----
+  // Evita que clicks internos cierren el dropdown
+  [wrap, input, list].forEach(el => {
+    el.addEventListener('click', e => e.stopPropagation(), { capture:true });
+    el.addEventListener('mousedown',  e => e.stopPropagation(), { capture: true });
+  });
+
+  // Abrir con focus/click y escribir
+  input.addEventListener('focus', openList);
+  input.addEventListener('click', openList);
+  input.addEventListener('input', e => {
+    const val = e.target.value;
+    if (!open) openList();
+    filterNow(val);
+  });
+
+  // Navegación teclado
+  input.addEventListener('keydown', (e) => {
+    switch(e.key){
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.min(filtered.length-1, active+1); render();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!open){ openList(); break; }
+        active = Math.max(0, active-1); render();
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (!open){
+          const nq = norm(input.value);
+          const exacts = items.filter(m=>norm(m.label)===nq);
+          const cands  = exacts.length?exacts:items.filter(m=>norm(m.label).includes(nq));
+          if (cands.length===1){ filtered=cands; choose(0); } else { openList(); }
+        } else {
+          if (active<0 && filtered.length===1) active=0;
+          choose(active);
+        }
+        break;
+      case 'Escape':
+        if (open) { closeList(); } else { input.select(); }
+        break;
+      case 'Tab':
+        closeList();
+        break;
+    }
+  });
+
+  // Clic fuera: cerrar
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) closeList();
+  });
+
+  // Reposicionar en scroll/resize
+  window.addEventListener('scroll', () => { if (open) positionList(); }, true);
+  window.addEventListener('resize', () => { if (open) positionList(); });
+
+  // Poblado inicial y asíncrono
+  if (sel.options.length) snapshotItems();
+  const mo = new MutationObserver(() => {
+    snapshotItems();
+    if (open) { render(); positionList(); }
+  });
+  mo.observe(sel, { childList: true });
+})();
+
+// Función para poblar el map-search con municipios
+function populateMapSearch() {
+  const select = document.getElementById('map-search');
+  if (!select || !mapSearchMunicipiosData.length) return;
+  
+  select.innerHTML = '<option value="">Seleccione un municipio</option>';
+  mapSearchMunicipiosData.forEach(municipio => {
+    const option = document.createElement('option');
+    option.value = municipio.clave;
+    option.textContent = municipio.nombre;
+    select.appendChild(option);
+  });
+}
+
+// Clear map search combobox function
+window.clearMapSearchCombobox = function () {
+  const sel = document.getElementById('map-search');
+  if (!sel) return;
+  const wrap = document.getElementById('map-search-combobox');
+  const input = wrap ? wrap.querySelector('input.form-control') : null;
+
+  if (input) input.value = '';
+  sel.value = '';
+  const list = document.getElementById('map-search-combobox-list');
+  if (list) list.style.display = 'none';
+};
+
+// Inicializar map-search cuando el DOM esté listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', loadMapSearchMunicipios);
+} else {
+  loadMapSearchMunicipios();
+}
+
+// ---------------------------------------------------------------
+// Descarga masiva de datos (todas las cabeceras) en un solo CSV
+// ---------------------------------------------------------------
+async function downloadAllMeteoCSV(btn){
+  await downloadAllGeneric(btn, 'meteo', 'meteorologicos');
+}
+async function downloadAllChemCSV(btn){
+  await downloadAllGeneric(btn, 'chem', 'contaminantes');
+}
+
+async function downloadMeteoZIP(btn){
+  await downloadZIPPerMunicipio(btn, 'meteo', 'meteorologia');
+}
+async function downloadChemZIP(btn){
+  await downloadZIPPerMunicipio(btn, 'chem', 'calidad_aire');
+}
+
+async function downloadAllGeneric(btn, tipo, sufijo){
+  if (!m_dir_runs){ alert('No hay ejecución seleccionada.'); return; }
+  if (btn){ btn.disabled = true; btn.textContent = 'Preparando...'; }
+  try {
+    // Obtener listado de features (cabeceras)
+    const feats = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+    const cabeceras = feats.filter(f => f.get && f.get('local') === 'cabecera');
+    if (!cabeceras.length){ alert('No se encontraron cabeceras.'); return; }
+
+    // Construir encabezado según tipo
+    let header;
+    if (tipo === 'meteo'){
+      header = 'Municipio,Clave,Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    } else {
+      header = 'Municipio,Clave,Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+    }
+    const lines = [header];
+
+    // Determinar fecha-hora de la corrida actual (m_dir_runs: runs/AAAAMMDDHH/ )
+    // Se asume nombre JSON igual a lógica de show_feature
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+
+    // Prefijo dir_dat
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+
+    // Fetch secuencial (podría paralelizarse pero evitamos saturar)
+    for (const f of cabeceras){
+      const clave = f.get('clave');
+      const nombre = (f.get('nombre')||'').replace(/[,\r\n]+/g,' ');
+      const jsonUrl = m_dir_runs + f.get('dir') + dir_dat + clave + '_' + fech + '_' + hor + 'z.json';
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) { console.warn('No se pudo leer', jsonUrl); continue; }
+        const data = await resp.json();
+        // Suponemos arrays alineados; usamos longitud de la primera clave
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        const len = (Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0);
+        let hs = 0;
+        for (let i=0;i<len;i++){
+          hs += 3;
+            const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g,' ');
+            if (tipo === 'meteo'){
+              // Orden: t2m, rh, pre, sw, wnd, psl (según CSV individual existente)
+              const row = [nombre, clave, fechaLabel,
+                safeVal(data.t2m, i), safeVal(data.rh, i), safeVal(data.pre, i),
+                safeVal(data.sw, i), safeVal(data.wnd, i), safeVal(data.psl, i)
+              ].join(',');
+              lines.push(row);
+            } else {
+              // Orden química: CO, NO2, O3, SO2, PM10, PM25
+              const row = [nombre, clave, fechaLabel,
+                safeVal(data.CO, i), safeVal(data.NO2, i), safeVal(data.O3, i), safeVal(data.SO2, i),
+                safeVal(data.PM10, i), safeVal(data.PM25, i)
+              ].join(',');
+              lines.push(row);
+            }
+        }
+      } catch(e){ console.warn('Error procesando', jsonUrl, e); }
+    }
+
+    if (lines.length <= 1){ alert('No se generaron datos.'); return; }
+    const bom = '\uFEFF';
+    const blob = new Blob([bom + lines.join('\r\n') + '\r\n'], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    const fechaNom = fech + '_' + hor + 'z';
+    a.download = 'Datos_' + sufijo + '_' + fechaNom + '.csv';
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = btn.textContent.replace('Preparando...','Listo'); setTimeout(()=>{ btn.textContent = btn.textContent.replace('Listo','Descargar'); }, 1800); }
+  }
+}
+
+function safeVal(arr, idx){
+  if (!Array.isArray(arr)) return '';
+  const v = arr[idx];
+  if (v === null || v === undefined || isNaN(v)) return '';
+  return Number.parseFloat(v).toFixed(2);
+}
+
+// ---------------------------------------------------------------
+// ZIP por municipio (cada CSV separado) usando JSZip dinámico
+// ---------------------------------------------------------------
+async function ensureJSZip(){
+  if (window.JSZip) return window.JSZip;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res();
+    s.onerror = (e) => rej(e);
+    document.head.appendChild(s);
+  });
+  return window.JSZip;
+}
+
+async function downloadZIPPerMunicipio(btn, tipo, sufijo){
+  if (!m_dir_runs){ alert('No hay ejecución seleccionada.'); return; }
+  if (btn){ btn.disabled = true; var original = btn.textContent; btn.textContent = 'Preparando ZIP...'; }
+  try {
+    const JSZipLib = await ensureJSZip();
+    const zip = new JSZipLib();
+    const feats = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+    const cabeceras = feats.filter(f => f.get && f.get('local') === 'cabecera');
+    if (!cabeceras.length){ alert('No se encontraron cabeceras.'); return; }
+
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+
+    // Encabezados según tipo
+    const headerM = 'Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    const headerC = 'Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+
+    for (const f of cabeceras){
+      const clave = f.get('clave');
+      const nombre = (f.get('nombre')||'').replace(/[\r\n]+/g,' ').trim();
+      const safeName = nombre.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+      const jsonUrl = m_dir_runs + f.get('dir') + dir_dat + clave + '_' + fech + '_' + hor + 'z.json';
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) { console.warn('No se pudo leer', jsonUrl); continue; }
+        const data = await resp.json();
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        const len = Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0;
+        let hs = 0;
+        const lines = [ tipo === 'meteo' ? headerM : headerC ];
+        for (let i=0;i<len;i++){
+          hs += 3;
+          const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g,' ');
+          if (tipo === 'meteo'){
+            lines.push([
+              fechaLabel,
+              safeVal(data.t2m,i), safeVal(data.rh,i), safeVal(data.pre,i),
+              safeVal(data.sw,i), safeVal(data.wnd,i), safeVal(data.psl,i)
+            ].join(','));
+          } else {
+            lines.push([
+              fechaLabel,
+              safeVal(data.CO,i), safeVal(data.NO2,i), safeVal(data.O3,i), safeVal(data.SO2,i),
+              safeVal(data.PM10,i), safeVal(data.PM25,i)
+            ].join(','));
+          }
+        }
+        const csvContent = '\uFEFF' + lines.join('\r\n') + '\r\n';
+        const fileName = `${clave}_${safeName}_${fech}_${hor}z.csv`;
+        zip.file(fileName, csvContent);
+      } catch(e){ console.warn('Error procesando', jsonUrl, e); }
+    }
+
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.download = `todos_${sufijo}_${fech}_${hor}z.zip`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch(err){
+    alert('No se pudo generar el ZIP: ' + err);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = original; }
+  }
+}
+
+// Nueva función para manejar la leyenda horizontal
+function setupLegendClickFilter() {
+  // Preferencia: div tradicional de leyenda; fallback: canvas dinámico
+  const legendGradient = document.getElementById('legend-gradient') || document.getElementById('dynamic-gradient-canvas');
+  let filterIndicator = document.getElementById('filter-indicator');
+  const gradientContainer = document.getElementById('gradient-container');
+    
+  if (!legendGradient) return;
+    
+    let isSelecting = false;
+    let startX = 0;
+
+  // Crear indicador si no existe para evitar null
+  if (!filterIndicator && gradientContainer) {
+    filterIndicator = document.createElement('div');
+    filterIndicator.id = 'filter-indicator';
+    filterIndicator.className = 'filter-indicator';
+    filterIndicator.style.display = 'none';
+    gradientContainer.appendChild(filterIndicator);
+  }
+    
+  legendGradient.addEventListener('mousedown', (e) => {
+        isSelecting = true;
+    // offsetX puede ser 0 en algunos navegadores si hay scaling; usar bounding rect
+    const rect = legendGradient.getBoundingClientRect();
+    startX = (e.clientX - rect.left);
+        if (filterIndicator) {
+          filterIndicator.style.display = 'block';
+          filterIndicator.style.left = startX + 'px';
+          filterIndicator.style.width = '2px';
+        }
+        e.preventDefault();
+    });
+    
+  legendGradient.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+    const rect = legendGradient.getBoundingClientRect();
+    const currentX = (e.clientX - rect.left);
+        const width = Math.abs(currentX - startX);
+        const left = Math.min(startX, currentX);
+        if (filterIndicator) {
+          filterIndicator.style.left = left + 'px';
+          filterIndicator.style.width = width + 'px';
+        }
+    });
+    
+  legendGradient.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
+        isSelecting = false;
+        
+    const rect = legendGradient.getBoundingClientRect();
+    const endX = (e.clientX - rect.left);
+    const gradientWidth = rect.width || legendGradient.offsetWidth;
+        
+        const minPercent = Math.min(startX, endX) / gradientWidth;
+        const maxPercent = Math.max(startX, endX) / gradientWidth;
+        
+        if (Math.abs(endX - startX) > 5) {
+            // Aplicar filtro basado en el rango seleccionado
+            applyLegendFilter(minPercent, maxPercent);
+        } else {
+            // Click simple - obtener valor puntual
+            const percent = startX / gradientWidth;
+            applyLegendFilter(percent - 0.05, percent + 0.05);
+        }
+    });
+    
+
+    //no quieor borrar esto porque siento que igualmente puede ser util aunque no funcione para nada ahora
+    // Doble click en la leyenda para limpiar filtro
+  /*legendGradient.addEventListener('dblclick', (e) => {
+    const btn = document.getElementById('btn_recarga');
+    if (btn) {
+      btn.click();
+    } else {
+      // fallback si el botón no existe todavía
+      clearLegendFilter();
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });*/
+
+    // Añadir soporte a barras alternativas (gradiente vertical / horizontal incrustado)
+    /*const extraSelectors = ['.gradient-bar-horizontal', '.gradient-bar'];
+    extraSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.addEventListener('dblclick', (e) => {
+          const btn = document.getElementById('btn_recarga');
+          if (btn) { btn.click(); } else { clearLegendFilter(); }
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    });*/
+
+    // Doble clic en cualquier zona interna del contenedor para limpiar (máxima tolerancia)
+    /*if (gradientContainer) {
+      gradientContainer.addEventListener('dblclick', (e) => {
+        const btn = document.getElementById('btn_recarga');
+        if (btn) { btn.click(); } else { clearLegendFilter(); }
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }*/
+}
+
+function applyLegendFilter(minPercent, maxPercent) {
+    if (!window.gradientLookup || !window.gradientLookup.length) return;
+    
+    const totalSteps = window.gradientLookup.length;
+    const minIndex = Math.floor(minPercent * totalSteps);
+    const maxIndex = Math.ceil(maxPercent * totalSteps);
+    
+    if (minIndex >= 0 && maxIndex < totalSteps) {
+        const minValue = window.gradientLookup[minIndex].value;
+        const maxValue = window.gradientLookup[maxIndex].value;
+        const avgValue = (minValue + maxValue) / 2;
+        
+        // Simular el color para el filtrado
+        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
+        if (colorEntry && colorEntry.hex) {
+            const hex = colorEntry.hex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            filter_color = [r, g, b];
+            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+            showInfo(range);
+          notifyFiltering('Filtrando: ' + range);
+            const filteredLayer = applyFilterToImage(m_lienzo.img);
+            put_FilteredImage(filteredLayer);
+        }
+    }
+}
+
+function clearLegendFilter() {
+    const filterIndicator = document.getElementById('filter-indicator');
+    if (filterIndicator) {
+        filterIndicator.classList.remove('active');
+    }
+    filter_color = null;          // filtro raster (canvas)
+    filter_range_active = false;   // filtro de rango numérico
+    filter_range_min = null;
+    filter_range_max = null;
+    colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
+    hideInfo();
+    if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
+      try { m_map.removeLayer(window.filtered_layer); } catch(e) {}
+      window.filtered_layer = null;
+    }
+    if (m_dlayer && m_dlayer.layer) {
+      try { m_dlayer.layer.setVisible(true); } catch(e) {}
+    }
+    // Si hay una capa activa de heatmap regenerarla sin filtro
+    if (typeof activeLayer === 'string' && activeLayer && typeof addEnhancedWeatherLayer === 'function') {
+      try { addEnhancedWeatherLayer(activeLayer); } catch(e) {}
+    }
+}
+
+// Función para actualizar la leyenda con nueva variable
+function updateLegend(title, gradient, minValue, maxValue, unit) {
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legend-title');
+    const legendGradient = document.getElementById('legend-gradient');
+    const legendLabels = document.getElementById('legend-labels');
+    
+    if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
+    
+    legend.style.display = 'block';
+    legendTitle.textContent = title;
+    legendGradient.style.background = gradient;
+    
+    // Crear etiquetas - CORREGIDAS: de mayor a menor (invertido)
+    legendLabels.innerHTML = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        // Invertir los valores: empezar por el máximo y bajar al mínimo
+        const value = maxValue - (maxValue - minValue) * (i / steps);
+        const span = document.createElement('span');
+        span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
+        legendLabels.appendChild(span);
+    }
+}
+
+// Inicializar la leyenda cuando se carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    setupLegendClickFilter();
+  initDualRangeFilter();
+});
+
+function showInfo(value) {
+  hideInfo();
+  const info = document.getElementById("filter-info");
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
+  const existingRange = info.querySelector(".dynamic-range");
+  const rangeElement = document.createElement("div");
+  rangeElement.className = "dynamic-range";
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${units}</strong>`;
+  info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  if (!info) return; // Guard: si no existe el contenedor, abortar silenciosamente
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
+}
+
+// Notificación breve al usuario al modificar filtros (throttle)
+let _filterNtfTimer = null;
+function notifyFiltering(message){
+  // Función deshabilitada - no mostrar mensaje "Filtrando:"
+  return;
+  
+  // if (!message) message = 'Aplicando filtro…';
+  // const el = document.getElementById('filter-info');
+  // if (!el) return;
+  // // crear o reusar una banda sutil en filter-info
+  // let badge = el.querySelector('.modifying-badge');
+  // if (!badge){
+  //   badge = document.createElement('div');
+  //   badge.className = 'modifying-badge';
+  //   badge.style.cssText = 'margin-top:4px;font-size:12px;color:#555;background:rgba(193,152,98,.12);border:1px solid rgba(193,152,98,.4);border-radius:6px;padding:4px 8px;display:inline-block;';
+  //   el.appendChild(badge);
+  // }
+  // badge.textContent = message;
+  // if (_filterNtfTimer) clearTimeout(_filterNtfTimer);
+  // _filterNtfTimer = setTimeout(()=>{
+  //   if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+  //   _filterNtfTimer = null;
+  // }, 1200);
+}
+
+// ================= Rango dual con sliders INTEGRADOS (no overlay) =================
+function initDualRangeFilter(){
+  // Usar el contenedor de la nueva leyenda (#legend-gradient) en lugar de #gradient-container
+  const container = document.getElementById('legend-gradient') || document.getElementById('gradient-container');
+  const bar = document.getElementById('dynamic-gradient-canvas');
+  if (!container || !bar) {
+    console.warn('[initDualRangeFilter] No se encontró contenedor (#legend-gradient) o canvas.');
+    return;
+  }
+  // Reusar si ya existe
+  let wrap = container.querySelector('.legend-dual-slider-wrapper');
+  if (!wrap) {
+    // Crear wrapper para sliders DEBAJO del canvas (integrado, no flotante)
+    wrap = document.createElement('div');
+    wrap.className = 'legend-dual-slider-wrapper';
+    wrap.style.cssText = 'width:100%; margin-top:8px;';
+    
+    // Insertar DESPUÉS del canvas (no envolverlo)
+    const parent = bar.parentNode;
+    parent.insertBefore(wrap, bar.nextSibling);
+    
+    // Barra de sliders (layout horizontal integrado)
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'dual-slider-container';
+    sliderContainer.style.cssText = 'position:relative; width:100%; height:30px; margin-bottom:6px;';
+    
+    // Sliders (uno encima del otro, pero ahora SIN overlay visual flotante)
+    const rLow = document.createElement('input');
+    Object.assign(rLow, {type:'range', min:0, max:1000, value:0});
+    rLow.className='dual-range low';
+    rLow.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
+    
+    const rHigh = document.createElement('input');
+    Object.assign(rHigh, {type:'range', min:0, max:1000, value:1000});
+    rHigh.className='dual-range high';
+    rHigh.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
+    
+    sliderContainer.appendChild(rLow);
+    sliderContainer.appendChild(rHigh);
+    wrap.appendChild(sliderContainer);
+    
+    // Inputs numéricos (SIN botón limpiar - ya existe "Limpiar Filtro" en footer)
+    const inputsRow = document.createElement('div');
+    inputsRow.className='dual-inputs';
+    inputsRow.style.cssText='display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-top:4px;';
+    inputsRow.innerHTML = `
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Mín
+        <input type="number" step="0.1" class="dual-min" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Máx
+        <input type="number" step="0.1" class="dual-max" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>`;
+    wrap.appendChild(inputsRow);
+  }
+
+  const rLow = wrap.querySelector('.dual-range.low');
+  const rHigh = wrap.querySelector('.dual-range.high');
+  const inpMin = wrap.querySelector('.dual-min');
+  const inpMax = wrap.querySelector('.dual-max');
+  const sliderContainer = wrap.querySelector('.dual-slider-container');
+
+  // Variables para rastrear el estado de arrastre
+  let isDragging = false;
+  let activeSlider = null;
+  let dragStarted = false;
+  let initialValue = null;
+
+  // Función para ajustar z-index basado en qué slider está más cerca del mouse
+  function updateZIndexByMousePosition(event) {
+    const rect = sliderContainer.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+    
+    const lowVal = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+    
+    // Determinar qué slider está más cerca del mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow < distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }
+
+  function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+  function slidersToValues(){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return {lo:0,hi:0};
+    const gmin = window.gradientMin, gmax = window.gradientMax;
+    const lo = gmin + (gmax-gmin)*(parseInt(rLow.value,10)/1000);
+    const hi = gmin + (gmax-gmin)*(parseInt(rHigh.value,10)/1000);
+    return {lo: Math.min(lo,hi), hi: Math.max(lo,hi)};
+  }
+  function valuesToSliders(lo,hi){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return;
+    const gmin = window.gradientMin, gmax = window.gradientMax, span = (gmax-gmin)||1;
+    rLow.value  = Math.round(((lo-gmin)/span)*1000);
+    rHigh.value = Math.round(((hi-gmin)/span)*1000);
+  }
+  
+  function syncInputsFromSliders(){
+    const {lo,hi} = slidersToValues();
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    inpMin.value = lo.toFixed(1);
+    inpMax.value = hi.toFixed(1);
+  }
+  
+  function syncSlidersFromInputs(){
+    let lo = parseFloat(inpMin.value), hi = parseFloat(inpMax.value);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    if (lo>hi) [lo,hi]=[hi,lo];
+    if (typeof window.gradientMin === 'number'){ 
+      lo = clamp(lo, window.gradientMin, window.gradientMax); 
+      hi = clamp(hi, window.gradientMin, window.gradientMax); 
+    }
+    valuesToSliders(lo,hi);
+    scheduleApply(); 
+    showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+  }
+
+  // Inicializar rangos a full
+  (function init(){
+    if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+      inpMin.value = window.gradientMin.toFixed(1);
+      inpMax.value = window.gradientMax.toFixed(1);
+      valuesToSliders(window.gradientMin, window.gradientMax);
+      // Z-index inicial: LOW arriba para que sea accesible desde el inicio
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      setTimeout(init,300);
+    }
+  })();
+
+  let applyTimer=null;
+  function scheduleApply(){
+    if (applyTimer) clearTimeout(applyTimer);
+    applyTimer = setTimeout(()=>{
+      const {lo,hi}=slidersToValues();
+      if (isFinite(lo) && isFinite(hi)) {
+        applyRangeMask(lo,hi);
+        showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+        notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+      }
+    },150);
+  }
+
+  // Eventos: actualizar z-index cuando el mouse/touch se mueva sobre el contenedor
+  ['pointerdown','pointermove'].forEach(ev => {
+  sliderContainer.addEventListener(ev, (e) => {
+    const rect = sliderContainer.getBoundingClientRect();
+    let clientX;
+    
+    // Obtener coordenada X según el tipo de evento
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+    } else {
+      clientX = e.clientX !== undefined ? e.clientX : 0;
+    }
+    
+    const mouseX = clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+
+    const lowVal  = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+
+    // Elevar el slider que esté más cerca del toque/mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow <= distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }, {passive: true});
+});
+  
+  // Función para detectar si el clic está en el thumb
+  function isClickOnThumb(slider, event) {
+    const rect = slider.getBoundingClientRect();
+    const sliderWidth = rect.width;
+    const thumbWidth = 16; // Ancho del thumb
+    
+    // Calcular posición del thumb basada en el valor del slider
+    const sliderValue = parseInt(slider.value, 10);
+    const thumbPosition = (sliderValue / 1000) * sliderWidth;
+    
+    // Obtener posición del clic/touch
+    let clickX;
+    if (event.touches && event.touches[0]) {
+      clickX = event.touches[0].clientX - rect.left;
+    } else {
+      clickX = event.clientX - rect.left;
+    }
+    
+    // Verificar si el clic está dentro del área del thumb (con un poco de margen)
+    const thumbStart = thumbPosition - (thumbWidth / 2) - 5; // 5px de margen
+    const thumbEnd = thumbPosition + (thumbWidth / 2) + 5;
+    
+    return clickX >= thumbStart && clickX <= thumbEnd;
+  }
+
+  // Eventos simples para rastrear arrastre - SOLO ARRASTRE, NO CLICS
+  ['mousedown', 'touchstart', 'pointerdown'].forEach(event => {
+    rLow.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rLow, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rLow.value, 10);
+      isDragging = true;
+      activeSlider = 'low';
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    }, { passive: false });
+    
+    rHigh.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rHigh, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rHigh.value, 10);
+      isDragging = true;
+      activeSlider = 'high';
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }, { passive: false });
+  });
+
+  // Prevenir clics directos en el track que cambiarían el valor
+  rLow.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  
+  rHigh.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Interceptar eventos de input para validar que solo vengan de arrastre
+  rLow.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rLow.value = initialValue;
+      }
+      return;
+    }
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  rHigh.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rHigh.value = initialValue;
+      }
+      return;
+    }
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  // Eventos para finalizar el arrastre
+  ['mouseup', 'touchend', 'pointerup'].forEach(event => {
+    document.addEventListener(event, () => {
+      if (isDragging) {
+        // Solo actualizar si realmente hubo arrastre
+        syncInputsFromSliders();
+        scheduleApply();
+      }
+      isDragging = false;
+      activeSlider = null;
+      dragStarted = false;
+      initialValue = null;
+    });
+  });
+
+  // Eventos change como respaldo para móvil
+  rLow.addEventListener('change', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  rHigh.addEventListener('change', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  inpMin.addEventListener('change', syncSlidersFromInputs);
+  inpMax.addEventListener('change', syncSlidersFromInputs);
+  inpMin.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+  inpMax.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+}
+
+function applyRangeMask(minVal, maxVal){
+  if (!m_lienzo || !m_lienzo.img || typeof window.gradientMin !== 'number') return;
+  
+  // Activar filtro de rango y guardar valores
+  filter_range_active = true;
+  filter_range_min = minVal;
+  filter_range_max = maxVal;
+  
+  // Construir un mapa rápido valor->RGBA usando gradientLookup ordenado por value
+  // Para performance mantenemos el mismo método que applyFilterToImage pero revisando rango
+  try {
+    const baseImg = m_lienzo.img;
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return;
+    canvas.width = baseImg.width; canvas.height = baseImg.height;
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(baseImg,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    // Estrategia: convertir RGB de cada pixel a valor aproximado buscando color más cercano en gradientLookup.
+    // Si dataset es grande podría optimizarse con clustering; por ahora brute force con caching.
+    const cache = new Map(); // key r,g,b -> value
+    const lookup = window.gradientLookup||[];
+    function nearestVal(r,g,b){
+      const key = (r<<16)|(g<<8)|b;
+      if (cache.has(key)) return cache.get(key);
+      let bestD=1e9, bestV=null;
+      for (const c of lookup){
+        const hx = c.hex.replace('#','');
+        const cr = parseInt(hx.substring(0,2),16);
+        const cg = parseInt(hx.substring(2,4),16);
+        const cb = parseInt(hx.substring(4,6),16);
+        const d = (r-cr)*(r-cr)+(g-cg)*(g-cg)+(b-cb)*(b-cb);
+        if (d<bestD){ bestD=d; bestV=c.value; if (d===0) break; }
+      }
+      cache.set(key,bestV);
+      return bestV;
+    }
+
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const v = nearestVal(r,g,b);
+      if (v < minVal || v > maxVal){
+        data[i+3]=0; // transparencia
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source:new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
+    });
+    clipLayer(filteredLayer);
+    if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+    if (m_dlayer && m_dlayer.layer) m_dlayer.layer.setVisible(false);
+    m_map.getLayers().insertAt(1, filteredLayer);
+    window.filtered_layer = filteredLayer;
+  } catch(e){ console.error('applyRangeMask error', e); }
+}
+
+// Llama esto cada vez que cambies de variable (después de updateLegend)
+function resetFilterUIForNewVariable() {
+  // 1) limpiar cualquier filtro aplicado y ocultar etiqueta
+  clearLegendFilter(); // ya hace: filter_color=null, quita capa filtrada, muestra original, etc.
+
+  // 2) resetear sliders e inputs del rango
+  const wrap =
+    document.querySelector('#legend .legend-dual-slider-wrapper') ||
+    document.querySelector('#gradient-container .legend-dual-slider-wrapper');
+
+  if (wrap) {
+    const rLow  = wrap.querySelector('.dual-range.low');
+    const rHigh = wrap.querySelector('.dual-range.high');
+    const inpMin = wrap.querySelector('.dual-min');
+    const inpMax = wrap.querySelector('.dual-max');
+
+    if (rLow)  rLow.value  = 0;
+    if (rHigh) rHigh.value = 1000;
+    
+    // Esperar un momento para que se establezcan los nuevos gradientMin/Max, luego establecer valores
+    setTimeout(() => {
+      if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+        if (inpMin) inpMin.value = window.gradientMin.toFixed(1);
+        if (inpMax) inpMax.value = window.gradientMax.toFixed(1);
+      } else {
+        // Si no hay valores disponibles, limpiar
+        if (inpMin) inpMin.value = '';
+        if (inpMax) inpMax.value = '';
+      }
+    }, 100);
+  }
+
+  // 3) quitar el texto de rango debajo del mapa
+  hideInfo();
+}

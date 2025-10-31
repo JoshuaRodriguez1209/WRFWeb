@@ -1,42 +1,80 @@
 <!doctype html>
-<html>
+<html lang="es">
 <head>
-<meta charset="utf-8">
-<title>Glosario</title>
+  <meta charset="utf-8" />
+  <title>Glosario Meteorológico</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --vino:#5a1b30;
+      --dorado:#c19862;
+      --bg:#ffffff;
+      --head-bg:#5a1b30;
+      --row-alt:#faf8f8;
+      --border:#ececec;
+    }
+    body { margin:0; font-family:'Poppins', Arial, sans-serif; background:#fff; color:#333; padding:16px; }
+    h1 { font-size:1.6rem; margin:0 0 18px; color:var(--vino); letter-spacing:.5px; }
+    .glossary-table-wrapper { background:#fff; border:1px solid var(--border); border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.06); overflow:hidden; }
+    table { width:100%; border-collapse:collapse; font-size:14px; line-height:1.35; }
+    thead th { background:var(--head-bg); color:#fff; text-align:left; padding:14px 16px; font-weight:600; letter-spacing:.4px; font-size:13px; position:sticky; top:0; }
+    tbody td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top; }
+    tbody tr:nth-child(even) { background:var(--row-alt); }
+    tbody tr:last-child td { border-bottom:none; }
+    .param { font-weight:600; color:var(--vino); width:22%; min-width:130px; }
+    .def { width:78%; }
+    /* Hover */
+    tbody tr:hover { background:#f5f2f3; }
+    /* Responsive: modo tarjetas en pantallas muy pequeñas */
+    @media (max-width:620px){
+      thead { display:none; }
+      table, tbody, tr, td { display:block; width:100%; }
+      tbody tr { background:#fff; margin:0 0 14px; border:1px solid var(--border); border-radius:12px; padding:10px 12px; box-shadow:0 4px 12px rgba(0,0,0,.05); }
+      tbody tr:nth-child(even){ background:#fff; }
+      tbody td { border:none; padding:6px 4px 6px 0; }
+      tbody td.param { padding-top:2px; font-size:13px; }
+      tbody td.param::before { content:'Parámetro:'; display:block; font-size:11px; font-weight:600; text-transform:uppercase; color:#777; letter-spacing:.5px; }
+      tbody td.def { font-size:13px; line-height:1.35; padding-bottom:4px; }
+    }
+  </style>
 </head>
-
 <body>
-<table width="100%" border="1">
-  <tbody>
-    <tr>
-      <th width="20%" scope="col">Parametro</th>
-      <th width="80%" scope="col">Definición</th>
-    </tr>
-    <tr>
-      <td>Temperatura</td>
-      <td>Temperatura ambiente en superficie en Grados Centígrados.</td>
-    </tr>
-    <tr>
-      <td>Humedad</td>
-      <td>Humedad Relativa expresada en porcentaje.</td>
-    </tr>
-    <tr>
-      <td>Precipitación</td>
-      <td>Cantidad de precipitación medida en mm de lluvia.</td>
-    </tr>
-    <tr>
-      <td>Radiación</td>
-      <td>Radiación solar se mide en unidades de potencia, vatios por metro cuadrado (W/m2).</td>
-    </tr>
-    <tr>
-      <td>Viento</td>
-      <td>Dirección e Intensidad del viento, la dirección se expresa de 0-360 grados, la intensidad en kilómetros por hora (Km/h). Aunque gráficamente es común expresar el viento mediante barras de viento, donde la intensidad se basa en nudos.</td>
-    </tr>
-    <tr>
-      <td>Presión</td>
-      <td>Presión atmosférica en superficie, expresada en hectopascales.</td>
-    </tr>
-  </tbody>
-</table>
+  <h1>Parámetros Meteorológicos</h1>
+  <div class="glossary-table-wrapper">
+    <table aria-label="Glosario ">
+      <thead>
+        <tr>
+          <th>Parámetro</th>
+          <th>Definición</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="param">Temperatura</td>
+          <td class="def">Temperatura ambiente en superficie expresada en grados centígrados (°C).</td>
+        </tr>
+        <tr>
+          <td class="param">Humedad</td>
+          <td class="def">Humedad relativa del aire expresada en porcentaje (%).</td>
+        </tr>
+        <tr>
+          <td class="param">Precipitación</td>
+          <td class="def">Cantidad de precipitación acumulada medida en milímetros (mm).</td>
+        </tr>
+        <tr>
+          <td class="param">Radiación</td>
+          <td class="def">Radiación solar global en superficie, expresada en W/m².</td>
+        </tr>
+        <tr>
+          <td class="param">Viento</td>
+          <td class="def">Dirección (0–360°) e intensidad del viento normalmente expresada en km/h; en representaciones sinópticas puede mostrarse en nudos.</td>
+        </tr>
+        <tr>
+          <td class="param">Presión</td>
+          <td class="def">Presión atmosférica reducida a superficie, expresada en hectopascales (hPa).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </body>
 </html>
