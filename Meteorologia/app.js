@@ -578,6 +578,12 @@ $(function () {
 
   pollForNewRuns();
   setInterval(pollForNewRuns, 43200000);
+  
+  // NUEVO SISTEMA: Event listener para cambio de fecha de pronóstico
+  $(document).on('change', '#select_run', function() {
+    console.log('🎯 Cambio de fecha detectado:', $(this).val());
+    loadHoursForSelectedDay();
+  });
 });
 //-------------------------------------------------------------------------------
 function pollForNewRuns() {
@@ -665,41 +671,319 @@ var make_animation = function (datos) {
 var m_dir_runs = "";
 
 var list_runs = function (datos) {
+  // En lugar de mostrar runs, vamos a mostrar fechas de pronóstico
   var dir_runs = "";
   var list_files = datos.split("|");
-
-  for (var i = list_files.length - 1; i >= 0; i--) {
+  
+  // Obtener fechas objetivo: hoy, mañana y pasado mañana
+  var today = new Date(); // Fecha fija para pruebas
+  
+  var tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  var dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(today.getDate() + 2);
+  
+  // Función para verificar si una run contiene pronósticos para nuestras fechas objetivo
+  function runCoversTargetDates(runDate) {
+    var runEndDate = new Date(runDate);
+    runEndDate.setDate(runDate.getDate() + 3);
+    return (runDate <= dayAfterTomorrow && runEndDate >= today);
+  }
+  
+  // Encontrar la run más reciente que cubra nuestro período
+  var bestRun = null;
+  var bestRunData = null;
+  
+  for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
-
+    
     if (str_file != "") {
       var pos = str_file.lastIndexOf("/");
       var str_name = str_file.substring(pos + 1);
-
-      // Extraer año, mes y día
-      const year = str_name.substring(0, 4);
-      const month = str_name.substring(4, 6);
-      const day = str_name.substring(6, 8);
-
-      // Crear un objeto Date. Es importante usar UTC para evitar problemas de zona horaria.
-      const date = new Date(Date.UTC(year, month - 1, day));
-
-      // Formatear la fecha al formato "Día, DD/MM/YYYY"
-      const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' };
-      let fechaFormateada = new Intl.DateTimeFormat('es-ES', options).format(date);
-
-      // Capitalizar el día de la semana
-      fechaFormateada = fechaFormateada.charAt(0).toUpperCase() + fechaFormateada.slice(1);
-
-      // Reemplazar guiones por diagonales si es necesario
-      fechaFormateada = fechaFormateada.replace(/-/g, '/');
-
-      dir_runs += "<option value='" + str_file + "'>" + fechaFormateada + "</option>";
+      
+      var runYear = parseInt(str_name.substring(0, 4));
+      var runMonth = parseInt(str_name.substring(4, 6));
+      var runDay = parseInt(str_name.substring(6, 8));
+      var runHour = parseInt(str_name.substring(8, 10));
+      
+      var runDate = new Date(runYear, runMonth - 1, runDay);
+      
+      if (runCoversTargetDates(runDate)) {
+        var runScore = runDate.getTime() + (runHour * 60 * 60 * 1000); // Preferir runs más recientes y horas más tardías
+        
+        if (!bestRun || runScore > bestRun) {
+          bestRun = runScore;
+          bestRunData = {
+            file: str_file,
+            date: runDate,
+            year: runYear,
+            month: runMonth,
+            day: runDay,
+            hour: runHour,
+            name: str_name
+          };
+        }
+      }
     }
+  }
+  
+  // Guardar la run seleccionada globalmente para usar en otras funciones
+  window.selectedRunData = bestRunData;
+  
+  if (bestRunData) {
+    // Ahora crear opciones para fechas de pronóstico (no runs)
+    var dayLabels = [
+      { date: today, label: "Hoy", offset: 0 },
+      { date: tomorrow, label: "Mañana", offset: 24 }, 
+      { date: dayAfterTomorrow, label: "Pasado mañana", offset: 48 }
+    ];
+    
+    dayLabels.forEach(function(dayInfo) {
+      var dateStr = String(dayInfo.date.getDate()).padStart(2, '0') + "-" + 
+                    String(dayInfo.date.getMonth() + 1).padStart(2, '0') + "-" + 
+                    dayInfo.date.getFullYear();
+      
+      var fullLabel = dayInfo.label + " (" + dateStr + ")";
+      
+      // El value incluye tanto el archivo base como el offset de horas
+      var valueData = bestRunData.file + "|" + dayInfo.offset;
+      
+      dir_runs += "<option value='" + valueData + "'>" + fullLabel + "</option>";
+    });
+  } else {
+    dir_runs = "<option value=''>No hay pronósticos disponibles</option>";
   }
 
   $("#select_run").html(dir_runs);
+  
+  // Trigger para cargar las horas del primer día seleccionado
+  if (bestRunData) {
+    loadHoursForSelectedDay();
+  }
 };
+
+//-------------------------------------------------------------------------------
+// NUEVA FUNCIÓN: Cargar horas para el día seleccionado
+function loadHoursForSelectedDay() {
+  var selectedValue = $("#select_run").val();
+  if (!selectedValue || !selectedValue.includes("|")) return;
+  
+  var parts = selectedValue.split("|");
+  var runFile = parts[0];
+  var hourOffset = parseInt(parts[1]);
+  
+  if (!window.selectedRunData || !selectedVariable) {
+    console.log('⚠️ Faltan datos: selectedRunData o selectedVariable');
+    return;
+  }
+  
+  // Construir la ruta de la variable actual
+  var varPath = runFile + "/" + selectedVariable + "/";
+  
+  console.log('🔄 Cargando horas para:', {
+    dia: selectedValue,
+    variable: selectedVariable,
+    offset: hourOffset,
+    path: varPath
+  });
+  
+  // Hacer petición para obtener archivos de esa variable
+  make_transaction(
+    mUrl_api + "api.php?tipo_solicitud=listado_var",
+    "variable=" + varPath,
+    function(datos) {
+      console.log('📁 Archivos recibidos:', datos);
+      loadHoursForDay(datos, hourOffset);
+    },
+    function() {
+      console.error('❌ Error cargando archivos para:', varPath);
+      showDialog_Error();
+    }
+  );
+}
+
+// NUEVA FUNCIÓN: Procesar archivos y filtrar por día
+function loadHoursForDay(datos, hourOffset) {
+  var dir_var = "";
+  var list_files = datos.split("|");
+  
+  console.log('🕐 Procesando archivos para offset:', hourOffset, 'Total archivos:', list_files.length);
+  console.log('📁 Variable actual:', selectedVariable);
+  
+  // Detectar si es una variable de resumen diario (24h, 48h, 72h)
+  var isDailySummaryVariable = selectedVariable && (
+    selectedVariable.includes('temmax') || 
+    selectedVariable.includes('temmin') || 
+    selectedVariable.includes('precacum')
+  );
+  
+  var validHours = [];
+  
+  if (isDailySummaryVariable) {
+    console.log('📊 Variable de resumen diario detectada');
+    
+    // Para variables diarias, mapear correctamente los días a las horas de resumen
+    var targetHour;
+    var dayName = "";
+    
+    if (hourOffset === 0) {
+      // Hoy = resumen a las 24 horas
+      targetHour = 24;
+      dayName = "Hoy";
+    } else if (hourOffset === 24) {
+      // Mañana = resumen a las 48 horas  
+      targetHour = 48;
+      dayName = "Mañana";
+    } else if (hourOffset === 48) {
+      // Pasado mañana = resumen a las 72 horas
+      targetHour = 72;
+      dayName = "Pasado mañana";
+    } else {
+      console.error('❌ Offset no válido para variable diaria:', hourOffset);
+      return;
+    }
+    
+    // Buscar archivo - probar con y sin ceros al inicio
+    var targetHourStr = String(targetHour).padStart(3, '0'); // "072", "048", "024"
+    var targetHourStr2 = String(targetHour); // "72", "48", "24"
+    
+    var foundFile = null;
+    for (var i = 0; i < list_files.length; i++) {
+      var str_file = list_files[i];
+      if (str_file && (str_file.includes('_' + targetHourStr + '.png') || str_file.includes('_' + targetHourStr2 + '.png'))) {
+        foundFile = str_file.substring(1); // Quitar ../
+        break;
+      }
+    }
+    
+    if (foundFile) {
+      validHours.push({
+        hour: targetHour,
+        file: foundFile,
+        label: `Resumen de ${dayName.toLowerCase()}`
+      });
+      console.log('✅ Encontrado resumen diario:', targetHourStr, 'o', targetHourStr2, '→', foundFile);
+    } else {
+      console.log('❌ No encontrado resumen diario:', targetHourStr, 'ni', targetHourStr2);
+    }
+    
+  } else {
+    console.log('⏰ Variable horaria detectada (cada 3 horas)');
+    
+    // Para variables horarias normales (cada 3 horas)
+    for (var h = 0; h < 24; h += 3) {
+      var targetHour = hourOffset + h;
+      var targetHourStr = String(targetHour).padStart(3, '0');
       
+      // Buscar archivo que coincida con esta hora
+      var foundFile = null;
+      for (var i = 0; i < list_files.length; i++) {
+        var str_file = list_files[i];
+        if (str_file && str_file.includes('_' + targetHourStr + '.png')) {
+          foundFile = str_file.substring(1); // Quitar ../
+          break;
+        }
+      }
+      
+      if (foundFile) {
+        validHours.push({
+          hour: h,
+          file: foundFile,
+          label: String(h).padStart(2, '0') + ':00'
+        });
+        console.log('✅ Encontrado:', targetHourStr, '→', foundFile);
+      } else {
+        console.log('❌ No encontrado:', targetHourStr);
+      }
+    }
+  }
+  
+  console.log('📊 Horas válidas encontradas:', validHours.length);
+  
+  if (validHours.length === 0) {
+    console.error('❌ No se encontraron archivos válidos para este día/variable');
+    $("#selectHora").html("<option value=''>No hay datos disponibles para este día</option>");
+    return;
+  }
+  
+  // Crear dropdown de horas
+  validHours.forEach(function(hourData) {
+    dir_var += "<option value='" + hourData.file + "'>" + hourData.label + "</option>";
+  });
+  
+  // ARREGLO: Preparar frames para animación usando las horas válidas del día
+  m_frames = [];
+  validHours.forEach(function(hourData) {
+    var frame_kms = new CDataLayer(m_map, "create", hourData.file);
+    
+    // Cargar imagen para filtros si es necesario
+    frame_kms.img = new Image();
+    frame_kms.img.crossOrigin = "anonymous";
+    frame_kms.img.src = hourData.file;
+    
+    m_frames.push(frame_kms);
+  });
+  
+  console.log('🎬 Frames de animación creados para el día:', m_frames.length);
+  
+  // ==========================================
+  // Selector de horas del día / resumen
+  /*
+  // Crear el select de horas si no existe
+  var hoursContainer = document.getElementById('hours-container');
+  if (!hoursContainer) {
+    // Buscar dónde insertar el selector de horas
+    var variablesContainer = document.getElementById('variables-container');
+    if (variablesContainer) {
+      hoursContainer = document.createElement('div');
+      hoursContainer.className = 'control-group';
+      hoursContainer.id = 'hours-container';
+      hoursContainer.innerHTML = `
+        <label for="selectHora">${isDailySummaryVariable ? 'Resumen' : 'Hora del día'}</label>
+        <select id="selectHora"></select>
+      `;
+      
+      // Insertar después del contenedor de variables
+      variablesContainer.parentNode.insertBefore(hoursContainer, variablesContainer.nextSibling);
+    }
+  } else {
+    // Actualizar label si ya existe
+    var label = hoursContainer.querySelector('label');
+    if (label) {
+      label.textContent = isDailySummaryVariable ? 'Resumen' : 'Hora del día';
+    }
+  }
+  
+  $("#selectHora").html(dir_var);
+  
+  // Agregar event listener para cuando cambie la hora
+  $("#selectHora").off('change.dayHours').on('change.dayHours', function() {
+    update_var();
+  });
+  */
+  // ==========================================
+  
+  // Cargar la primera hora automáticamente
+  if (validHours.length > 0) {
+    // Llamar check_loaded para habilitar botón de animación
+    check_loaded();
+    
+    // TEMPORAL: Cargar directamente la primera hora disponible (sin selector)
+    var firstFile = validHours[0].file;
+    set_layer(m_map, firstFile, "add", m_dlayer);
+    var img = new Image();
+    img.onload = function () {
+      m_lienzo = new CLienzo(img);
+      if (filter_color) {
+        const filteredLayer = applyFilterToImage(m_lienzo.img);
+        put_FilteredImage(filteredLayer);
+      }
+    };
+    img.src = firstFile;
+    
+    console.log('📷 Cargando imagen directamente:', firstFile);
+  }
+}
 
 //-------------------------------------------------------------------------------
 var selectedParameter = null;
@@ -955,6 +1239,8 @@ var m_lienzo = null;
 var m_barra = null;
 
 //-------------------------------------------------------------------------------
+// COMENTADO TEMPORALMENTE: update_var que dependía del selectHora
+/*
 async function update_var() {
   m_lienzo = null;
   m_barra = null;
@@ -1008,6 +1294,7 @@ async function update_var() {
     showDialog_Error();
   }
 }
+*/
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
@@ -1021,19 +1308,36 @@ var procesa_var = function () {
     window.currentVariableLabel = selectVar.options[selectVar.selectedIndex].text;
   }
   
-  var str_run = $("#select_run").val();
+  // NUEVO SISTEMA: Usar datos de fecha seleccionada en lugar de run directa
+  var selectedDayValue = $("#select_run").val();
+  if (!selectedDayValue || !selectedDayValue.includes("|")) {
+    console.error('No hay día seleccionado válido');
+    return;
+  }
+  
+  var parts = selectedDayValue.split("|");
+  var str_run = parts[0]; // Archivo base de la run
+  var hourOffset = parseInt(parts[1]); // Offset de horas para el día
+  
   var str_var = selectedVariable;
+  
+  // Actualizar variable global para mantener compatibilidad
   m_dir_runs = str_run.substring(1);
+  
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
-  m_map;
-  console.log(str_dat);
+  console.log('🚀 NUEVO SISTEMA - Cargando variable:', str_dat, 'Offset de horas:', hourOffset);
+  
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   filter_color = null;
   hideInfo();
+  
+  // En lugar de llamar list_var, llamamos la nueva función que filtra por día
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_var",
     str_dat,
-    list_var,
+    function(datos) {
+      loadHoursForDay(datos, hourOffset);
+    },
     showDialog_Error
   );
 };
@@ -2219,7 +2523,6 @@ function round10(x) {
   return Number.parseFloat(str_num);
 }
 
-
 function setLabel(str_file, hs) {
   var pos = str_file.lastIndexOf("/");
   var str_name = str_file.substring(pos + 1);
@@ -2239,22 +2542,18 @@ function setLabel(str_file, hs) {
 
   f.setHours(f.getHours() + parseInt(ls[p + 1].substring(0, 2)));
   f.setHours(f.getHours() + hs);
-
-  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-  const dayName = days[f.getUTCDay()];
-
   var fecha_loc =
-    dayName +
-    ", " +
-    pad(f.getUTCDate(), 2) +
+    pad(f.getDate(), 2) +
     "/" +
-    pad(f.getUTCMonth() + 1, 2) +
+    pad(f.getMonth() + 1, 2) +
     "/" +
-    f.getUTCFullYear();
+    f.getFullYear() +
+    " " +
+    pad(f.getHours(), 2) +
+    "hs";
 
   return fecha_loc;
 }
-
 
 function pad(num, size) {
   var s = "000000000" + num;
@@ -2654,7 +2953,7 @@ canvas.addEventListener("click", function (event) {
   let high = value + 2;
   if (typeof low === 'number' && isFinite(low)) low = parseFloat(low.toFixed(2));
   if (typeof high === 'number' && isFinite(high)) high = parseFloat(high.toFixed(2));
-  showInfo(`${low} - ${high}`);
+  // showInfo(`${low} - ${high}`); // COMENTADO: No mostrar rango al aplicar filtro
   const filteredLayer = applyFilterToImage(m_lienzo.img);
   put_FilteredImage(filteredLayer);
 });
@@ -4613,23 +4912,26 @@ function hideInfo() {
 // Notificación breve al usuario al modificar filtros (throttle)
 let _filterNtfTimer = null;
 function notifyFiltering(message){
-  if (!message) message = 'Aplicando filtro…';
-  const el = document.getElementById('filter-info');
-  if (!el) return;
-  // crear o reusar una banda sutil en filter-info
-  let badge = el.querySelector('.modifying-badge');
-  if (!badge){
-    badge = document.createElement('div');
-    badge.className = 'modifying-badge';
-    badge.style.cssText = 'margin-top:4px;font-size:12px;color:#555;background:rgba(193,152,98,.12);border:1px solid rgba(193,152,98,.4);border-radius:6px;padding:4px 8px;display:inline-block;';
-    el.appendChild(badge);
-  }
-  badge.textContent = message;
-  if (_filterNtfTimer) clearTimeout(_filterNtfTimer);
-  _filterNtfTimer = setTimeout(()=>{
-    if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
-    _filterNtfTimer = null;
-  }, 1200);
+  // Función deshabilitada - no mostrar mensaje "Filtrando:"
+  return;
+  
+  // if (!message) message = 'Aplicando filtro…';
+  // const el = document.getElementById('filter-info');
+  // if (!el) return;
+  // // crear o reusar una banda sutil en filter-info
+  // let badge = el.querySelector('.modifying-badge');
+  // if (!badge){
+  //   badge = document.createElement('div');
+  //   badge.className = 'modifying-badge';
+  //   badge.style.cssText = 'margin-top:4px;font-size:12px;color:#555;background:rgba(193,152,98,.12);border:1px solid rgba(193,152,98,.4);border-radius:6px;padding:4px 8px;display:inline-block;';
+  //   el.appendChild(badge);
+  // }
+  // badge.textContent = message;
+  // if (_filterNtfTimer) clearTimeout(_filterNtfTimer);
+  // _filterNtfTimer = setTimeout(()=>{
+  //   if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+  //   _filterNtfTimer = null;
+  // }, 1200);
 }
 
 // ================= Rango dual con sliders INTEGRADOS (no overlay) =================
