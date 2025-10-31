@@ -488,7 +488,7 @@ html {
   width: 100%;
   min-height: 300px;
   margin-top: var(--header-height); /* Adjusted to match new header height */
-  background-image: url("../images/header/banner-intro-inicio.png");
+  background-image: url("../images/header/nuevo_header.jpg");
   background-size: cover;
   background-position: center;
 }
@@ -569,7 +569,7 @@ html {
 .card-img {
   height: 350px;
   background-size: cover;
-  background-position: center;
+  background-position: bottom;
   display: flex;
   justify-content: center;
   align-items: center;

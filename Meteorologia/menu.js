@@ -220,6 +220,29 @@ $("#btn_recarga").click(function(){
 			console.error('Error al restaurar capa:', e);
 		}
 	}
+	
+	// Resetear dual inputs a valores originales
+	const wrap =
+		document.querySelector('#legend .legend-dual-slider-wrapper') ||
+		document.querySelector('#gradient-container .legend-dual-slider-wrapper');
+
+	if (wrap) {
+		const rLow  = wrap.querySelector('.dual-range.low');
+		const rHigh = wrap.querySelector('.dual-range.high');
+		const inpMin = wrap.querySelector('.dual-min');
+		const inpMax = wrap.querySelector('.dual-max');
+
+		// Resetear sliders a posición inicial
+		if (rLow)  rLow.value  = 0;
+		if (rHigh) rHigh.value = 1000;
+		
+		// Establecer valores originales en los inputs
+		if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+			if (inpMin) inpMin.value = window.gradientMin.toFixed(1);
+			if (inpMax) inpMax.value = window.gradientMax.toFixed(1);
+		}
+	}
+	
 	// Ocultar info de filtro
 	hideInfo();
 	// Limpiar indicador visual si existe

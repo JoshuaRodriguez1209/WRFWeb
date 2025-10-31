@@ -1010,6 +1010,10 @@ var createParameterButtons = function(parameterData) {
       // Activar el botón clickeado
       this.classList.add('active');
       selectedParameter = param.value;
+      
+      // Resetear filtro y dual inputs al cambiar de layer
+      resetFilterUIForNewVariable();
+      
       procesa_dat();
     });
     
@@ -2927,6 +2931,7 @@ let filter_color = null;
 let filter_range_active = false;  // Indica si hay un filtro de rango activo
 let filter_range_min = null;      // Valor mínimo del rango
 let filter_range_max = null;      // Valor máximo del rango
+let colorFilter = null;           // Filtro de heatmap (mapbox / data-layer)
 
 const canvas = document.getElementById("dynamic-gradient-canvas");
 canvas.addEventListener("click", function (event) {
@@ -5336,8 +5341,18 @@ function resetFilterUIForNewVariable() {
 
     if (rLow)  rLow.value  = 0;
     if (rHigh) rHigh.value = 1000;
-    if (inpMin) inpMin.value = '';
-    if (inpMax) inpMax.value = '';
+    
+    // Esperar un momento para que se establezcan los nuevos gradientMin/Max, luego establecer valores
+    setTimeout(() => {
+      if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+        if (inpMin) inpMin.value = window.gradientMin.toFixed(1);
+        if (inpMax) inpMax.value = window.gradientMax.toFixed(1);
+      } else {
+        // Si no hay valores disponibles, limpiar
+        if (inpMin) inpMin.value = '';
+        if (inpMax) inpMax.value = '';
+      }
+    }, 100);
   }
 
   // 3) quitar el texto de rango debajo del mapa
