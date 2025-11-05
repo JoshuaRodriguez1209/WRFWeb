@@ -52,7 +52,7 @@
     { "type": "Feature",
       "geometry": {"type": "Point", "coordinates": [-98.28, 19.12]},
       "properties": {
-        "nombre": "Velodromo",
+        "nombre": "Velódromo",
 	"clave": "007"
       }
     }

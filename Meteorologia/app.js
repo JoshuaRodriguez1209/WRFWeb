@@ -222,9 +222,9 @@ var m_control = new ol.control.Control({ element: notification });
 //-------------------------------------------------------------------------------
 var m_view = new ol.View({
   projection: "EPSG:4326",
-  center: [-97.7711, 19.0105],
-  zoom: 9,
-  minZoom: 9,
+  center: [-97.5711, 19.6105],
+  zoom: 8.67,
+  minZoom: 8.67,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -559,19 +559,19 @@ m_map.on("postcompose", function (event) {
 $(function () {
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_runs",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_runs,
     showDialog_Error
   );
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=cabeceras",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_cabeceras,
     showDialog_Error
   );
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=estaciones",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_estaciones,
     showDialog_Error
   );
@@ -593,7 +593,7 @@ function pollForNewRuns() {
   // Volvemos a pedir el listado
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_runs",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     function (datos) {
       list_runs(datos);
       const newHtml = $("#select_run").html();
@@ -676,7 +676,7 @@ var list_runs = function (datos) {
   var list_files = datos.split("|");
   
   // Obtener fechas objetivo: hoy, mañana y pasado mañana
-  var today = new Date(); // Fecha fija para pruebas
+  var today = new Date(2025, 9, 30); // Fecha fija para pruebas (30 oct 2025)
   
   var tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -1400,7 +1400,7 @@ $(function () {
 });
 
 //-------------------------------------------------------------------------------
-var m_rango = 250;
+var m_rango = 500; //milisegundos entre frames
 var m_animate = false;
 var m_id_animation = 0;
 
@@ -3500,6 +3500,61 @@ function renderIndividualCharts(datasets, labels, type) {
     return;
   }
 
+  // Función para obtener zonas de colores basadas en valores de temperatura
+  function getTemperatureZones(variableKey) {
+    // Solo aplicar a variables de temperatura
+    if (!variableKey || !variableKey.toLowerCase().includes('temp')) {
+      return []; // Sin zonas para otras variables
+    }
+    
+    // Definir las zonas de temperatura con colores
+    return [
+      { min: -10, max: 22, color: 'rgba(76, 175, 80, 0.3)', label: 'Bajo' },        // Verde
+      { min: 22, max: 27, color: 'rgba(255, 235, 59, 0.3)', label: 'Moderado' },     // Amarillo
+      { min: 27, max: 32, color: 'rgba(255, 152, 0, 0.3)', label: 'Alto' },          // Naranja
+      { min: 32, max: 37, color: 'rgba(244, 67, 54, 0.3)', label: 'Muy Alto' },      // Rojo
+      { min: 37, max: 50, color: 'rgba(156, 39, 176, 0.3)', label: 'Extremo' }       // Morado
+    ];
+  }
+
+  // Plugin personalizado para dibujar zonas de colores de fondo
+  const backgroundZonesPlugin = {
+    id: 'backgroundZones',
+    beforeDatasetsDraw: function(chart) {
+      const ctx = chart.ctx;
+      const chartArea = chart.chartArea;
+      const yScale = chart.scales.y;
+      
+      // Obtener zonas de la configuración del chart
+      const zones = chart.config.options.backgroundZones || [];
+      
+      zones.forEach(zone => {
+        const yTop = yScale.getPixelForValue(zone.max);
+        const yBottom = yScale.getPixelForValue(zone.min);
+        
+        ctx.save();
+        ctx.fillStyle = zone.color;
+        ctx.fillRect(
+          chartArea.left, 
+          Math.max(yTop, chartArea.top), 
+          chartArea.right - chartArea.left, 
+          Math.min(yBottom, chartArea.bottom) - Math.max(yTop, chartArea.top)
+        );
+        
+        // Dibujar etiqueta de la zona
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.font = 'bold 12px Poppins';
+        ctx.textAlign = 'left';
+        const labelY = Math.max(yTop, chartArea.top) + (Math.min(yBottom, chartArea.bottom) - Math.max(yTop, chartArea.top)) / 2;
+        ctx.fillText(zone.label, chartArea.left + 10, labelY);
+        ctx.restore();
+      });
+    }
+  };
+
+  // Registrar el plugin de zonas
+  Chart.register(backgroundZonesPlugin);
+
   // Crear una gráfica individual para cada variable
   datasets.forEach((dataset, idx) => {
     const card = document.createElement('div');
@@ -3526,6 +3581,28 @@ function renderIndividualCharts(datasets, labels, type) {
       return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
     })();
 
+    // Obtener la clave de la variable para determinar las zonas de color
+    const variableKey = Object.keys(meteorologicalVariables).find(key => 
+      meteorologicalVariables[key].label === dataset.label.split(' (')[0]
+    );
+
+    // Obtener zonas de colores para esta variable
+    const backgroundZones = getTemperatureZones(variableKey);
+
+    // Registrar plugin personalizado para color de fondo
+    Chart.register({
+      id: 'backgroundColorPlugin',
+      beforeDraw: function(chart) {
+        if (chart.config.options.backgroundColor) {
+          const ctx = chart.ctx;
+          ctx.save();
+          ctx.fillStyle = chart.config.options.backgroundColor;
+          ctx.fillRect(0, 0, chart.width, chart.height);
+          ctx.restore();
+        }
+      }
+    });
+
     // Crear la gráfica individual
     const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
       type: 'line',
@@ -3537,6 +3614,8 @@ function renderIndividualCharts(datasets, labels, type) {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 650, easing: 'easeInOutQuart' },
+        // Zonas de colores de fondo basadas en rangos de valores
+        backgroundZones: backgroundZones,
         plugins: {
           legend: { 
             display: true,
@@ -3571,8 +3650,9 @@ function renderIndividualCharts(datasets, labels, type) {
         scales: {
           y: {
             beginAtZero: false,
-            suggestedMin: gmin - pad,
-            suggestedMax: gmax + pad,
+            // Expandir rango para mostrar todas las zonas de temperatura
+            suggestedMin: backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad,
+            suggestedMax: backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad,
             title: {
               display: true,
               text: dataset.label.split('(')[1]?.replace(')', '') || 'Valor',

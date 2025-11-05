@@ -313,6 +313,8 @@ $(document).on("click", "#btn_atmos", function () {
   
   // Activar modo mapa
   document.body.classList.add('map-active');
+  // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
+  $(".side-menu-right").css('display', '');
   
   $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -357,6 +359,8 @@ $(document).on("click", "#btn_aire", function () {
   
   // Activar modo mapa
   document.body.classList.add('map-active');
+  // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
+  $(".side-menu-right").css('display', '');
 
   $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -399,6 +403,8 @@ $(document).on("click", "#btn_hist", function () {
   $("#banner, #botones1").hide();
   $("#hist").show();
   $("#historial-dashboard").show();
+  // Ocultar el side-menu-right cuando se muestra el historial
+  $(".side-menu-right").hide();
   $("#panel-header-text").text("Historial de Datos");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
