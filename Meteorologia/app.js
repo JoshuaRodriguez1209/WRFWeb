@@ -579,11 +579,32 @@ $(function () {
   pollForNewRuns();
   setInterval(pollForNewRuns, 43200000);
   
-  // NUEVO SISTEMA: Event listener para cambio de fecha de pronóstico
+  // Event listeners para cambios en los selects
   $(document).on('change', '#select_run', function() {
-    console.log('🎯 Cambio de fecha detectado:', $(this).val());
-    loadHoursForSelectedDay();
+    console.log('Cambio de run detectado');
+    change_run();
   });
+  
+  $(document).on('change', '#select_var', function() {
+    console.log('Cambio de variable detectado');
+    var select = document.getElementById('select_var');
+    if (select && select.selectedIndex >= 0) {
+      selectedVariable = select.value;
+      window.currentVariableLabel = select.options[select.selectedIndex].text;
+      updateFilterInfoVariable();
+      procesa_var();
+    }
+  });
+  
+  $(document).on('change', '#selectHora', function() {
+    console.log('Cambio de hora detectado');
+    update_var();
+  });
+  
+  // Inicializar con modo atmosférico por defecto después de cargar runs
+  setTimeout(function() {
+    set_atmos();
+  }, 500);
 });
 //-------------------------------------------------------------------------------
 function pollForNewRuns() {
@@ -671,323 +692,116 @@ var make_animation = function (datos) {
 var m_dir_runs = "";
 
 var list_runs = function (datos) {
-  // En lugar de mostrar runs, vamos a mostrar fechas de pronóstico
   var dir_runs = "";
   var list_files = datos.split("|");
-  
-  // Obtener fechas objetivo: hoy, mañana y pasado mañana
-  var today = new Date(2025, 9, 30); // Fecha fija para pruebas (30 oct 2025)
-  
-  var tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  var dayAfterTomorrow = new Date(today);
-  dayAfterTomorrow.setDate(today.getDate() + 2);
-  
-  // Función para verificar si una run contiene pronósticos para nuestras fechas objetivo
-  function runCoversTargetDates(runDate) {
-    var runEndDate = new Date(runDate);
-    runEndDate.setDate(runDate.getDate() + 3);
-    return (runDate <= dayAfterTomorrow && runEndDate >= today);
-  }
-  
-  // Encontrar la run más reciente que cubra nuestro período
-  var bestRun = null;
-  var bestRunData = null;
-  
+
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
-    
+
     if (str_file != "") {
       var pos = str_file.lastIndexOf("/");
       var str_name = str_file.substring(pos + 1);
       
-      var runYear = parseInt(str_name.substring(0, 4));
-      var runMonth = parseInt(str_name.substring(4, 6));
-      var runDay = parseInt(str_name.substring(6, 8));
-      var runHour = parseInt(str_name.substring(8, 10));
+      var year = str_name.substring(0, 4);
+      var month = str_name.substring(4, 6);
+      var day = str_name.substring(6, 8);
+      var hour = str_name.substring(8, 10);
       
-      var runDate = new Date(runYear, runMonth - 1, runDay);
+      var label = day + "-" + month + "-" + year + " " + hour + ":00";
       
-      if (runCoversTargetDates(runDate)) {
-        var runScore = runDate.getTime() + (runHour * 60 * 60 * 1000); // Preferir runs más recientes y horas más tardías
-        
-        if (!bestRun || runScore > bestRun) {
-          bestRun = runScore;
-          bestRunData = {
-            file: str_file,
-            date: runDate,
-            year: runYear,
-            month: runMonth,
-            day: runDay,
-            hour: runHour,
-            name: str_name
-          };
-        }
-      }
+      dir_runs += "<option value='" + str_file + "'>" + label + "</option>";
     }
-  }
-  
-  // Guardar la run seleccionada globalmente para usar en otras funciones
-  window.selectedRunData = bestRunData;
-  
-  if (bestRunData) {
-    // Ahora crear opciones para fechas de pronóstico (no runs)
-    var dayLabels = [
-      { date: today, label: "Hoy", offset: 0 },
-      { date: tomorrow, label: "Mañana", offset: 24 }, 
-      { date: dayAfterTomorrow, label: "Pasado mañana", offset: 48 }
-    ];
-    
-    dayLabels.forEach(function(dayInfo) {
-      var dateStr = String(dayInfo.date.getDate()).padStart(2, '0') + "-" + 
-                    String(dayInfo.date.getMonth() + 1).padStart(2, '0') + "-" + 
-                    dayInfo.date.getFullYear();
-      
-      var fullLabel = dayInfo.label + " (" + dateStr + ")";
-      
-      // El value incluye tanto el archivo base como el offset de horas
-      var valueData = bestRunData.file + "|" + dayInfo.offset;
-      
-      dir_runs += "<option value='" + valueData + "'>" + fullLabel + "</option>";
-    });
-  } else {
-    dir_runs = "<option value=''>No hay pronósticos disponibles</option>";
   }
 
   $("#select_run").html(dir_runs);
+  change_run();
+};
+
+//-------------------------------------------------------------------------------
+var change_run = function() {
+  // Extraer información de la run seleccionada
+  var selectedRun = $("#select_run").val();
+  if (selectedRun) {
+    var pos = selectedRun.lastIndexOf("/");
+    var str_name = selectedRun.substring(pos + 1);
+    
+    var year = parseInt(str_name.substring(0, 4));
+    var month = parseInt(str_name.substring(4, 6));
+    var day = parseInt(str_name.substring(6, 8));
+    var hour = parseInt(str_name.substring(8, 10));
+    
+    // Actualizar window.selectedRunData para que el historial funcione
+    window.selectedRunData = {
+      name: str_name,
+      year: year,
+      month: month,
+      day: day,
+      hour: hour
+    };
+    
+    console.log('🔄 Run seleccionada actualizada:', window.selectedRunData);
+  }
   
-  // Trigger para cargar las horas del primer día seleccionado
-  if (bestRunData) {
-    loadHoursForSelectedDay();
+  // Recargar los parámetros cuando cambie la run
+  // Detectar si estamos en modo atmos o chem según el parámetro activo
+  if (selectedParameter) {
+    // Si hay un parámetro seleccionado, recargar ese tipo
+    var currentType = selectedParameter.substring(0, selectedParameter.indexOf('/'));
+    if (currentType === 'meteo') {
+      set_atmos();
+    } else if (currentType === 'chem') {
+      set_chem();
+    }
   }
 };
 
 //-------------------------------------------------------------------------------
-// NUEVA FUNCIÓN: Cargar horas para el día seleccionado
-function loadHoursForSelectedDay() {
-  var selectedValue = $("#select_run").val();
-  if (!selectedValue || !selectedValue.includes("|")) return;
-  
-  var parts = selectedValue.split("|");
-  var runFile = parts[0];
-  var hourOffset = parseInt(parts[1]);
-  
-  if (!window.selectedRunData || !selectedVariable) {
-    console.log('⚠️ Faltan datos: selectedRunData o selectedVariable');
-    return;
-  }
-  
-  // Construir la ruta de la variable actual
-  var varPath = runFile + "/" + selectedVariable + "/";
-  
-  console.log('🔄 Cargando horas para:', {
-    dia: selectedValue,
-    variable: selectedVariable,
-    offset: hourOffset,
-    path: varPath
-  });
-  
-  // Hacer petición para obtener archivos de esa variable
-  make_transaction(
-    mUrl_api + "api.php?tipo_solicitud=listado_var",
-    "variable=" + varPath,
-    function(datos) {
-      console.log('📁 Archivos recibidos:', datos);
-      loadHoursForDay(datos, hourOffset);
-    },
-    function() {
-      console.error('❌ Error cargando archivos para:', varPath);
-      showDialog_Error();
-    }
-  );
-}
-
-// NUEVA FUNCIÓN: Procesar archivos y filtrar por día
-function loadHoursForDay(datos, hourOffset) {
-  var dir_var = "";
-  var list_files = datos.split("|");
-  
-  console.log('🕐 Procesando archivos para offset:', hourOffset, 'Total archivos:', list_files.length);
-  console.log('📁 Variable actual:', selectedVariable);
-  
-  // Detectar si es una variable de resumen diario (24h, 48h, 72h)
-  var isDailySummaryVariable = selectedVariable && (
-    selectedVariable.includes('temmax') || 
-    selectedVariable.includes('temmin') || 
-    selectedVariable.includes('precacum')
-  );
-  
-  var validHours = [];
-  
-  if (isDailySummaryVariable) {
-    console.log('📊 Variable de resumen diario detectada');
-    
-    // Para variables diarias, mapear correctamente los días a las horas de resumen
-    var targetHour;
-    var dayName = "";
-    
-    if (hourOffset === 0) {
-      // Hoy = resumen a las 24 horas
-      targetHour = 24;
-      dayName = "Hoy";
-    } else if (hourOffset === 24) {
-      // Mañana = resumen a las 48 horas  
-      targetHour = 48;
-      dayName = "Mañana";
-    } else if (hourOffset === 48) {
-      // Pasado mañana = resumen a las 72 horas
-      targetHour = 72;
-      dayName = "Pasado mañana";
-    } else {
-      console.error('❌ Offset no válido para variable diaria:', hourOffset);
-      return;
-    }
-    
-    // Buscar archivo - probar con y sin ceros al inicio
-    var targetHourStr = String(targetHour).padStart(3, '0'); // "072", "048", "024"
-    var targetHourStr2 = String(targetHour); // "72", "48", "24"
-    
-    var foundFile = null;
-    for (var i = 0; i < list_files.length; i++) {
-      var str_file = list_files[i];
-      if (str_file && (str_file.includes('_' + targetHourStr + '.png') || str_file.includes('_' + targetHourStr2 + '.png'))) {
-        foundFile = str_file.substring(1); // Quitar ../
-        break;
-      }
-    }
-    
-    if (foundFile) {
-      validHours.push({
-        hour: targetHour,
-        file: foundFile,
-        label: `Resumen de ${dayName.toLowerCase()}`
-      });
-      console.log('✅ Encontrado resumen diario:', targetHourStr, 'o', targetHourStr2, '→', foundFile);
-    } else {
-      console.log('❌ No encontrado resumen diario:', targetHourStr, 'ni', targetHourStr2);
-    }
-    
-  } else {
-    console.log('⏰ Variable horaria detectada (cada 3 horas)');
-    
-    // Para variables horarias normales (cada 3 horas)
-    for (var h = 0; h < 24; h += 3) {
-      var targetHour = hourOffset + h;
-      var targetHourStr = String(targetHour).padStart(3, '0');
-      
-      // Buscar archivo que coincida con esta hora
-      var foundFile = null;
-      for (var i = 0; i < list_files.length; i++) {
-        var str_file = list_files[i];
-        if (str_file && str_file.includes('_' + targetHourStr + '.png')) {
-          foundFile = str_file.substring(1); // Quitar ../
-          break;
-        }
-      }
-      
-      if (foundFile) {
-        validHours.push({
-          hour: h,
-          file: foundFile,
-          label: String(h).padStart(2, '0') + ':00'
-        });
-        console.log('✅ Encontrado:', targetHourStr, '→', foundFile);
-      } else {
-        console.log('❌ No encontrado:', targetHourStr);
-      }
-    }
-  }
-  
-  console.log('📊 Horas válidas encontradas:', validHours.length);
-  
-  if (validHours.length === 0) {
-    console.error('❌ No se encontraron archivos válidos para este día/variable');
-    $("#selectHora").html("<option value=''>No hay datos disponibles para este día</option>");
-    return;
-  }
-  
-  // Crear dropdown de horas
-  validHours.forEach(function(hourData) {
-    dir_var += "<option value='" + hourData.file + "'>" + hourData.label + "</option>";
-  });
-  
-  // ARREGLO: Preparar frames para animación usando las horas válidas del día
-  m_frames = [];
-  validHours.forEach(function(hourData) {
-    var frame_kms = new CDataLayer(m_map, "create", hourData.file);
-    
-    // Cargar imagen para filtros si es necesario
-    frame_kms.img = new Image();
-    frame_kms.img.crossOrigin = "anonymous";
-    frame_kms.img.src = hourData.file;
-    
-    m_frames.push(frame_kms);
-  });
-  
-  console.log('🎬 Frames de animación creados para el día:', m_frames.length);
-  
-  // ==========================================
-  // Selector de horas del día / resumen
-  /*
-  // Crear el select de horas si no existe
-  var hoursContainer = document.getElementById('hours-container');
-  if (!hoursContainer) {
-    // Buscar dónde insertar el selector de horas
-    var variablesContainer = document.getElementById('variables-container');
-    if (variablesContainer) {
-      hoursContainer = document.createElement('div');
-      hoursContainer.className = 'control-group';
-      hoursContainer.id = 'hours-container';
-      hoursContainer.innerHTML = `
-        <label for="selectHora">${isDailySummaryVariable ? 'Resumen' : 'Hora del día'}</label>
-        <select id="selectHora"></select>
-      `;
-      
-      // Insertar después del contenedor de variables
-      variablesContainer.parentNode.insertBefore(hoursContainer, variablesContainer.nextSibling);
-    }
-  } else {
-    // Actualizar label si ya existe
-    var label = hoursContainer.querySelector('label');
-    if (label) {
-      label.textContent = isDailySummaryVariable ? 'Resumen' : 'Hora del día';
-    }
-  }
-  
-  $("#selectHora").html(dir_var);
-  
-  // Agregar event listener para cuando cambie la hora
-  $("#selectHora").off('change.dayHours').on('change.dayHours', function() {
-    update_var();
-  });
-  */
-  // ==========================================
-  
-  // Cargar la primera hora automáticamente
-  if (validHours.length > 0) {
-    // Llamar check_loaded para habilitar botón de animación
-    check_loaded();
-    
-    // TEMPORAL: Cargar directamente la primera hora disponible (sin selector)
-    var firstFile = validHours[0].file;
-    set_layer(m_map, firstFile, "add", m_dlayer);
-    var img = new Image();
-    img.onload = function () {
-      m_lienzo = new CLienzo(img);
-      if (filter_color) {
-        const filteredLayer = applyFilterToImage(m_lienzo.img);
-        put_FilteredImage(filteredLayer);
-      }
-    };
-    img.src = firstFile;
-    
-    console.log('📷 Cargando imagen directamente:', firstFile);
-  }
-}
-
-//-------------------------------------------------------------------------------
 var selectedParameter = null;
 var selectedVariable = null;
+
+// Mapeo de unidades para cada variable
+var variableUnits = {
+  'temmax': '°C',
+  'temmin': '°C',
+  'temp/700': '°C',
+  'temp/600': '°C',
+  'temp/500': '°C',
+  'temp/400': '°C',
+  'temp/300': '°C',
+  'temp/200': '°C',
+  'temp/sfc': '°C',
+  'hum/sfc': '%',
+  'precacum': 'mm',
+  'radsw/sfc': 'W/m²',
+  'radlw/sfc': 'W/m²',
+  'wnd/sfc': 'km/h',
+  'wnd/700': 'km/h',
+  'wnd/600': 'km/h',
+  'wnd/500': 'km/h',
+  'wnd/400': 'km/h',
+  'wnd/300': 'km/h',
+  'wnd/200': 'km/h',
+  'psfc': 'hPa',
+  'CO/sfc': 'ppm',
+  'NO2/sfc': 'ppb',
+  'O3/sfc': 'ppb',
+  'SO2/sfc': 'ppb',
+  'PM25/sfc': 'µg/m³',
+  'PM10/sfc': 'µg/m³'
+};
+
+// Función para actualizar la información de la variable en filter-info
+function updateFilterInfoVariable() {
+  const variableElement = document.querySelector("#filter-info .filter-info-variable");
+  if (!variableElement) return;
+  
+  if (window.currentVariableLabel && selectedVariable) {
+    const unit = variableUnits[selectedVariable] || '';
+    variableElement.textContent = window.currentVariableLabel + (unit ? ' (' + unit + ')' : '');
+  } else {
+    variableElement.textContent = '';
+  }
+}
 
 // Crear botones de parámetros principales
 var createParameterButtons = function(parameterData) {
@@ -1120,29 +934,24 @@ var updateVariableSelect = function(variableData) {
   var select = document.getElementById('select_var');
   var selectContainer = document.getElementById('variables-container');
   
-  // Si solo hay una variable, ocultar el select y usar directamente
-  if (variableData.length <= 1) {
-    // Aun cuando lo ocultemos, creamos la opción para que otras funciones puedan leer su label
-    select.innerHTML = '';
-    if (variableData.length === 1) {
-      const single = variableData[0];
-      const option = document.createElement('option');
-      option.value = single.value;
-      option.textContent = single.label;
-      select.appendChild(option);
-      select.selectedIndex = 0;
-      selectedVariable = single.value;
-      window.currentVariableLabel = single.label; // almacenar etiqueta actual
-    } else {
-      selectedVariable = null;
-      window.currentVariableLabel = null;
-    }
-    selectContainer.style.display = 'none';
-  } else {
-    // Múltiples variables: mostrar select
-    selectContainer.style.display = 'block';
-    select.innerHTML = '';
-    
+  // Siempre mantener oculto el select de variables
+  selectContainer.style.display = 'none';
+  
+  select.innerHTML = '';
+  
+  if (variableData.length === 1) {
+    // Una sola variable: crear opción y seleccionar automáticamente
+    const single = variableData[0];
+    const option = document.createElement('option');
+    option.value = single.value;
+    option.textContent = single.label;
+    select.appendChild(option);
+    select.selectedIndex = 0;
+    selectedVariable = single.value;
+    window.currentVariableLabel = single.label;
+    updateFilterInfoVariable();
+  } else if (variableData.length > 1) {
+    // Múltiples variables: crear opciones y seleccionar la primera
     variableData.forEach(function(variable, index) {
       var option = document.createElement('option');
       option.value = variable.value;
@@ -1153,8 +962,14 @@ var updateVariableSelect = function(variableData) {
       if (index === 0) {
         selectedVariable = variable.value;
         window.currentVariableLabel = variable.label;
+        updateFilterInfoVariable();
       }
     });
+  } else {
+    // Sin variables
+    selectedVariable = null;
+    window.currentVariableLabel = null;
+    updateFilterInfoVariable();
   }
   
   // Procesar la primera variable automáticamente
@@ -1243,8 +1058,6 @@ var m_lienzo = null;
 var m_barra = null;
 
 //-------------------------------------------------------------------------------
-// COMENTADO TEMPORALMENTE: update_var que dependía del selectHora
-/*
 async function update_var() {
   m_lienzo = null;
   m_barra = null;
@@ -1281,24 +1094,15 @@ async function update_var() {
       const filteredLayer = applyFilterToImage(m_lienzo.img);
       put_FilteredImage(filteredLayer);
     }
+    
+    // Actualizar la fecha en filter-info
+    const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+    if (permanentDateElement && m_dlayer && m_dlayer.fecha_loc) {
+      permanentDateElement.textContent = m_dlayer.fecha_loc;
+    }
   };
   img.src = str_file;
-  if (m_dlayer.img_escala.complete) {
-    switch (m_dlayer.tipo_barra) {
-      case TEMP:
-        //loadGradientDataFromCSV("./color_scale.csv","TEMP");
-        //m_barra = new CBarra(m_dlayer.img_escala, -12, 50, 2, 22);
-        break;
-      case WIND:
-        //loadGradientDataFromCSV("./color_scale.csv", "WIND");
-        //m_barra = new CBarra(m_dlayer.img_escala, 0, 160, 10, 22);
-        break;
-    }
-  } else {
-    showDialog_Error();
-  }
 }
-*/
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
@@ -1312,36 +1116,22 @@ var procesa_var = function () {
     window.currentVariableLabel = selectVar.options[selectVar.selectedIndex].text;
   }
   
-  // NUEVO SISTEMA: Usar datos de fecha seleccionada en lugar de run directa
-  var selectedDayValue = $("#select_run").val();
-  if (!selectedDayValue || !selectedDayValue.includes("|")) {
-    console.error('No hay día seleccionado válido');
-    return;
-  }
-  
-  var parts = selectedDayValue.split("|");
-  var str_run = parts[0]; // Archivo base de la run
-  var hourOffset = parseInt(parts[1]); // Offset de horas para el día
-  
+  var str_run = $("#select_run").val();
   var str_var = selectedVariable;
   
-  // Actualizar variable global para mantener compatibilidad
+  // Actualizar variable global
   m_dir_runs = str_run.substring(1);
   
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
-  console.log('🚀 NUEVO SISTEMA - Cargando variable:', str_dat, 'Offset de horas:', hourOffset);
   
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   filter_color = null;
   hideInfo();
   
-  // En lugar de llamar list_var, llamamos la nueva función que filtra por día
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_var",
     str_dat,
-    function(datos) {
-      loadHoursForDay(datos, hourOffset);
-    },
+    list_var,
     showDialog_Error
   );
 };
@@ -1400,7 +1190,7 @@ $(function () {
 });
 
 //-------------------------------------------------------------------------------
-var m_rango = 500; //milisegundos entre frames
+var m_rango = 3000; //milisegundos entre frames
 var m_animate = false;
 var m_id_animation = 0;
 
@@ -1815,14 +1605,19 @@ m_view.on("propertychange", function (e) {
   if (e.key == "resolution") {
     //Cuando cambia el zoom
     var zoom = m_view.getZoom();
+    console.log(`Resolution changed: old zoom=${m_zoom}, new zoom=${zoom}`);
 
-    if (m_zoom == zoom || zoom % 1 != 0) {
+    // Solo saltamos si el zoom es exactamente igual (sin cambios fraccionarios)
+    if (Math.abs(m_zoom - zoom) < 0.01) {
+      console.log("Skipping zoom update - minimal change");
       return;
     }
 
     m_zoom = zoom;
+    console.log(`Zoom updated to: ${m_zoom}`);
     var scale = get_scale();
     var features = m_vectorSource.getFeatures(); //Obtener el arreglo de iconos
+    console.log(`Updating ${features.length} features`);
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
@@ -1845,9 +1640,12 @@ function get_scale() {
 
 //------------------------------------------------------------------------
 function set_text(feature) {
+  console.log(`set_text called: m_zoom=${m_zoom}, ZOOMREF=${ZOOMREF}, feature=${feature.get("nombre")}`);
   if (m_zoom < ZOOMREF) {
+    console.log(`Hiding text for ${feature.get("nombre")} (zoom ${m_zoom} < ${ZOOMREF})`);
     feature.getStyle().getText().setText("");
   } else {
+    console.log(`Showing text for ${feature.get("nombre")} (zoom ${m_zoom} >= ${ZOOMREF})`);
     feature.getStyle().getText().setText(feature.get("nombre"));
   }
 }
@@ -2668,16 +2466,11 @@ function show_datos(datos) {
 
   //texthtml.append('<tbody>');
   texthtml.append("<div>");
-  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
+  // Determinar modo actual según m_glosario
   let modo = 'meteo';
-  try {
-    const sel = document.getElementById('select_dat');
-    if (sel && sel.value) {
-      modo = sel.value === 'quim' ? 'chem' : 'meteo';
-    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
-      modo = 'chem';
-    }
-  } catch(e) {}
+  if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
+    modo = 'chem';
+  }
 
   // Bloque de acciones masivas (solo un botón según modo)
   if (modo === 'meteo') {
@@ -2751,9 +2544,8 @@ async function bulkDownloadCabeceras(features){
     return;
   }
   
-  // Determinar tipo según select_dat
-  const sel = document.getElementById('select_dat');
-  const modo = sel ? sel.value : 'meteo';
+  // Determinar tipo según m_glosario
+  const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
   const tipo = modo === 'quim' ? 'chem' : 'meteo';
   const sufijo = tipo === 'meteo' ? 'meteorologicos' : 'contaminantes';
   
@@ -2892,7 +2684,11 @@ function downladCSV(clave) {
 
     if (feature.get("clave") == clave && feature.get("local") == "cabecera") {
       m_feature = feature;
-      if ($("#select_dat").val() == "quim") {
+      
+      // Determinar modo según m_glosario
+      const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
+      
+      if (modo === 'quim') {
         show_chem(false);
       } else {
         show_meteo(false);
@@ -2914,8 +2710,10 @@ function downloadCSV(clave) {
       if (feature.get('clave') == clave && feature.get('local') == 'cabecera') {
         m_feature = feature;
         m_pendingDirectDownload = true;
-        const sel = document.getElementById('select_dat');
-        const modo = sel ? sel.value : 'meteo';
+        
+        // Determinar modo según m_glosario
+        const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
+        
         if (modo === 'quim') {
           show_chem(false);
         } else {
@@ -4358,11 +4156,17 @@ async function loadMapSearchMunicipios() {
 
 // Función para centrar el mapa en un municipio
 function centerMapOnMunicipioSearch(municipioClave) {
+  console.log(`centerMapOnMunicipioSearch called with: ${municipioClave}`);
   const municipio = mapSearchMunicipiosData.find(m => m.clave === municipioClave);
-  if (!municipio || !m_map) return;
+  if (!municipio || !m_map) {
+    console.log("Municipio not found or map not available");
+    return;
+  }
   
   const [lng, lat] = municipio.coordinates;
   const view = m_map.getView();
+  
+  console.log(`Centering map on: ${municipio.nombre} [${lng}, ${lat}] with zoom 12`);
   
   // Centrar el mapa en las coordenadas del municipio
   view.animate({
@@ -5157,6 +4961,18 @@ function initDualRangeFilter(){
       setTimeout(init,300);
     }
   })();
+  
+  // Función global para actualizar dual-inputs cuando cambien gradientMin/Max
+  window.updateDualInputs = function() {
+    if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+      inpMin.value = window.gradientMin.toFixed(1);
+      inpMax.value = window.gradientMax.toFixed(1);
+      valuesToSliders(window.gradientMin, window.gradientMax);
+      // Resetear sliders a posición inicial
+      rLow.value = 0;
+      rHigh.value = 1000;
+    }
+  };
 
   let applyTimer=null;
   function scheduleApply(){

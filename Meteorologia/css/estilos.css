@@ -16,9 +16,9 @@ body {
     background: #f5f5f5;
     /* THIS IS THE KEY FIX: Makes space for the fixed header */
     padding-top: var(--header-height);
-  overflow-x: hidden;
-  overflow-y: auto; /* siempre permitir scroll del documento */
+    overflow: hidden; /* Sin scroll en el body, el scroll está en los contenedores internos */
     min-height: 100vh;
+    height: 100vh; /* Altura fija para evitar scroll externo */
 }
 
 .header-container {
@@ -634,7 +634,7 @@ html {
   display: none;
   position: relative;
   margin-top: 60px; /* This adds the space */
-  height: calc(100vh - var(--header-height) - 30px); /* This adjusts the height for the new margin */
+  height: auto; /* This adjusts the height for the new margin */
 }
 
 
@@ -844,9 +844,9 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 .ol-scale-line {
-  position: relative !important;
+  position: absolute !important; /* Cambiado de relative a absolute para posicionamiento preciso */
   bottom: 200px !important; /* Justo encima del map-legend (que está en bottom: 150px) */
-  left: 50% !important; /* Centrado horizontalmente */
+  left: 20% !important; /* Posición hacia la izquierda */
   transform: translateX(-50%) !important; /* Ajuste para centrar perfectamente */
   right: auto !important;
   padding: 4px 8px 6px 8px !important;
@@ -1567,8 +1567,8 @@ body.map-active #app #map { overscroll-behavior: contain; }
 #filter-info {
   position: absolute;
   top: calc(var(--header-height) - 45px);
-  left: 40%;
-  z-index: 3001;
+  left: 15%; /* Cambiado de 40% a 15% para mover hacia la izquierda */
+  z-index: 1001;
   font-weight: 500;
   color: #333;
   text-align: center;
@@ -1585,7 +1585,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 @media (max-width: 768px) {
   #filter-info {
     top: 110px;
-    left: 18%;
+    left: 10%; /* Cambiado de 18% a 10% para mover más hacia la izquierda en móvil */
     transform: translateX(-50%);
     max-width: 90%; 
     padding: 8px 15px; 
@@ -2710,9 +2710,9 @@ body.map-active #app #map { overscroll-behavior: contain; }
 .ol-scale-line {
   position: absolute !important;
   bottom: var(--scale-bottom-desktop) !important;
-  right: var(--scale-right-desktop) !important;
-  left: auto !important;
-  transform: none !important;
+  left: 20% !important; /* Cambiado de right a left para mover hacia la izquierda */
+  right: auto !important;
+  transform: translateX(-50%) !important; /* Centrar desde la posición left */
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;

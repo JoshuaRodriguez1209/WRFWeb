@@ -227,18 +227,25 @@
 
     <div id="app">
       <div id="side-menu" class="side-menu">
+        <div class="menu-buttons-group">
+          <button class="menu-btn" id="btn_aire" title="Calidad del aire">
+            <i class="fa-solid fa-smog"></i> <span class="menu-label">Calidad del aire</span>
+          </button>
+          <button class="menu-btn" id="btn_atmos" title="Atmósfera">
+            <i class="fa-solid fa-temperature-half"></i> <span class="menu-label">Meteorología</span>
+          </button>
+
+          <button class="menu-btn" id="btn_hist" title="Historial">
+            <i class="fa-solid fa-chart-line"></i> <span class="menu-label">Historial</span>
+          </button>
+          
+          <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
+            <i class="fa-solid fa-play" id="playIcon"></i>
+          </button>
+        </div>
+
         <button class="back-btn" id="btn_back" title="Volver al inicio" onclick="location.reload()">
           <i class="fa-solid fa-arrow-left"></i>
-        </button>
-        <button class="menu-btn" id="btn_aire" title="Calidad del aire">
-          <i class="fa-solid fa-smog"></i> <span class="menu-label">Calidad del aire</span>
-        </button>
-        <button class="menu-btn" id="btn_atmos" title="Atmósfera">
-          <i class="fa-solid fa-temperature-half"></i> <span class="menu-label">Meteorología</span>
-        </button>
-
-        <button class="menu-btn" id="btn_hist" title="Historial">
-          <i class="fa-solid fa-chart-line"></i> <span class="menu-label">Historial</span>
         </button>
       </div>
 
@@ -250,6 +257,13 @@
               </button>
             </div>
         </div>
+        
+        <!-- Información del Día - Movido de vuelta al mapa -->
+        <div id="filter-info">
+          <div class="filter-info-variable"></div>
+          <div class="permanent-date"></div>
+        </div>
+        
         <!-- Escala integrada al panel de capas 
         <div id="gradient-container" class="horizontal-mode embedded bottom-floating">
           <div class="gradient-inner">
@@ -329,7 +343,73 @@
       
       <!-- Side menu derecho para filtros y controles -->
       <div id="side-menu-right" class="side-menu-right">
-        <h3>Filtros y Controles</h3>
+
+        <!-- 1. Weather Control (primero) -->
+        <div class="control-section">
+           <!--<h4>Weather Control</h4>-->
+          <div class="weather-controls" id="weather-controls">
+            <div class="controls-header" style="display: none;">
+              <h3 id="controls-header-title"></h3>
+              <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
+            </div>
+
+            <div class="controls-body">
+              <div class="control-group" style="display:none;">
+                <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
+              </div>
+              
+              <div class="control-group" style="display:none;">
+                <label for="select_run">Fecha de Pronóstico</label>
+                <select id="select_run"></select>
+              </div>
+               
+
+              <div class="control-group">
+                <label>Parámetros</label>
+                <div class="layer-buttons" id="parameter-buttons"></div>
+              </div>
+
+              <div class="control-group" id="variables-container" style="display: none;">
+                <label for="select_var">Variables</label>
+                <select id="select_var"></select>
+              </div>
+              
+              <div class="control-group">
+              <div id="gradient-container" >
+                <label>Filtro</label>
+                <div class="gradient-inner">
+                  <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
+                </div>
+              </div>
+              </div>
+
+              <!-- Controls Footer -->
+              <div class="controls-footer">
+                <button class="footer-btn" id="btn_glo">
+                  <i class="fa-solid fa-book"></i> Glosario
+                </button>
+                <button class="footer-btn" id="btn_datos">
+                  <i class="fa-solid fa-download"></i> Datos por Municipio
+                </button>
+                <button class="footer-btn" id="btn_recarga">
+                  <i class="fa-solid fa-reload"></i> Limpiar Filtro
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 2. Buscar Municipio (segundo) -->
+        <div class="control-section">
+          <h4>Buscar Municipio</h4>
+          <div id="municipio-map-control">
+            <select id="map-search" class="form-control" style="display: none;">
+              <option value="">Seleccione un municipio</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- 3. Simbología (tercero/último) -->
         <div class="control-section">
           <h4>Simbología</h4>
           <div class="legend-content">
@@ -355,83 +435,6 @@
                 <text x="8" y="11.5" text-anchor="middle" font-size="10" font-weight="bold" fill="#c19862">i</text>
               </svg>
               <span>Haz clic sobre las cabeceras o estaciones para ver datos</span>
-            </div>
-          </div>
-        </div>
-        <div class="control-section">
-          <h4>Buscar Municipio</h4>
-          <div id="municipio-map-control">
-            <label for="map-search">Buscar municipio</label>
-            <select id="map-search" class="form-control" style="display: none;">
-              <option value="">Seleccione un municipio</option>
-            </select>
-          </div>
-        </div>
-        <div class="control-section">
-          <h4>Información del Día</h4>
-          <div id="filter-info">
-            <div class="permanent-date"></div>
-          </div>
-        </div>
-        <div class="control-section">
-          <h4>Weather Control</h4>
-          <div class="weather-controls" id="weather-controls">
-            <div class="controls-header" style="display: none;">
-              <h3 id="controls-header-title"></h3>
-              <button class="close-btn" id="close-controls-btn" title="Cerrar panel">&times;</button>
-            </div>
-
-            <div class="controls-body">
-              <div class="control-group" style="display:none;">
-                <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
-              </div>
-
-              <div class="control-group">
-                <label for="select_run">Fecha de Pronóstico</label>
-                <select id="select_run"></select>
-              </div>
-
-              <div class="control-group">
-                <label>Parámetros</label>
-                <div class="layer-buttons" id="parameter-buttons"></div>
-              </div>
-
-              <div class="control-group" id="variables-container">
-                <label for="select_var">Variables</label>
-                <select id="select_var"></select>
-              </div>
-              
-              <div class="control-group">
-              <div id="gradient-container" >
-                <label>Filtro</label>
-                <div class="gradient-inner">
-                  <canvas id="dynamic-gradient-canvas" class="gradient-bar-horizontal" height="22" width="380"></canvas>
-                </div>
-              </div>
-              </div>
-
-              <!-- Animation Controls -->
-              <div class="animation-controls">
-                <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
-                  <i class="fa-solid fa-play" id="playIcon"></i>
-                </button>
-                <div style="flex-grow: 1;">
-                  <label for="speedSlider" style="font-size: 12px; color: #666; display: block; margin-bottom: 2px;">Animación del pronóstico</label>
-                </div>
-              </div>
-
-              <!-- Controls Footer -->
-              <div class="controls-footer">
-                <button class="footer-btn" id="btn_glo">
-                  <i class="fa-solid fa-book"></i> Glosario
-                </button>
-                <button class="footer-btn" id="btn_datos">
-                  <i class="fa-solid fa-download"></i> Datos por Municipio
-                </button>
-                <button class="footer-btn" id="btn_recarga">
-                  <i class="fa-solid fa-reload"></i> Limpiar Filtro
-                </button>
-              </div>
             </div>
           </div>
         </div>

@@ -315,6 +315,10 @@ $(document).on("click", "#btn_atmos", function () {
   document.body.classList.add('map-active');
   // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
   $(".side-menu-right").css('display', '');
+  // Mostrar filter-info y controles del mapa
+  $("#filter-info").show();
+  $("#parameter-buttons").parent().show(); // Mostrar el control-group de parámetros
+  $("#gradient-container").parent().show(); // Mostrar el control-group del filtro
   
   $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -361,6 +365,10 @@ $(document).on("click", "#btn_aire", function () {
   document.body.classList.add('map-active');
   // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
   $(".side-menu-right").css('display', '');
+  // Mostrar filter-info y controles del mapa
+  $("#filter-info").show();
+  $("#parameter-buttons").parent().show(); // Mostrar el control-group de parámetros
+  $("#gradient-container").parent().show(); // Mostrar el control-group del filtro
 
   $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -403,8 +411,16 @@ $(document).on("click", "#btn_hist", function () {
   $("#banner, #botones1").hide();
   $("#hist").show();
   $("#historial-dashboard").show();
-  // Ocultar el side-menu-right cuando se muestra el historial
+  // Ocultar el side-menu-right, filter-info y parámetros cuando se muestra el historial
   $(".side-menu-right").hide();
+  $(".side-menu-right").css('display', 'none'); // Forzar con CSS también
+  $("#filter-info").hide();
+  $("#parameter-buttons").parent().hide(); // Ocultar el control-group de parámetros
+  $("#gradient-container").parent().hide(); // Ocultar el control-group del filtro
+  
+  // También remover la clase map-active si existe
+  document.body.classList.remove('map-active');
+  
   $("#panel-header-text").text("Historial de Datos");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);

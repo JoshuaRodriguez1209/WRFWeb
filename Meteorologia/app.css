@@ -145,7 +145,7 @@ body.map-active #main-content {
     justify-content: center;
     font-size: 24px;
     text-decoration: none;
-    margin-top: 35px;
+    margin-top: 0; /* Eliminamos el margin-top ya que estará en la parte inferior */
 }
 
 .back-btn:hover {
@@ -153,6 +153,15 @@ body.map-active #main-content {
     color: var(--primary-brand-color);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(90, 27, 48, 0.3);
+}
+
+/* Asegurar visibilidad del back-btn */
+#btn_back.back-btn {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    z-index: 1000 !important;
 }
 
 .weather-controls {
@@ -352,11 +361,29 @@ body.map-active #main-content {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-start; /* Cambiado de space-between a flex-start */
     gap: 15px;
     border-right: 1px solid var(--border-color);
     z-index: 999;
     flex-shrink: 0;
-    height: 100%;
+    height: 100vh; /* Cambiado de 100% a 100vh para asegurar altura completa */
+    min-height: 500px; /* Altura mínima para asegurar espacio */
+    overflow: visible; /* Asegurar que el contenido sea visible */
+}
+
+/* Contenedor para los botones principales del menú */
+.side-menu .menu-buttons-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 25px; /* Reducido aún más */
+}
+
+/* Posicionar el back button hacia abajo pero visible */
+.side-menu .back-btn {
+    margin-top: 490px; /* Empuja el botón hacia abajo */
+    margin-bottom: 15px; /* Espacio desde el bottom para que sea visible */
 }
 
 /* Side menu derecho para filtros - OVERLAY FIJO */
@@ -365,7 +392,7 @@ body.map-active #main-content {
     top: 195px; /* Debajo del nav-menu */
     right: 0;
     width: 400px;
-    height: calc(100vh - 200px); /* Altura ajustada para no cubrir el nav */
+    height: calc(100vh - 190px); /* Altura ajustada para no cubrir el nav */
     background-color: #ffffff;
     padding: 15px;
     display: none; /* Oculto por defecto */
@@ -373,7 +400,7 @@ body.map-active #main-content {
     border-left: 1px solid var(--border-color);
     box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
     z-index: 999; /* Por encima de otros elementos */
-    overflow-y: auto; /* Scroll si es necesario */
+    overflow-y: hidden; /* Sin scroll - contenido optimizado */
 }
 
 /* Mostrar side-menu-right solo en modo mapa */
@@ -381,17 +408,22 @@ body.map-active .side-menu-right {
     display: flex;
 }
 
+/* Ocultar side-menu-right cuando NO está en modo mapa */
+body:not(.map-active) .side-menu-right {
+    display: none !important;
+}
+
 .side-menu-right h3 {
-    margin: 0 0 20px 0;
+    margin: 0 0 12px 0; /* Reducido de 20px a 12px */
     color: var(--primary-brand-color);
     font-size: 18px;
     border-bottom: 2px solid var(--secondary-brand-color);
-    padding-bottom: 10px;
+    padding-bottom: 8px; /* Reducido de 10px a 8px */
 }
 
 .control-section {
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 12px; /* Reducido de 20px a 12px para mejor aprovechamiento */
+    padding: 12px; /* Reducido de 15px a 12px */
     background: #fbfaf9fa; /* Color dorado con transparencia */
     border-radius: 8px;
     border: 2px solid #c19862; /* Borde dorado para que sea visible */
@@ -465,30 +497,8 @@ body.map-active .side-menu-right {
     max-width: 350px !important;
 }
 
-/* Estilos para filter-info cuando está en el side-menu-right */
-.side-menu-right #filter-info {
-    position: static !important;
-    top: auto !important;
-    right: auto !important;
-    transform: none !important;
-    max-width: none !important;
-    z-index: auto !important;
-    width: 100% !important;
-    background: rgba(193, 152, 98, 0.1);
-    border-radius: 6px;
-    padding: 10px;
-    margin: 0;
-}
-
-.side-menu-right #filter-info .permanent-date {
-    font-size: 13px;
-    color: var(--text-color);
-    text-align: center;
-    font-weight: 500;
-}
-
 .side-menu-right .control-group {
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* Reducido de 15px a 10px */
 }
 
 .side-menu-right .control-group label {
@@ -813,7 +823,11 @@ body.map-active .side-menu-right {
 
 /* ADDED: Historial Dashboard Styles */
 /* Fix for historial dashboard positioning */
-
+/* Desktop: Make historial-dashboard use full available width (from sidebar edge to right edge) */
+#historial-dashboard {
+    left: var(--sidebar-width) !important;
+    width: calc(100% - var(--sidebar-width)) !important;
+}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -937,6 +951,15 @@ body.map-active .side-menu-right {
         left: 0;
         width: 100%;
         padding: 15px;
+    }
+    
+    /* Hide filter-info in mobile when historial is shown */
+    #filter-info {
+        top: 140px !important;
+        right: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100% - 20px) !important;
+        z-index: 1500;
     }
     
     /* Ensure gradient scale is visible and properly positioned */
@@ -1706,7 +1729,8 @@ body.map-active .side-menu-right {
     font: 10px/1.2 "Poppins", Arial, sans-serif !important; /* texto reducido */
     padding: 2px 4px !important;
     bottom: 4px !important; /* acercar al borde si se desea */
-    right: 4px !important;
+    left: 4px !important; /* Cambiado de right a left para mover hacia la izquierda */
+    right: auto !important; /* Resetear right */
     background: rgba(255,255,255,0.65) !important;
     backdrop-filter: blur(4px);
     border-radius: 6px !important;
@@ -1737,7 +1761,12 @@ body.map-active .side-menu-right {
   .ol-attribution.ol-collapsed button { width:18px !important; height:18px !important; }
 
   @media (max-width:768px){
-    .ol-attribution.ol-unselectable.ol-control { font-size:9px !important; bottom:6px !important; right:6px !important; }
+    .ol-attribution.ol-unselectable.ol-control { 
+      font-size:9px !important; 
+      bottom:6px !important; 
+      left:6px !important; /* Cambiado de right a left para móvil también */
+      right: auto !important; /* Resetear right */
+    }
     .ol-attribution.ol-unselectable.ol-control button { font-size:10px !important; }
   }
 

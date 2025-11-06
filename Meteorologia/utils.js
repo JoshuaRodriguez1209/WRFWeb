@@ -330,6 +330,12 @@ async function loadGradientDataFromCSV(path, variable, units, title) {
   // Exponer globalmente para filtros numéricos
   window.gradientMin = min;
   window.gradientMax = max;
+  
+  // Actualizar dual-inputs si existen
+  if (typeof window.updateDualInputs === 'function') {
+    window.updateDualInputs();
+  }
+  
   const stops = values.map((v) => ((v - min) / (max - min)) * 100);
   const canvas = document.getElementById("dynamic-gradient-canvas");
   const ctx = canvas.getContext("2d");
