@@ -81,7 +81,7 @@
                 <li><a href="https://smadsot.puebla.gob.mx/quienes-somos" target="_blank">QUIENES SOMOS</a></li>
                 <li><a href="https://smadsot.puebla.gob.mx/avisos-de-privacidad">AVISOS DE PRIVACIDAD</a></li>
                 <li><a href="#" id="btn_wrf_info">¿CÓMO FUNCIONA EL PRONÓSTICO?</a></li>
-                <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Meteorología</a></li>
+                <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Clima</a></li>
                 <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
                 <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
             </ul>
@@ -113,10 +113,10 @@
                 <h3>Aplicaciones en Puebla:</h3>
                 <p>En el Estado de Puebla, utilizamos el modelo WRF para:</p>
                 <ul>
-                    <li>Generar pronóstico meteorológico de alta resolución</li>
-                    <li>Evaluar la dispersión de contaminantes atmosféricos</li>
-                    <li>Proporcionar información actualizada para la toma de decisiones informadas</li>
-                    <li>Monitorear la calidad del aire en tiempo real</li>
+                    <li>Generar pronóstico meteorológico de alta resolución.</li>
+                    <li>Evaluar la dispersión de contaminantes atmosféricos.</li>
+                    <li>Proporcionar información actualizada para la toma de decisiones informadas.</li>
+                    <li>Monitorear la calidad del aire en tiempo real.</li>
                 </ul>
 
                 <p class="modal-footer-text">Para más información, visita <a href="https://www.mmm.ucar.edu/weather-research-and-forecasting-model" target="_blank">el sitio oficial de WRF</a>.</p>
@@ -180,7 +180,7 @@
     <section class="banner" id="banner">
       <div class="banner-content">
         <h1 class="banner-title">
-          Pronóstico de calidad del aire y meteorología para el Estado de Puebla para los siguientes 3 días
+          Pronóstico de calidad del aire y clima para el Estado de Puebla para los siguientes 3 días
         </h1>
       </div>
     </section>
@@ -213,7 +213,7 @@
               "
             >
               <div class="card-text">
-                <h3>Meteorología</h3>
+                <h3>Clima</h3>
               </div>
             </div>
           </a>
@@ -296,7 +296,7 @@
             <div class="data-type-selector">
               <label for="hist-tipo-select">Tipo de datos</label>
               <select id="hist-tipo-select" class="form-control">
-                <option value="meteo">Datos Meteorológicos</option>
+                <option value="meteo">Clima</option>
                 <option value="chem">Calidad del Aire</option>
               </select>
             </div>
@@ -311,6 +311,32 @@
             <!-- Main Content Area -->
             <div class="content-wrapper">
               <div id="hist-content">
+                <!-- ICA / Franja de calidad del aire: visible en el dashboard histórico -->
+                <div class="ica-legend" style="width:100%;margin-bottom:10px;">
+                  <div class="table-responsive" style="width: 100%;">
+                    <table class="table table-bordered table-striped" style="text-align: center; width:100%;">
+                      <tr>
+                        <td class="align-middle" style="width:10%;"><b>Calidad del aire</b></td>
+                        <td class="align-middle" style="width:10%;">Buena</td>
+                        <td class="align-middle" style="width:10%;">Regular</td>
+                        <td class="align-middle" style="width:10%;">Mala</td>
+                        <td class="align-middle" style="width:10%;">Muy mala</td>
+                        <td class="align-middle" style="width:10%;">Extremadamente Mala</td>
+                        <td class="align-middle" style="width:10%;">Peligrosa</td>
+                      </tr>
+                      <tr>
+                        <td><b>Intervalos</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(0,228,0);"><b>0-50</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(255,255,0);"><b>51-100</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(255,126,0);"><b>101-150</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(255,0,0); color:white;"><b>151-200</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(143,63,151); color:white;"><b>201-300</b></td>
+                        <td class="align-middle" scope="col" style="width: 10%; background-color: rgb(153,0,51); color:white;"><b>301-500</b></td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+
                 <div id="chartsHost" class="charts-grid">
                   <!-- Las gráficas se generarán dinámicamente aquí -->
                 </div>
@@ -352,7 +378,7 @@
 
             <div class="controls-body">
               <div class="control-group" style="display:none;">
-                <label id="panel-header-text">Pronóstico meteorológico para el Estado de Puebla</label>
+                <label id="panel-header-text">Pronóstico de Clima para el Estado de Puebla</label>
               </div>
               
               <div class="control-group" style="display:none;">

@@ -398,8 +398,8 @@ function constrainScaleLine() {
     return; // no aplicar reducción
   }
   // Desktop: limitar a 1/3 del viewport si excede
-  // Forzar anclaje a la izquierda en desktop
-  el.style.left = '100px';
+  // Forzar anclaje a la izquierda en desktop (alineado al mapa)
+  el.style.left = 'calc(var(--sidebar-width) + 10px)';
   el.style.right = 'auto';
   el.style.setProperty('transform', 'none', 'important');
   const maxPx = window.innerWidth / 3;
@@ -2140,6 +2140,23 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
     </div>
   `);
   card.append(header);
+  // Añadir una versión compacta de la leyenda ICA dentro de cada tarjeta de gráfica
+  const icaLegendMini = $(`
+    <div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">
+      <table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;">
+        <tr>
+          <td style="width:18%;font-weight:700;text-align:left;padding:4px;">ICA</td>
+          <td style="width:13%;padding:4px;background:rgb(0,228,0);">0-50</td>
+          <td style="width:13%;padding:4px;background:rgb(255,255,0);">51-100</td>
+          <td style="width:13%;padding:4px;background:rgb(255,126,0);">101-150</td>
+          <td style="width:13%;padding:4px;background:rgb(255,0,0);color:#fff;">151-200</td>
+          <td style="width:13%;padding:4px;background:rgb(143,63,151);color:#fff;">201-300</td>
+          <td style="width:13%;padding:4px;background:rgb(153,0,51);color:#fff;">301-500</td>
+        </tr>
+      </table>
+    </div>
+  `);
+  card.append(icaLegendMini);
 
   const canva = document.createElement('canvas');
   card.append(canva);
@@ -3126,6 +3143,50 @@ const airQualityVariables = {
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
 };
 
+// Plugin global para dibujar zonas de fondo (backgroundZones) en cualquier Chart.js
+Chart.register({
+  id: 'globalBackgroundZones',
+  beforeDatasetsDraw: function(chart) {
+    const zones = chart.config && chart.config.options && chart.config.options.backgroundZones;
+    if (!zones || !zones.length) return;
+    const ctx = chart.ctx;
+    const chartArea = chart.chartArea;
+    if (!chartArea) return;
+    // Preferir escala Y explícita
+    const yScale = chart.scales && (chart.scales.y || Object.values(chart.scales)[0]);
+    if (!yScale) return;
+
+    zones.forEach(zone => {
+      // Evitar valores no numéricos
+      if (typeof zone.min !== 'number' || typeof zone.max !== 'number') return;
+      const yTop = yScale.getPixelForValue(zone.max);
+      const yBottom = yScale.getPixelForValue(zone.min);
+
+      // Recortar al área del gráfico
+      const top = Math.max(yTop, chartArea.top);
+      const bottom = Math.min(yBottom, chartArea.bottom);
+      const height = bottom - top;
+      if (height <= 0) return;
+
+      ctx.save();
+      ctx.fillStyle = zone.color || 'rgba(0,0,0,0.12)';
+      ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, height);
+
+      // Etiqueta pequeña a la izquierda dentro de la franja
+      if (zone.label) {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.font = "600 12px 'Poppins', sans-serif";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const labelY = top + height / 2;
+        ctx.fillText(zone.label, chartArea.left + 8, labelY);
+      }
+
+      ctx.restore();
+    });
+  }
+});
+
 let currentHistChart = null;
 let currentHistData = null;
 let selectedVariables = new Set();
@@ -3167,12 +3228,33 @@ function renderGroupedCharts(groups, labels, titlePrefix){
   groups.forEach((grp, idx) => {
     const card = document.createElement('div');
     card.className = 'chart-card';
+    // Añadir mini-leyenda ICA en charts agrupados (si aplica)
+    const icaMini = document.createElement('div');
+    icaMini.className = 'ica-legend-mini';
+    icaMini.style.width = '100%';
+    icaMini.style.margin = '6px 0 10px 0';
+    icaMini.innerHTML = `
+      <table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;">
+        <tr>
+          <td style="width:18%;font-weight:700;text-align:left;padding:4px;">ICA</td>
+          <td style="width:13%;padding:4px;background:rgb(0,228,0);">0-50</td>
+          <td style="width:13%;padding:4px;background:rgb(255,255,0);">51-100</td>
+          <td style="width:13%;padding:4px;background:rgb(255,126,0);">101-150</td>
+          <td style="width:13%;padding:4px;background:rgb(255,0,0);color:#fff;">151-200</td>
+          <td style="width:13%;padding:4px;background:rgb(143,63,151);color:#fff;">201-300</td>
+          <td style="width:13%;padding:4px;background:rgb(153,0,51);color:#fff;">301-500</td>
+        </tr>
+      </table>
+    `;
+    card.appendChild(icaMini);
     const cv = document.createElement('canvas');
     card.appendChild(cv);
     host.appendChild(card);
 
-    const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
-const gmin = Math.min(...allY), gmax = Math.max(...allY);
+  const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
+  const gmin = Math.min(...allY), gmax = Math.max(...allY);
+  // Determinar zonas (ICA) para este grupo si corresponde a chem
+  const zones = (grp && grp.length && grp[0].variableKey && (Object.keys(airQualityVariables).includes(grp[0].variableKey))) ? getICAZones() : [];
 const range = Math.max(1e-9, gmax - gmin);
 const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
 
@@ -3184,10 +3266,12 @@ const niceStep = (() => {
   return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
 })();
 
-const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
+    const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
   type: 'line',
   data: { labels, datasets: grp },
   options: {
+    // Si alguno de los datasets es de calidad del aire, agregar zonas ICA
+        backgroundZones: zones,
     responsive: true,
     animation: { duration: 650, easing: 'easeInOutQuart' },
     maintainAspectRatio: false,
@@ -3210,11 +3294,11 @@ const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
         callbacks: { label: c => ` ${c.dataset.label}: ${(+c.parsed.y).toFixed(2)}` }
       }
     },
-    scales: {
+      scales: {
       y: {
         beginAtZero: false,
-        suggestedMin: gmin - pad,
-        suggestedMax: gmax + pad,
+        suggestedMin: zones.length ? Math.min(gmin - pad, zones[0].min) : gmin - pad,
+        suggestedMax: zones.length ? Math.max(gmax + pad, zones[zones.length - 1].max) : gmax + pad,
         ticks: {
           stepSize: niceStep,
           maxTicksLimit: 6,
@@ -3371,7 +3455,30 @@ function renderIndividualCharts(datasets, labels, type) {
   datasets.forEach((dataset, idx) => {
     const card = document.createElement('div');
     card.className = 'chart-card individual-chart';
-    
+
+    // Si es un gráfico de calidad del aire, añadir mini-leyenda ICA
+    const isChem = (type === 'chem');
+    if (isChem) {
+      const icaMini = document.createElement('div');
+      icaMini.className = 'ica-legend-mini';
+      icaMini.style.width = '100%';
+      icaMini.style.margin = '6px 0 10px 0';
+      icaMini.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;">
+          <tr>
+            <td style="width:18%;font-weight:700;text-align:left;padding:4px;">ICA</td>
+            <td style="width:13%;padding:4px;background:rgb(0,228,0);">0-50</td>
+            <td style="width:13%;padding:4px;background:rgb(255,255,0);">51-100</td>
+            <td style="width:13%;padding:4px;background:rgb(255,126,0);">101-150</td>
+            <td style="width:13%;padding:4px;background:rgb(255,0,0);color:#fff;">151-200</td>
+            <td style="width:13%;padding:4px;background:rgb(143,63,151);color:#fff;">201-300</td>
+            <td style="width:13%;padding:4px;background:rgb(153,0,51);color:#fff;">301-500</td>
+          </tr>
+        </table>
+      `;
+      card.appendChild(icaMini);
+    }
+
     // Crear canvas para la gráfica
     const cv = document.createElement('canvas');
     card.appendChild(cv);
@@ -3394,12 +3501,20 @@ function renderIndividualCharts(datasets, labels, type) {
     })();
 
     // Obtener la clave de la variable para determinar las zonas de color
-    const variableKey = Object.keys(meteorologicalVariables).find(key => 
-      meteorologicalVariables[key].label === dataset.label.split(' (')[0]
-    );
+    let variableKey = dataset.variableKey;
+    if (!variableKey) {
+      variableKey = Object.keys(meteorologicalVariables).find(key => 
+        meteorologicalVariables[key].label === dataset.label.split(' (')[0]
+      );
+      if (!variableKey) {
+        variableKey = Object.keys(airQualityVariables).find(key => 
+          airQualityVariables[key].label === dataset.label.split(' (')[0]
+        );
+      }
+    }
 
-    // Obtener zonas de colores para esta variable
-    const backgroundZones = getTemperatureZones(variableKey);
+    // Obtener zonas de colores para esta variable: ICA para 'chem', temperatura para 'meteo'
+    const backgroundZones = (type === 'chem') ? getICAZones() : getTemperatureZones(variableKey);
 
     // Registrar plugin personalizado para color de fondo
     Chart.register({
@@ -3762,6 +3877,18 @@ function calculateStats(values) {
   const min = Math.min(...values);
   
   return { avg, max, min };
+}
+
+// Devuelve las zonas ICA (intervalos y colores) para calidad del aire
+function getICAZones(){
+  return [
+    { min: 0,   max: 50,  color: 'rgba(0,228,0,0.22)', label: 'Buena' },
+    { min: 51,  max: 100, color: 'rgba(255,255,0,0.22)', label: 'Regular' },
+    { min: 101, max: 150, color: 'rgba(255,126,0,0.22)', label: 'Mala' },
+    { min: 151, max: 200, color: 'rgba(255,0,0,0.22)', label: 'Muy mala' },
+    { min: 201, max: 300, color: 'rgba(143,63,151,0.22)', label: 'Extremadamente Mala' },
+    { min: 301, max: 500, color: 'rgba(153,0,51,0.22)', label: 'Peligrosa' }
+  ];
 }
 
 // === COMBOBOX for municipality selection in historial ===

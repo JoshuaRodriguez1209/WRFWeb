@@ -102,7 +102,7 @@ body {
 }
 
 .nav-links a {
-    color: #999;
+    color: #74767b;
     text-decoration: none;
     font-size: 13px;
     font-weight: 600;
@@ -846,7 +846,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 .ol-scale-line {
   position: absolute !important;
   bottom: 200px !important; /* Justo encima del map-legend */
-  left: 50px !important; /* Posición fija desde la izquierda - crece hacia la derecha */
+  left: calc(var(--sidebar-width) + 10px) !important; /* 10px desde el borde del sidebar */
   right: auto !important;
   transform: none !important; /* Sin transformación en desktop */
   padding: 4px 8px 6px 8px !important;
@@ -1971,9 +1971,15 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 @media (max-width: 768px) {
   #historial-dashboard {
-    left: 0;
-    width: 100%;
-    padding: 15px 15px 40px; /* extra bottom padding para último contenido */
+    position: relative;
+    left: 0 !important;
+    margin: 120px 0 24px 0 !important; /* un poco menos de margen superior en móvil */
+    width: 100% !important;
+    padding: 12px 12px 36px !important; /* padding más compacto */
+    max-height: none !important; /* permitir crecer naturalmente */
+    overflow: visible !important; /* dejar que el scroll sea del body si hace falta */
+    box-shadow: none !important; /* simplificar en pantallas pequeñas */
+    border-radius: 0 !important; /* flush edges */
   }
   
   .dashboard-header {
@@ -2119,6 +2125,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   min-height: 300px;
   display: flex;
   flex-direction: column;
+  position: relative; /* asegurar posicionamiento para pseudo overrides */
 }
 @keyframes fadeInUp{
   from{opacity:0; transform:translateY(8px)}
@@ -2147,10 +2154,11 @@ body.map-active #app #map { overscroll-behavior: contain; }
   }
   
   #historial-dashboard {
-    left: 10px;
-    width: calc(100% - 20px);
-    padding: 20px;
-    margin: 140px 0 20px 0;
+    left: 0 !important;
+    width: 100% !important;
+    padding: 12px 12px 32px !important;
+    margin: 120px 0 20px 0 !important;
+    overflow: visible !important;
   }
 }
 
@@ -2318,6 +2326,13 @@ body.map-active #app #map { overscroll-behavior: contain; }
   position: relative;
   margin-bottom: 20px;
   padding-top: 55px; /* Espacio para el botón de descarga */
+}
+
+/* Override: eliminar cualquier pseudo decorativo que interfiera visualmente */
+.modal-content .chart-card::before,
+.modal-content .chart-card::after {
+  content: none !important;
+  display: none !important;
 }
 
 .download-btn {
@@ -2590,6 +2605,28 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 /* Listas */
+
+/* ===== ICA Legend Styles (added) ===== */
+.ica-legend { width: 100%; }
+.ica-legend table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+.ica-legend td { padding: 6px 8px; }
+.ica-legend b { font-weight: 700; }
+
+/* Compact legend inside chart cards */
+.ica-legend-mini { display: block; }
+.chart-card .ica-legend-mini table { font-size: 11px; }
+.ica-legend-mini td { padding: 3px 6px; border-radius: 2px; }
+
+/* Make legend responsive: stack labels on very small screens */
+@media (max-width: 420px) {
+  .ica-legend table, .ica-legend-mini table { font-size: 12px; }
+  .ica-legend table td, .ica-legend-mini table td { padding: 6px 4px; }
+}
+
+/* Small tweak: ensure legend doesn't overflow chart card */
+.chart-card .ica-legend-mini { max-width: 100%; overflow: hidden; }
+
+/* End ICA Legend Styles */
 #map-combobox-list,
 #hist-combobox-list {
   background: white;
@@ -2793,6 +2830,12 @@ body.map-active #app #map { overscroll-behavior: contain; }
     line-height:1;
     display:inline-block;
   }
+}
+
+/* Override global: en modales NO usar pseudo ::before en botones de descarga */
+.modal-content .download-btn::before {
+  content: none !important;
+  display: none !important;
 }
 
 .legend-title { 
