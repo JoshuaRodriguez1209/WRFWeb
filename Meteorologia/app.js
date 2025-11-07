@@ -223,8 +223,8 @@ var m_control = new ol.control.Control({ element: notification });
 var m_view = new ol.View({
   projection: "EPSG:4326",
   center: [-97.5711, 19.6105],
-  zoom: 8.67,
-  minZoom: 8.67,
+  zoom: 8.6,
+  minZoom: 8.6,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -385,19 +385,33 @@ function constrainScaleLine() {
   const isMobileViewport = window.innerWidth < 768;
   inner.style.transform = 'none';
   if (isMobileViewport) {
+    // Contenedor centrado en móvil
+    el.style.left = '50%';
+    el.style.right = 'auto';
+    el.style.setProperty('transform', 'translateX(-50%)', 'important');
     // Asegurar ancho mínimo para legibilidad
     if (inner.getBoundingClientRect().width < 200) {
       inner.style.minWidth = '220px';
     }
+    // En móvil, crecer desde el centro
+    inner.style.transformOrigin = 'center center';
     return; // no aplicar reducción
   }
   // Desktop: limitar a 1/3 del viewport si excede
+  // Forzar anclaje a la izquierda en desktop
+  el.style.left = '100px';
+  el.style.right = 'auto';
+  el.style.setProperty('transform', 'none', 'important');
   const maxPx = window.innerWidth / 3;
   const actual = inner.getBoundingClientRect().width;
   if (actual > maxPx) {
     const ratio = maxPx / actual;
-    inner.style.transformOrigin = 'right center';
+    // En desktop, crecer desde la izquierda (left center)
+    inner.style.transformOrigin = 'left center';
     inner.style.transform = `scale(${ratio})`;
+  } else {
+    // Si no excede, asegurar que crece desde la izquierda
+    inner.style.transformOrigin = 'left center';
   }
 }
 

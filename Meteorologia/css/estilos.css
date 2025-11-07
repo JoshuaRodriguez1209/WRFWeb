@@ -844,11 +844,11 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 .ol-scale-line {
-  position: absolute !important; /* Cambiado de relative a absolute para posicionamiento preciso */
-  bottom: 200px !important; /* Justo encima del map-legend (que está en bottom: 150px) */
-  left: 20% !important; /* Posición hacia la izquierda */
-  transform: translateX(-50%) !important; /* Ajuste para centrar perfectamente */
+  position: absolute !important;
+  bottom: 200px !important; /* Justo encima del map-legend */
+  left: 50px !important; /* Posición fija desde la izquierda - crece hacia la derecha */
   right: auto !important;
+  transform: none !important; /* Sin transformación en desktop */
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;
@@ -856,9 +856,17 @@ body.map-active #app #map { overscroll-behavior: contain; }
   font-family: "Poppins", sans-serif !important;
   z-index: 1600 !important;
   pointer-events: none;
-  width: auto !important; /* tamaño según contenido */
-  max-width: 33vw; /* tope si la escala realmente crece demasiado */
-  overflow: visible; /* permitir pintar la barra completa (el escalado JS la ajusta) */
+  width: auto !important;
+  max-width: 33vw;
+  overflow: visible;
+}
+
+/* En móvil, centrar la escala */
+@media (max-width: 768px) {
+  .ol-scale-line {
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* Centrar en móvil */
+  }
 }
 
 /* Contenedor interno renderizado por OL cuando bar:true */
