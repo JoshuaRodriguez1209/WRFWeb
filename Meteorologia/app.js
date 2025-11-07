@@ -1770,6 +1770,25 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         console.log('[set_chart_meteo] datos OK', str_file, Object.keys(djson));
         set_csv_atmos(djson, str_file);
         if (show_dialog) {
+          
+          // --- INICIO DE MODIFICACIÓN ---
+          // Calcular promedios
+          const avgT2M = avg(djson["t2m"]);
+          const avgRH = avg(djson["rh"]);
+          const avgPRE = avg(djson["pre"]);
+          const avgSW = avg(djson["sw"]);
+          const avgWND = avg(djson["wnd"]);
+          const avgPSL = avg(djson["psl"]);
+
+          // Obtener colores de riesgo
+          const bandT2M = getWeatherRiskBand('t2m', avgT2M);
+          // (Suponiendo que no hay bandas para otros, usar default)
+          const bandRH = getWeatherRiskBand('rh', avgRH); 
+          const bandPRE = getWeatherRiskBand('pre', avgPRE);
+          const bandSW = getWeatherRiskBand('sw', avgSW);
+          const bandWND = getWeatherRiskBand('wnd', avgWND);
+          const bandPSL = getWeatherRiskBand('psl', avgPSL);
+
           const resumenHTML = `
   <div class="summary-block">
     <div class="summary-header">
@@ -1777,50 +1796,52 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
       <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
     </div>
     <div class="summary-grid" id="pollutantSummary">
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandT2M.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-temperature-half"></i></div>
         <div class="summary-body">
           <div class="summary-name">Temperatura</div>
-          <div class="summary-value">${avg(djson["t2m"]) } °C</div>
+          <div class="summary-value">${avgT2M} °C</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandRH.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-droplet"></i></div>
         <div class="summary-body">
           <div class="summary-name">Humedad</div>
-          <div class="summary-value">${avg(djson["rh"]) } %</div>
+          <div class="summary-value">${avgRH} %</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandPRE.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-cloud-rain"></i></div>
         <div class="summary-body">
           <div class="summary-name">Precipitación</div>
-          <div class="summary-value">${avg(djson["pre"]) } mm</div>
+          <div class="summary-value">${avgPRE} mm</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandSW.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-sun"></i></div>
         <div class="summary-body">
           <div class="summary-name">Radiación</div>
-          <div class="summary-value">${avg(djson["sw"]) } w/m²</div>
+          <div class="summary-value">${avgSW} w/m²</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandWND.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-wind"></i></div>
         <div class="summary-body">
           <div class="summary-name">Viento</div>
-          <div class="summary-value">${avg(djson["wnd"]) } km/h</div>
+          <div class="summary-value">${avgWND} km/h</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandPSL.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-gauge"></i></div>
         <div class="summary-body">
           <div class="summary-name">Presión</div>
-          <div class="summary-value">${avg(djson["psl"]) } hPa</div>
+          <div class="summary-value">${avgPSL} hPa</div>
         </div>
       </div>
     </div>
   </div>`;
+          // --- FIN DE MODIFICACIÓN ---
+
           contenDialog.append(resumenHTML);
           set_canva(contenDialog, djson["t2m"], "line", str_file, "Temperatura", "°C", "rgb(255, 0, 0)");
           set_canva(contenDialog, djson["rh"],  "line", str_file, "Humedad", "%", "rgb(0, 0, 255)");
@@ -1854,7 +1875,6 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
     }
   });
 }
-
 function set_chart_chem(str_file, contenDialog, show_dialog) {
   m_str_cvs = "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
   $.ajax({
@@ -1866,58 +1886,79 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
         console.log('[set_chart_chem] datos OK', str_file, Object.keys(djson));
         set_csv_chem(djson, str_file);
         if (show_dialog) {
+          
+          // --- INICIO DE MODIFICACIÓN ---
+          // Calcular promedios ICA
+          const avgCO = avgICA("CO", djson["CO"]);
+          const avgNO2 = avgICA("NO2", djson["NO2"]);
+          const avgO3 = avgICA("O3", djson["O3"]);
+          const avgSO2 = avgICA("SO2", djson["SO2"]);
+          const avgPM10 = avgICA("PM10", djson["PM10"]);
+          const avgPM25 = avgICA("PM25", djson["PM25"]);
+          
+          // Obtener colores de riesgo
+          const bandCO = getICAColorForValue(avgCO);
+          const bandNO2 = getICAColorForValue(avgNO2);
+          const bandO3 = getICAColorForValue(avgO3);
+          const bandSO2 = getICAColorForValue(avgSO2);
+          const bandPM10 = getICAColorForValue(avgPM10);
+          const bandPM25 = getICAColorForValue(avgPM25);
+
           const resumenHTML = `
         <div class="summary-block">
           <div class="summary-header">
-            <h4 class="summary-title">Resumen de Promedios</h4>
+            <h4 class="summary-title">Resumen de Promedios (Puntos ICA)</h4>
             <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
           </div>
           <div class="summary-grid" id="pollutantSummaryChem">
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandCO.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Monóxido de Carbono</div>
-                <div class="summary-value">${avg(djson["CO"]) } ppm</div>
+                <div class="summary-value">${avgCO.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandNO2.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Nitrógeno</div>
-                <div class="summary-value">${avg(djson["NO2"]) } ppb</div>
+                <div class="summary-value">${avgNO2.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandO3.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Ozono</div>
-                <div class="summary-value">${avg(djson["O3"]) } ppb</div>
+                <div class="summary-value">${avgO3.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandSO2.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Azufre</div>
-                <div class="summary-value">${avg(djson["SO2"]) } ppb</div>
+                <div class="summary-value">${avgSO2.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandPM10.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 10</div>
-                <div class="summary-value">${avg(djson["PM10"]) } µg/m³</div>
+                <div class="summary-value">${avgPM10.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
+            <div class="summary-card" style="background-color: ${bandPM25.color};">
               <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle-dot"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 2.5</div>
-                <div class="summary-value">${avg(djson["PM25"]) } µg/m³</div>
+                <div class="summary-value">${avgPM25.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
           </div>
         </div>`;
+          // --- FIN DE MODIFICACIÓN ---
+
           contenDialog.append(resumenHTML);
+          // (Los datos originales de concentración se siguen pasando a set_canva)
           set_canva(contenDialog, djson["CO"],   "line", str_file, "Monóxido de Carbono", "ppm",   "#8B4513");
           set_canva(contenDialog, djson["NO2"],  "line", str_file, "Dióxido de Nitrógeno", "ppb", "#6A5ACD");
           set_canva(contenDialog, djson["O3"],   "line", str_file, "Ozono", "ppb", "#32CD32");
@@ -2019,6 +2060,7 @@ function updateHistoricalChart() {
 }
 
 // Function to update the stats table
+// Function to update the stats table
 function updateStatsTable(tipo) {
   if (!currentHistData) return;
   
@@ -2056,6 +2098,20 @@ function updateStatsTable(tipo) {
       
       const row = document.createElement('tr');
       row.setAttribute('data-variable', key); // Para debugging y control
+
+      // --- INICIO DE MODIFICACIÓN ---
+      // Colorear la fila según el riesgo del promedio
+      let riskBand;
+      if (tipo === 'meteo') {
+        riskBand = getWeatherRiskBand(key, stats.avg);
+      } else {
+        // Es 'chem', calcular el promedio en ICA
+        const avgIcaValue = avgICA(key, values);
+        riskBand = getICAColorForValue(avgIcaValue);
+      }
+      row.className = riskBand.class || ""; // Asignar la clase CSS (ej. "riesgo-buena")
+      // --- FIN DE MODIFICACIÓN ---
+
       row.innerHTML = `
         <td><i class="${icon}" style="margin-right: 8px"></i>${label}</td>
         <td>${stats.avg.toFixed(2)}</td>
@@ -2071,27 +2127,6 @@ function updateStatsTable(tipo) {
   tbody.appendChild(fragment);
 }
 
-// Event handler for tipo-select changes
-$("#hist-tipo-select").on('change', function() {
-  const tipo = $(this).val();
-  
-  // Limpiar estado anterior
-  destroyHistCharts();
-  
-  // Limpiar tabla de estadísticas
-  const tbody = document.getElementById('histStatsTable');
-  if (tbody) tbody.innerHTML = '';
-  
-  // Crear nuevos toggles para el tipo seleccionado - SELECCIONAR TODAS las variables al cambiar modo
-  createVariableToggles(tipo, true);
-  
-  // Si hay datos, regenerar gráficas y tabla con TODAS las variables
-  if (currentHistData) {
-    updateHistoricalChart();
-    updateStatsTable(tipo);
-  }
-});
-
 //-------------------------------------------------------------------------------
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   // Buscar o crear el contenedor de gráficas
@@ -2103,7 +2138,7 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
 
   const card = $('<div class="chart-card"></div>');
 
-  // Mapa de iconos FontAwesome (mismos que en summary-icon)
+  // Mapa de iconos FontAwesome
   const iconMapFA = {
     'temperatura': 'fa-temperature-half',
     'humedad': 'fa-droplet',
@@ -2114,7 +2149,6 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
     'viento': 'fa-wind',
     'presión': 'fa-gauge',
     'presion': 'fa-gauge',
-    // Contaminantes (gases) – usar mismo ícono que en summary (fa-smog)
     'monóxido de carbono': 'fa-smog',
     'monoxido de carbono': 'fa-smog',
     'dióxido de nitrógeno': 'fa-smog',
@@ -2122,7 +2156,6 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
     'ozono': 'fa-smog',
     'dióxido de azufre': 'fa-smog',
     'dioxido de azufre': 'fa-smog',
-    // Partículas
     'partículas pm 10': 'fa-circle',
     'particulas pm 10': 'fa-circle',
     'partículas pm 2.5': 'fa-circle-dot',
@@ -2133,48 +2166,131 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   const normTitle = (title||'').toLowerCase().trim();
   const iconClass = iconMapFA[normTitle] || 'fa-chart-line';
 
+  // --- INICIO DE MODIFICACIÓN ---
+
+  // 1. Determinar el varKey (clave de contaminante o clima)
+  let varKey = null;
+  const lowerTitle = (title || '').toLowerCase().trim();
+  
+  // Buscar en contaminantes
+  Object.entries(airQualityVariables).forEach(([k, cfg]) => {
+    if (!varKey && cfg.label && cfg.label.toLowerCase() === lowerTitle) {
+      varKey = k;
+    }
+  });
+  
+  let isChem = !!varKey; // Es un contaminante
+  let isMeteo = false; // Es de clima
+  
+  // Buscar en clima
+  if (!varKey) {
+    Object.entries(meteorologicalVariables).forEach(([k, cfg]) => {
+      if (!varKey && cfg.label && cfg.label.toLowerCase() === lowerTitle) {
+        varKey = k;
+      }
+    });
+    isMeteo = !!varKey;
+  }
+
+  // 2. Preparar etiquetas (labs) y datos (dats)
+  const labs = [];
+  const dats = [];
+  let hs = 0;
+  let finalUnid = unid; // Unidad final para la gráfica
+  let finalTitle = title;
+  let bgZones = []; // Zonas de fondo para la gráfica
+
+  if (isChem) {
+    // Es un contaminante: Convertir datos a ICA
+    finalUnid = "Puntos ICA";
+    finalTitle = `${title}`;
+    
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      const concentration = round10(dataset[dat]);
+      const icaPoint = convertConcentrationToICA(varKey, concentration);
+      dats.push(icaPoint);
+    }
+    // Usar las bandas estáticas de ICA (0-50, 51-100, etc.)
+    bgZones = getStaticICAZones();
+
+  } else if (isMeteo) {
+    // Es de clima: Usar datos originales
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      dats.push(round10(dataset[dat]));
+    }
+    // Obtener bandas de riesgo de clima (ej. temperatura)
+    bgZones = getWeatherRiskZones(varKey);
+
+  } else {
+    // Variable desconocida: Usar datos originales
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      dats.push(round10(dataset[dat]));
+    }
+  }
+  
+  // Actualizar el título en el header (ahora que sabemos la unidad final)
   const header = $(`
     <div class="chart-header">
       <div class="summary-icon"><i class="fa-solid ${iconClass}"></i></div>
-      <div class="chart-title-text">${title} (${unid})</div>
+      <div class="chart-title-text">${finalTitle} (${finalUnid})</div>
     </div>
   `);
   card.append(header);
-  // Añadir una versión compacta de la leyenda ICA dentro de cada tarjeta de gráfica
-  const icaLegendMini = $(`
-    <div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">
-      <table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;">
-        <tr>
-          <td style="width:18%;font-weight:700;text-align:left;padding:4px;">ICA</td>
-          <td style="width:13%;padding:4px;background:rgb(0,228,0);">0-50</td>
-          <td style="width:13%;padding:4px;background:rgb(255,255,0);">51-100</td>
-          <td style="width:13%;padding:4px;background:rgb(255,126,0);">101-150</td>
-          <td style="width:13%;padding:4px;background:rgb(255,0,0);color:#fff;">151-200</td>
-          <td style="width:13%;padding:4px;background:rgb(143,63,151);color:#fff;">201-300</td>
-          <td style="width:13%;padding:4px;background:rgb(153,0,51);color:#fff;">301-500</td>
-        </tr>
-      </table>
-    </div>
-  `);
-  card.append(icaLegendMini);
+
+  // 3. Añadir la leyenda MINI (ICA o Clima) y el enlace "Ver más"
+  
+  if (isChem) {
+    // Contaminante: Añadir leyenda ICA y enlace "Ver más"
+    const icaLegendHTML = `
+      <div class="ver-riesgos-link-wrapper">
+        <div class="ica-legend-mini" style="width:100%;">
+          <table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;">
+            <tr>
+              <td style="font-weight:700;text-align:left;padding:4px 2px;">ICA</td>
+              <td style="padding:4px 2px;background:rgb(0,228,0);">0-50</td>
+              <td style="padding:4px 2px;background:rgb(255,255,0);">51-100</td>
+              <td style="padding:4px 2px;background:rgb(255,126,0);">101-150</td>
+              <td style="padding:4px 2px;background:rgb(255,0,0);color:#fff;">151-200</td>
+              <td style="padding:4px 2px;background:rgb(143,63,151);color:#fff;">201-300</td>
+            </tr>
+          </table>
+        </div>
+        <a href="#" class="ver-riesgos-link">
+          <i class="fa-solid fa-circle-info"></i> Ver más
+        </a>
+      </div>
+    `;
+    card.append(icaLegendHTML);
+
+  } else if (isMeteo && WeatherRiskBands[varKey]) {
+    // Clima (con bandas definidas): Añadir leyenda de clima
+    let weatherLegendHTML = '<div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
+    weatherLegendHTML += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;"><tr>';
+    weatherLegendHTML += `<td style="font-weight:700;text-align:left;padding:4px 2px;">${finalTitle}</td>`;
+    
+    WeatherRiskBands[varKey].forEach(band => {
+      weatherLegendHTML += `<td style="padding:4px 2px; background-color: ${band.color};">${band.label}</td>`;
+    });
+    
+    weatherLegendHTML += '</tr></table></div>';
+    card.append(weatherLegendHTML);
+  }
+  
+  // --- FIN DE MODIFICACIÓN ---
 
   const canva = document.createElement('canvas');
   card.append(canva);
 
-  const labs = [];
-  const dats = [];
-  let hs = 0;
-  for (const dat in dataset) {
-    labs.push(setLabel(str_file, (hs += 3)));
-    dats.push(round10(dataset[dat]));
-  }
-
-  grafico(canva, tipo, labs, dats, title, unid, color);
-  chartsContainer.append(card); // Añadir al contenedor de gráficas, no al dialog principal
+  // 4. Llamar a grafico() con los datos (convertidos o no) y las zonas de fondo
+  grafico(canva, tipo, labs, dats, finalTitle, finalUnid, color, bgZones);
+  
+  chartsContainer.append(card); // Añadir al contenedor de gráficas
 }
 
-//-------------------------------------------------------------------------------
-function grafico(canva, tipo, labels, dats, title, unid, color) {
+function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones = []) {
   const baseColor = color || 'rgb(90,27,48)';
   let rgbaFill;
 
@@ -2250,10 +2366,12 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
   };
 
   const ctx = canva.getContext('2d', { willReadFrequently: true });
-  const chart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
     type: tipo,
     data: { labels, datasets: [dataset] },
     options: {
+        // Zonas de fondo (ej. bandas ICA o Clima)
+        backgroundZones: (Array.isArray(backgroundZones) && backgroundZones.length) ? backgroundZones : undefined,
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 650, easing: 'easeOutQuart' },
@@ -2276,9 +2394,12 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
           }
         }
       },
+      // --- INICIO DE MODIFICACIÓN ---
       scales: {
         y: {
-          beginAtZero: false,
+          // Si la unidad es "Puntos ICA", forzar inicio en 0 y sugerir max 500
+          beginAtZero: (unid === "Puntos ICA"), 
+          suggestedMax: (unid === "Puntos ICA") ? 500 : undefined,
           ticks: {
             padding: 6,
             color: '#555',
@@ -2320,6 +2441,7 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
           }
         }
       },
+      // --- FIN DE MODIFICACIÓN ---
       elements: {
         line: { borderJoinStyle: 'round', capBezierPoints: true },
         point: { hoverBorderWidth: 2 }
@@ -3143,6 +3265,269 @@ const airQualityVariables = {
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
 };
 
+// Función para obtener zonas ICA (valores en unidades de concentración según la variable)
+// --- LÓGICA DE CÁLCULO ICA Y CLIMA ---
+
+// Bandas de concentración y sus puntos ICA equivalentes
+const ICABands = {
+  // 8-hour avg
+  O3: {
+    C: [0, 54, 70, 85, 105, 200],
+    I: [0, 50, 100, 150, 200, 300]
+  },
+  // 24-hour avg
+  PM25: {
+    C: [0.0, 12.0, 35.4, 55.4, 150.4, 250.4, 500.4],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 24-hour avg
+  PM10: {
+    C: [0, 54, 154, 254, 354, 424, 604],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 8-hour avg
+  CO: {
+    C: [0.0, 4.4, 9.4, 12.4, 15.4, 30.4, 50.4],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 1-hour avg
+  SO2: {
+    C: [0, 35, 75, 185, 304, 604, 1004],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 1-hour avg
+  NO2: {
+    C: [0, 53, 100, 360, 649, 1249, 2049],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  }
+};
+
+// Bandas de "Confort Térmico" para Clima (ej. Temperatura)
+const WeatherRiskBands = {
+  t2m: [ // Bandas para Temperatura en °C
+    { min: -Infinity, max: 10, label: "Frío", color: "rgba(0, 150, 255, 0.4)", class: "clima-frio" },
+    { min: 10, max: 25, label: "Templado", color: "rgba(0, 228, 0, 0.4)", class: "clima-templado" },
+    { min: 25, max: 30, label: "Calor", color: "rgba(255, 255, 0, 0.4)", class: "clima-calor" },
+    { min: 30, max: Infinity, label: "Mucho Calor", color: "rgba(255, 126, 0, 0.4)", class: "clima-mucho-calor" }
+  ]
+  // Puedes añadir más variables aquí, ej: rh (Humedad)
+};
+
+// Bandas de colores ICA (para fondos de tarjeta/tabla)
+const ICAColors = [
+    { max: 50, color: "rgba(0, 228, 0, 0.4)", class: "riesgo-buena" },
+    { max: 100, color: "rgba(255, 255, 0, 0.4)", class: "riesgo-regular" },
+    { max: 150, color: "rgba(255, 126, 0, 0.4)", class: "riesgo-mala" },
+    { max: 200, color: "rgba(255, 0, 0, 0.4)", class: "riesgo-muy-mala" },
+    { max: 300, color: "rgba(143, 63, 151, 0.4)", class: "riesgo-extremadamente-mala" },
+    { max: Infinity, color: "rgba(153, 0, 51, 0.4)", class: "riesgo-peligrosa" }
+];
+
+/**
+ * Devuelve el color de fondo y la clase CSS para un valor ICA.
+ */
+function getICAColorForValue(icaValue) {
+  for (const band of ICAColors) {
+    if (icaValue <= band.max) {
+      return band;
+    }
+  }
+  return { color: "rgba(240, 240, 240, 0.4)", class: "riesgo-desconocido" }; // Default
+}
+
+/**
+ * Devuelve el color de fondo y la clase CSS para una variable de clima.
+ */
+function getWeatherRiskBand(variableKey, value) {
+  const bands = WeatherRiskBands[variableKey];
+  if (!bands) {
+    return { color: "rgba(240, 240, 240, 0.4)", class: "clima-desconocido" }; // Default
+  }
+  
+  for (const band of bands) {
+    if (value >= band.min && value < band.max) {
+      return band;
+    }
+  }
+  return { color: "rgba(240, 240, 240, 0.4)", class: "clima-desconocido" }; // Default
+}
+
+/**
+ * Aplica interpolación lineal para calcular el Punto ICA.
+ * I = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low
+ */
+function calculateICA(C, C_low, C_high, I_low, I_high) {
+  if (C_high === C_low) return I_low; // Evitar división por cero
+  let ica = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low;
+  return Math.round(ica);
+}
+
+/**
+ * Convierte un valor de concentración a su Punto ICA equivalente.
+ */
+function convertConcentrationToICA(variableKey, concentration) {
+  const key = variableKey.toUpperCase();
+  if (!ICABands[key]) {
+    return concentration; // Si no es un contaminante ICA, devuelve el valor original
+  }
+
+  const bands = ICABands[key];
+  const C_p = parseFloat(concentration);
+
+  // Encontrar el rango correcto
+  for (let i = 1; i < bands.C.length; i++) {
+    const C_low = bands.C[i - 1];
+    const C_high = bands.C[i];
+    
+    if (C_p >= C_low && C_p <= C_high) {
+      const I_low = bands.I[i - 1];
+      const I_high = bands.I[i];
+      return calculateICA(C_p, C_low, C_high, I_low, I_high);
+    }
+  }
+  
+  // Si está por encima del rango más alto, usa la última banda
+  if (C_p > bands.C[bands.C.length - 1]) {
+      const C_low = bands.C[bands.C.length - 2];
+      const C_high = bands.C[bands.C.length - 1];
+      const I_low = bands.I[bands.I.length - 2];
+      const I_high = bands.I[bands.I.length - 1];
+      return calculateICA(C_p, C_low, C_high, I_low, I_high);
+  }
+
+  return 0; // Por defecto
+}
+
+/**
+ * Devuelve las bandas estáticas para el fondo de la gráfica ICA (0-500).
+ */
+function getStaticICAZones() {
+  const colors = [
+    'rgba(0,228,0,0.18)',    // 0-50 verde
+    'rgba(255,255,0,0.18)',  // 51-100 amarillo
+    'rgba(255,126,0,0.18)',  // 101-150 naranja
+    'rgba(255,0,0,0.18)',    // 151-200 rojo
+    'rgba(143,63,151,0.18)', // 201-300 morado
+    'rgba(153,0,51,0.18)'    // 301-500 vino
+  ];
+  const labels = ['0-50','51-100','101-150','151-200','201-300','301-500'];
+  const zones = [
+      { min: 0, max: 50 },
+      { min: 50, max: 100 },
+      { min: 100, max: 150 },
+      { min: 150, max: 200 },
+      { min: 200, max: 300 },
+      { min: 300, max: 500 } // Rango extendido para la última banda
+  ];
+
+  return zones.map((b, i) => ({ 
+    min: b.min, 
+    max: b.max, 
+    color: colors[i] || 'rgba(0,0,0,0.12)', 
+    label: labels[i] 
+  }));
+}
+
+/**
+ * Devuelve las bandas estáticas para el fondo de la gráfica de Clima.
+ */
+function getWeatherRiskZones(variableKey) {
+  const bands = WeatherRiskBands[variableKey];
+  if (!bands) return [];
+  
+  // Mapea las bandas al formato que espera la gráfica
+  return bands.map(band => ({
+    min: band.min === -Infinity ? -10 : band.min, // Ajusta -Infinity para la gráfica
+    max: band.max === Infinity ? 50 : band.max,   // Ajusta Infinity para la gráfica
+    color: band.color,
+    label: band.label
+  }));
+}
+
+/**
+ * Calcula el promedio de un array de concentraciones en Puntos ICA.
+ */
+function avgICA(variableKey, concentrationArray) {
+  if (!concentrationArray || concentrationArray.length === 0) return 0; // Devuelve 0 en lugar de "-"
+  
+  let icaSum = 0;
+  for (const conc of concentrationArray) {
+    icaSum += convertConcentrationToICA(variableKey, conc);
+  }
+  
+  return (icaSum / concentrationArray.length); // Devuelve el número
+}
+
+function getICAZones(variableKey) {
+  if (!variableKey) return [];
+  const k = variableKey.toString().toUpperCase();
+
+  const bands = {
+    PM25: [
+      { min: 0.0, max: 12.0 },
+      { min: 12.1, max: 35.4 },
+      { min: 35.5, max: 55.4 },
+      { min: 55.5, max: 150.4 },
+      { min: 150.5, max: 250.4 },
+      { min: 250.5, max: 500.4 }
+    ],
+    PM10: [
+      { min: 0, max: 54 },
+      { min: 55, max: 154 },
+      { min: 155, max: 254 },
+      { min: 255, max: 354 },
+      { min: 355, max: 424 },
+      { min: 425, max: 604 }
+    ],
+    O3: [
+      { min: 0, max: 54 },
+      { min: 55, max: 70 },
+      { min: 71, max: 85 },
+      { min: 86, max: 105 },
+      { min: 106, max: 200 },
+      { min: 201, max: 604 }
+    ],
+    NO2: [
+      { min: 0, max: 53 },
+      { min: 54, max: 100 },
+      { min: 101, max: 360 },
+      { min: 361, max: 649 },
+      { min: 650, max: 1249 },
+      { min: 1250, max: 2049 }
+    ],
+    SO2: [
+      { min: 0, max: 35 },
+      { min: 36, max: 75 },
+      { min: 76, max: 185 },
+      { min: 186, max: 304 },
+      { min: 305, max: 604 },
+      { min: 605, max: 1004 }
+    ],
+    CO: [
+      { min: 0.0, max: 4.4 },
+      { min: 4.5, max: 9.4 },
+      { min: 9.5, max: 12.4 },
+      { min: 12.5, max: 15.4 },
+      { min: 15.5, max: 30.4 },
+      { min: 30.5, max: 50.4 }
+    ]
+  };
+
+  const colors = [
+    'rgba(0,228,0,0.18)',    // 0-50 verde
+    'rgba(255,255,0,0.18)',  // 51-100 amarillo
+    'rgba(255,126,0,0.18)',  // 101-150 naranja
+    'rgba(255,0,0,0.18)',    // 151-200 rojo
+    'rgba(143,63,151,0.18)', // 201-300 morado
+    'rgba(153,0,51,0.18)'    // 301-500 vino
+  ];
+
+  const labels = ['0-50','51-100','101-150','151-200','201-300','301-500'];
+
+  const def = bands[k] || bands['PM25'];
+  return def.map((b, i) => ({ min: b.min, max: b.max, color: colors[i] || 'rgba(0,0,0,0.12)', label: labels[i] }));
+}
+
 // Plugin global para dibujar zonas de fondo (backgroundZones) en cualquier Chart.js
 Chart.register({
   id: 'globalBackgroundZones',
@@ -3254,7 +3639,7 @@ function renderGroupedCharts(groups, labels, titlePrefix){
   const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
   const gmin = Math.min(...allY), gmax = Math.max(...allY);
   // Determinar zonas (ICA) para este grupo si corresponde a chem
-  const zones = (grp && grp.length && grp[0].variableKey && (Object.keys(airQualityVariables).includes(grp[0].variableKey))) ? getICAZones() : [];
+  const zones = (grp && grp.length && grp[0].variableKey && (Object.keys(airQualityVariables).includes(grp[0].variableKey))) ? getICAZones(grp[0].variableKey) : [];
 const range = Math.max(1e-9, gmax - gmin);
 const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
 
@@ -3384,6 +3769,7 @@ function renderIndividualChartsFromSelectedVariables(tipo) {
 }
 
 // Función para crear gráficas individuales por variable (estilo MeteorologiaGit)
+// Función para renderizar gráficas individuales por variable (estilo MeteorologiaGit)
 function renderIndividualCharts(datasets, labels, type) {
   const host = document.getElementById('chartsHost');
   if (!host) return;
@@ -3399,92 +3785,107 @@ function renderIndividualCharts(datasets, labels, type) {
   // Función para obtener zonas de colores basadas en valores de temperatura
   function getTemperatureZones(variableKey) {
     // Solo aplicar a variables de temperatura
-    if (!variableKey || !variableKey.toLowerCase().includes('temp')) {
+    if (!variableKey || !variableKey.toLowerCase().includes('t2m')) { // Solo 't2m'
       return []; // Sin zonas para otras variables
     }
     
-    // Definir las zonas de temperatura con colores
-    return [
-      { min: -10, max: 22, color: 'rgba(76, 175, 80, 0.3)', label: 'Bajo' },        // Verde
-      { min: 22, max: 27, color: 'rgba(255, 235, 59, 0.3)', label: 'Moderado' },     // Amarillo
-      { min: 27, max: 32, color: 'rgba(255, 152, 0, 0.3)', label: 'Alto' },          // Naranja
-      { min: 32, max: 37, color: 'rgba(244, 67, 54, 0.3)', label: 'Muy Alto' },      // Rojo
-      { min: 37, max: 50, color: 'rgba(156, 39, 176, 0.3)', label: 'Extremo' }       // Morado
-    ];
+    // (Usar las bandas de la función global)
+    return getWeatherRiskZones(variableKey);
   }
 
-  // Plugin personalizado para dibujar zonas de colores de fondo
-  const backgroundZonesPlugin = {
-    id: 'backgroundZones',
-    beforeDatasetsDraw: function(chart) {
-      const ctx = chart.ctx;
-      const chartArea = chart.chartArea;
-      const yScale = chart.scales.y;
-      
-      // Obtener zonas de la configuración del chart
-      const zones = chart.config.options.backgroundZones || [];
-      
-      zones.forEach(zone => {
-        const yTop = yScale.getPixelForValue(zone.max);
-        const yBottom = yScale.getPixelForValue(zone.min);
-        
-        ctx.save();
-        ctx.fillStyle = zone.color;
-        ctx.fillRect(
-          chartArea.left, 
-          Math.max(yTop, chartArea.top), 
-          chartArea.right - chartArea.left, 
-          Math.min(yBottom, chartArea.bottom) - Math.max(yTop, chartArea.top)
-        );
-        
-        // Dibujar etiqueta de la zona
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.font = 'bold 12px Poppins';
-        ctx.textAlign = 'left';
-        const labelY = Math.max(yTop, chartArea.top) + (Math.min(yBottom, chartArea.bottom) - Math.max(yTop, chartArea.top)) / 2;
-        ctx.fillText(zone.label, chartArea.left + 10, labelY);
-        ctx.restore();
-      });
-    }
-  };
-
-  // Registrar el plugin de zonas
-  Chart.register(backgroundZonesPlugin);
+  // (El plugin global de 'backgroundZones' ya está registrado)
 
   // Crear una gráfica individual para cada variable
   datasets.forEach((dataset, idx) => {
     const card = document.createElement('div');
     card.className = 'chart-card individual-chart';
 
-    // Si es un gráfico de calidad del aire, añadir mini-leyenda ICA
+    // --- INICIO DE MODIFICACIÓN ---
+
+    // 1. Determinar el varKey y si es 'chem' o 'meteo'
+    let variableKey = dataset.variableKey;
     const isChem = (type === 'chem');
-    if (isChem) {
-      const icaMini = document.createElement('div');
-      icaMini.className = 'ica-legend-mini';
-      icaMini.style.width = '100%';
-      icaMini.style.margin = '6px 0 10px 0';
-      icaMini.innerHTML = `
-        <table style="width:100%;border-collapse:collapse;text-align:center;font-size:12px;">
-          <tr>
-            <td style="width:18%;font-weight:700;text-align:left;padding:4px;">ICA</td>
-            <td style="width:13%;padding:4px;background:rgb(0,228,0);">0-50</td>
-            <td style="width:13%;padding:4px;background:rgb(255,255,0);">51-100</td>
-            <td style="width:13%;padding:4px;background:rgb(255,126,0);">101-150</td>
-            <td style="width:13%;padding:4px;background:rgb(255,0,0);color:#fff;">151-200</td>
-            <td style="width:13%;padding:4px;background:rgb(143,63,151);color:#fff;">201-300</td>
-            <td style="width:13%;padding:4px;background:rgb(153,0,51);color:#fff;">301-500</td>
-          </tr>
-        </table>
-      `;
-      card.appendChild(icaMini);
+    const isMeteo = (type === 'meteo');
+
+    // 2. Preparar datos (dats), unidad (finalUnid) y título (finalTitle)
+    let dats = dataset.data;
+    let finalUnid = dataset.config.unit;
+    let finalTitle = dataset.config.label;
+    let backgroundZones = [];
+    
+    if (isChem && variableKey) {
+      // Es un contaminante: Convertir datos a ICA
+      finalUnid = "Puntos ICA";
+      finalTitle = dataset.config.label; // El título ya es correcto
+      
+      dats = dataset.data.map(concentration => {
+        return convertConcentrationToICA(variableKey, concentration);
+      });
+      
+      // Usar las bandas estáticas de ICA (0-50, 51-100, etc.)
+      backgroundZones = getStaticICAZones();
+
+    } else if (isMeteo && variableKey) {
+      // Es de clima: Usar datos originales y obtener bandas de riesgo
+      dats = dataset.data; // Ya están en el formato correcto
+      backgroundZones = getWeatherRiskZones(variableKey);
     }
+
+    // 3. Crear Header con la unidad final
+    const header = document.createElement('div');
+    header.className = 'chart-header';
+    header.innerHTML = `
+      <div class="summary-icon"><i class="fa-solid ${dataset.config.icon}"></i></div>
+      <div class="chart-title-text">${finalTitle} (${finalUnid})</div>
+    `;
+    card.appendChild(header);
+
+    // 4. Añadir la leyenda MINI (ICA o Clima) y el enlace "Ver más"
+    if (isChem) {
+      // Contaminante: Añadir leyenda ICA y enlace "Ver más"
+      const icaLegendHTML = `
+        <div class="ver-riesgos-link-wrapper">
+          <div class="ica-legend-mini" style="width:100%;">
+            <table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;">
+              <tr>
+                <td style="font-weight:700;text-align:left;padding:4px 2px;">ICA</td>
+                <td style="padding:4px 2px;background:rgb(0,228,0);">0-50</td>
+                <td style="padding:4px 2px;background:rgb(255,255,0);">51-100</td>
+                <td style="padding:4px 2px;background:rgb(255,126,0);">101-150</td>
+                <td style="padding:4px 2px;background:rgb(255,0,0);color:#fff;">151-200</td>
+                <td style="padding:4px 2px;background:rgb(143,63,151);color:#fff;">201-300</td>
+              </tr>
+            </table>
+          </div>
+          <a href="#" class="ver-riesgos-link">
+            <i class="fa-solid fa-circle-info"></i> Ver más
+          </a>
+        </div>
+      `;
+      card.insertAdjacentHTML('beforeend', icaLegendHTML);
+
+    } else if (isMeteo && WeatherRiskBands[variableKey]) {
+      // Clima (con bandas definidas): Añadir leyenda de clima
+      let weatherLegendHTML = '<div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
+      weatherLegendHTML += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;"><tr>';
+      weatherLegendHTML += `<td style="font-weight:700;text-align:left;padding:4px 2px;">${finalTitle}</td>`;
+      
+      WeatherRiskBands[variableKey].forEach(band => {
+        weatherLegendHTML += `<td style="padding:4px 2px; background-color: ${band.color};">${band.label}</td>`;
+      });
+      
+      weatherLegendHTML += '</tr></table></div>';
+      card.insertAdjacentHTML('beforeend', weatherLegendHTML);
+    }
+    // --- FIN DE MODIFICACIÓN ---
+
 
     // Crear canvas para la gráfica
     const cv = document.createElement('canvas');
     card.appendChild(cv);
 
     // Calcular rango y escalas para esta variable específica
-    const values = dataset.data.filter(v => Number.isFinite(v));
+    const values = dats.filter(v => Number.isFinite(v));
     if (!values.length) return;
 
     const gmin = Math.min(...values);
@@ -3500,64 +3901,29 @@ function renderIndividualCharts(datasets, labels, type) {
       return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
     })();
 
-    // Obtener la clave de la variable para determinar las zonas de color
-    let variableKey = dataset.variableKey;
-    if (!variableKey) {
-      variableKey = Object.keys(meteorologicalVariables).find(key => 
-        meteorologicalVariables[key].label === dataset.label.split(' (')[0]
-      );
-      if (!variableKey) {
-        variableKey = Object.keys(airQualityVariables).find(key => 
-          airQualityVariables[key].label === dataset.label.split(' (')[0]
-        );
-      }
-    }
-
-    // Obtener zonas de colores para esta variable: ICA para 'chem', temperatura para 'meteo'
-    const backgroundZones = (type === 'chem') ? getICAZones() : getTemperatureZones(variableKey);
-
-    // Registrar plugin personalizado para color de fondo
-    Chart.register({
-      id: 'backgroundColorPlugin',
-      beforeDraw: function(chart) {
-        if (chart.config.options.backgroundColor) {
-          const ctx = chart.ctx;
-          ctx.save();
-          ctx.fillStyle = chart.config.options.backgroundColor;
-          ctx.fillRect(0, 0, chart.width, chart.height);
-          ctx.restore();
-        }
-      }
-    });
+    // (El plugin 'backgroundColorPlugin' ya está registrado globalmente)
 
     // Crear la gráfica individual
     const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
       type: 'line',
       data: { 
         labels, 
-        datasets: [dataset] // Solo un dataset por gráfica
+        // Usar los datos (convertidos o no) y el dataset original
+        datasets: [{ ...dataset, data: dats, label: `${finalTitle} (${finalUnid})` }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 650, easing: 'easeInOutQuart' },
-        // Zonas de colores de fondo basadas en rangos de valores
+        // Zonas de colores de fondo (ICA o Clima)
         backgroundZones: backgroundZones,
         plugins: {
           legend: { 
-            display: true,
-            position: 'top',
-            onClick: () => {}, // Desactiva toggle
-            labels: { 
-              padding: 10, 
-              usePointStyle: true, 
-              font: { size: 12, family: "'Poppins', sans-serif" } 
-            }
+            display: false, // Ocultar leyenda, el título ya la describe
+            onClick: () => {}, 
           },
           title: { 
-            display: true, 
-            text: dataset.label,
-            font: { size: 15, weight: 'bold', family: "'Poppins', sans-serif" }
+            display: false, // Ocultar título, ya está en el header
           },
           tooltip: {
             mode: 'index', 
@@ -3576,19 +3942,19 @@ function renderIndividualCharts(datasets, labels, type) {
         },
         scales: {
           y: {
-            beginAtZero: false,
-            // Expandir rango para mostrar todas las zonas de temperatura
-            suggestedMin: backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad,
-            suggestedMax: backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad,
+            // Ajustar escala si es ICA
+            beginAtZero: (finalUnid === "Puntos ICA"),
+            suggestedMax: (finalUnid === "Puntos ICA") ? 500 : (backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad),
+            suggestedMin: (finalUnid === "Puntos ICA") ? 0 : (backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad),
             title: {
               display: true,
-              text: dataset.label.split('(')[1]?.replace(')', '') || 'Valor',
+              text: finalUnid,
               color: '#666',
               font: { family: "'Poppins', sans-serif" }
             },
             ticks: {
-              stepSize: niceStep,
-              maxTicksLimit: 6,
+              stepSize: (finalUnid === "Puntos ICA") ? 50 : niceStep, // Ticks fijos para ICA
+              maxTicksLimit: (finalUnid === "Puntos ICA") ? 11 : 6,
               padding: 6,
               callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
               font: { family: "'Poppins', sans-serif" }
@@ -3617,19 +3983,16 @@ function renderIndividualCharts(datasets, labels, type) {
       }
     });
 
-    // Crear botón de descarga estilo MeteorologiaGit
+    // Crear botón de descarga
     const btn = document.createElement('button');
     btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Gráfica';
     btn.className = 'download-btn';
     btn.onclick = () => {
       const a = document.createElement('a');
       a.href = chart.toBase64Image();
-      
-      // Crear nombre de archivo basado en la variable
-      const variableName = dataset.label.split(' ')[1] || 'variable'; // Extraer nombre de variable
-      const timestamp = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+      const variableName = dataset.config.label || 'variable';
+      const timestamp = new Date().toISOString().slice(0,10);
       a.download = `${slug(variableName)}_${timestamp}.png`;
-      
       a.click();
     };
     card.appendChild(btn);
@@ -3745,6 +4108,9 @@ function createMeteoHistoricalChart(data) {
         pointBackgroundColor: cfg.color,
         pointBorderColor: '#fff',
         pointBorderWidth: 1.2
+        ,
+        variableKey: key,
+        config: cfg
       });
     }
   });
@@ -3803,6 +4169,9 @@ function createChemHistoricalChart(data) {
         pointBackgroundColor: cfg.color,
         pointBorderColor: '#fff',
         pointBorderWidth: 1.2
+        ,
+        variableKey: key,
+        config: cfg
       });
     }
   });
@@ -3880,16 +4249,7 @@ function calculateStats(values) {
 }
 
 // Devuelve las zonas ICA (intervalos y colores) para calidad del aire
-function getICAZones(){
-  return [
-    { min: 0,   max: 50,  color: 'rgba(0,228,0,0.22)', label: 'Buena' },
-    { min: 51,  max: 100, color: 'rgba(255,255,0,0.22)', label: 'Regular' },
-    { min: 101, max: 150, color: 'rgba(255,126,0,0.22)', label: 'Mala' },
-    { min: 151, max: 200, color: 'rgba(255,0,0,0.22)', label: 'Muy mala' },
-    { min: 201, max: 300, color: 'rgba(143,63,151,0.22)', label: 'Extremadamente Mala' },
-    { min: 301, max: 500, color: 'rgba(153,0,51,0.22)', label: 'Peligrosa' }
-  ];
-}
+// NOTE: ICA zones are implemented above as getICAZones(variableKey)
 
 // === COMBOBOX for municipality selection in historial ===
 (function makeHistComboboxRobusto(){
@@ -5395,3 +5755,33 @@ function resetFilterUIForNewVariable() {
   // 3) quitar el texto de rango debajo del mapa
   hideInfo();
 }
+
+// --- Lógica para el Modal de Riesgos ---
+
+// Usar delegación de eventos en un contenedor padre (ej. 'body' o '#app')
+// para que el enlace funcione también en el dashboard de historial.
+$(document).on('click', '.ver-riesgos-link', function(e) {
+  e.preventDefault(); // Evitar que el enlace navegue
+  openRiesgosModal();
+});
+
+function openRiesgosModal() {
+  const modal = document.getElementById('riesgosModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeRiesgosModal() {
+  const modal = document.getElementById('riesgosModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Opcional: Cerrar el modal si se hace clic fuera del contenido
+$(document).on('click', '#riesgosModal', function(e) {
+  if (e.target.id === 'riesgosModal') {
+    closeRiesgosModal();
+  }
+});

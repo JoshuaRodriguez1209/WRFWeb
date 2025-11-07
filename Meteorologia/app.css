@@ -2057,3 +2057,72 @@ body.large-cursor {
 
 }
 
+/* --- Estilos para el enlace y modal de Riesgos --- */
+.ver-riesgos-link-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 10px 0;
+}
+
+.ver-riesgos-link {
+  color: var(--primary-brand-color);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ver-riesgos-link:hover {
+  color: var(--secondary-brand-color);
+  text-decoration: underline;
+}
+
+/* Ajusta el ica-legend-mini para que se alinee con el enlace */
+.ica-legend-mini {
+  flex-grow: 1; /* Ocupa el espacio restante */
+  margin: 0 !important;
+}
+
+.ica-legend-mini table {
+  margin: 0;
+}
+
+#riesgosModal .table-riesgos {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+#riesgosModal .table-riesgos th,
+#riesgosModal .table-riesgos td {
+  border: 1px solid #ddd;
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+#riesgosModal .table-riesgos thead th {
+  background-color: #f4f4f4;
+  font-weight: 600;
+  color: var(--primary-brand-color);
+}
+
+#riesgosModal .table-riesgos tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+/* Colores para las filas de la tabla de estadísticas del historial */
+.stats-table tr.riesgo-buena { background-color: rgba(0, 228, 0, 0.2); }
+.stats-table tr.riesgo-regular { background-color: rgba(255, 255, 0, 0.2); }
+.stats-table tr.riesgo-mala { background-color: rgba(255, 126, 0, 0.2); }
+.stats-table tr.riesgo-muy-mala { background-color: rgba(255, 0, 0, 0.2); }
+.stats-table tr.riesgo-extremadamente-mala { background-color: rgba(143, 63, 151, 0.2); }
+.stats-table tr.riesgo-peligrosa { background-color: rgba(153, 0, 51, 0.2); }
+
+.stats-table tr.clima-frio { background-color: rgba(0, 150, 255, 0.2); }
+.stats-table tr.clima-templado { background-color: rgba(0, 228, 0, 0.2); }
+.stats-table tr.clima-calor { background-color: rgba(255, 255, 0, 0.2); }
+.stats-table tr.clima-mucho-calor { background-color: rgba(255, 126, 0, 0.2); }

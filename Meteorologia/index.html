@@ -463,6 +463,60 @@
         </div>
       </div>
     </div>
+    <div class="modal-overlay" id="riesgosModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Comunicación de riesgos</h2>
+                <button class="modal-close" onclick="closeRiesgosModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                
+                <table class="table table-bordered table-riesgos">
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Riesgos a la salud</th>
+                            <th>Recomendaciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background-color: #00e400;">
+                            <td><strong>Buena</strong></td>
+                            <td>Existe poco o ningún riesgo para la salud.</td>
+                            <td>Se puede realizar cualquier actividad al aire libre.</td>
+                        </tr>
+                        <tr style="background-color: #ffff00;">
+                            <td><strong>Regular</strong></td>
+                            <td>Los grupos susceptibles pueden presentar síntomas en la salud.</td>
+                            <td>Las personas que son extremadamente susceptibles a la contaminación deben considerar limitar la exposición al aire libre.</td>
+                        </tr>
+                        <tr style="background-color: #ff7e00;">
+                            <td><strong>Mala</strong></td>
+                            <td>Alto. Los grupos susceptibles presentan efectos en la salud.</td>
+                            <td>Los niños, adultos mayores, personas que realizan actividad física intensa o con enfermedades respiratorias y cardiovasculares, deben evitar la exposición al aire libre y el resto de la población deben limitar la exposición al aire libre.</td>
+                        </tr>
+                        <tr style="background-color: #ff0000; color: white;">
+                            <td><strong>Muy Mala</strong></td>
+                            <td>Muy alto. Toda la población puede presentar efectos en la salud; quienes pertenecen a los grupos susceptibles experimentan efectos graves.</td>
+                            <td>Los niños, adultos mayores, personas que realizan actividad física intensa o con enfermedades respiratorias y cardiovasculares, deben evitar la exposición al aire libre.</td>
+                        </tr>
+                        <tr style="background-color: #8f3f97; color: white;">
+                            <td><strong>Extremadamente Mala</strong></td>
+                            <td>Extremadamente alto. Toda la población tiene probabilidades de experimentar efectos graves en la salud.</td>
+                            <td>Toda la población debe evitar la exposición al aire libre.</td>
+                        </tr>
+                        <tr style="background-color: #990033; color: white;">
+                            <td><strong>Peligrosa</strong></td>
+                            <td>Peligro. Toda la población experimenta efectos graves en la salud.</td>
+                            <td>Suspensión de actividades al aire libre.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p class="modal-footer-text">Referencia: NADF-009-AIRE-2017</p>
+
+            </div>
+        </div>
+    </div>
   </body>
   <canvas id="filter-canvas" style="display: none"></canvas>
   <!-- Guía de lectura -->
