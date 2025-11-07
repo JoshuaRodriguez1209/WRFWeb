@@ -1,0 +1,60 @@
+{ "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.24, 19.0]},
+      "properties": {
+        "nombre": "Agua Santa",
+	"clave": "000"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.41, 18.92]},
+      "properties": {
+        "nombre": "Atlixco",
+	"clave": "001"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.24, 19.09]},
+      "properties": {
+        "nombre": "BINE",
+	"clave": "002"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.2, 19.04]},
+      "properties": {
+        "nombre": "Ninfas",
+	"clave": "003"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.41, 19.31]},
+      "properties": {
+        "nombre": "Texmelucan",
+	"clave": "004"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-97.41, 18.49]},
+      "properties": {
+        "nombre": "Tehuacan",
+	"clave": "005"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.16, 19.04]},
+      "properties": {
+        "nombre": "UTP",
+	"clave": "006"
+      }
+    },
+    { "type": "Feature",
+      "geometry": {"type": "Point", "coordinates": [-98.28, 19.12]},
+      "properties": {
+        "nombre": "Velodromo",
+	"clave": "007"
+      }
+    }
+  ]
+}
