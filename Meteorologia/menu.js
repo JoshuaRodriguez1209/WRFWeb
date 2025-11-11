@@ -290,18 +290,23 @@ $("#toggle-controls-btn").click(function (e) {
 
 $("#close-controls-btn").click(function (e) {
   e.stopPropagation();
+  if (window.matchMedia("(max-width: 768px)").matches) {
   $("#weather-controls").removeClass("is-open");
+  }
 });
 
-// Close panel when clicking outside
+// Close panel when clicking outside (solo en móvil)
 $(document).click(function (e) {
-  const panel = $("#weather-controls");
-  const toggleBtn = $("#toggle-controls-btn");
-  if (
-    !panel.is(e.target) && panel.has(e.target).length === 0 &&
-    !toggleBtn.is(e.target) && toggleBtn.has(e.target).length === 0
-  ) {
-    panel.removeClass("is-open");
+  // Solo cerrar al hacer clic fuera en pantallas móviles (menor a 768px)
+  if (window.matchMedia("(max-width: 768px)").matches) {
+    const panel = $("#weather-controls");
+    const toggleBtn = $("#toggle-controls-btn");
+    if (
+      !panel.is(e.target) && panel.has(e.target).length === 0 &&
+      !toggleBtn.is(e.target) && toggleBtn.has(e.target).length === 0
+    ) {
+      panel.removeClass("is-open");
+    }
   }
 });
 $(document).on("click", "#btn_atmos", function () {
@@ -311,14 +316,12 @@ $(document).on("click", "#btn_atmos", function () {
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   
+  // Mostrar side-menu-right y filter-info cuando se vuelve al mapa
+  $(".side-menu-right").show();
+  $("#filter-info").show();
+  
   // Activar modo mapa
   document.body.classList.add('map-active');
-  // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
-  $(".side-menu-right").css('display', '');
-  // Mostrar filter-info y controles del mapa
-  $("#filter-info").show();
-  $("#parameter-buttons").parent().show(); // Mostrar el control-group de parámetros
-  $("#gradient-container").parent().show(); // Mostrar el control-group del filtro
   
   $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -361,14 +364,12 @@ $(document).on("click", "#btn_aire", function () {
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   
+  // Mostrar side-menu-right y filter-info cuando se vuelve al mapa
+  $(".side-menu-right").show();
+  $("#filter-info").show();
+  
   // Activar modo mapa
   document.body.classList.add('map-active');
-  // Permitir que el side-menu-right se muestre según las reglas CSS (remover display inline)
-  $(".side-menu-right").css('display', '');
-  // Mostrar filter-info y controles del mapa
-  $("#filter-info").show();
-  $("#parameter-buttons").parent().show(); // Mostrar el control-group de parámetros
-  $("#gradient-container").parent().show(); // Mostrar el control-group del filtro
 
   $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
@@ -411,14 +412,15 @@ $(document).on("click", "#btn_hist", function () {
   $("#banner, #botones1").hide();
   $("#hist").show();
   $("#historial-dashboard").show();
-  // Ocultar el side-menu-right, filter-info y parámetros cuando se muestra el historial
-  $(".side-menu-right").hide();
-  $(".side-menu-right").css('display', 'none'); // Forzar con CSS también
-  $("#filter-info").hide();
-  $("#parameter-buttons").parent().hide(); // Ocultar el control-group de parámetros
-  $("#gradient-container").parent().hide(); // Ocultar el control-group del filtro
   
-  // También remover la clase map-active si existe
+  // Ocultar side-menu-right y filter-info cuando se muestra el historial
+  $(".side-menu-right").hide();
+  $("#filter-info").hide();
+  
+  // Cerrar weather-controls en móvil cuando se abre el historial
+  $("#weather-controls").removeClass("is-open");
+  
+  // Desactivar el modo mapa para que el historial tenga espacio completo
   document.body.classList.remove('map-active');
   
   $("#panel-header-text").text("Historial de Datos");

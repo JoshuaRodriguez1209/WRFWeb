@@ -226,23 +226,25 @@
       <div id="side-menu" class="side-menu">
         <div class="menu-buttons-group">
           <button class="menu-btn" id="btn_aire" title="Calidad del aire">
-            <i class="fa-solid fa-smog"></i> <span class="menu-label">Calidad del aire</span>
+            <i class="fa-solid fa-smog"></i> 
+            <span class="menu-label">Calidad del aire</span>
+            <span class="menu-tooltip">Calidad del aire</span>
           </button>
           <button class="menu-btn" id="btn_atmos" title="Atmósfera">
-            <i class="fa-solid fa-temperature-half"></i> <span class="menu-label">Meteorología</span>
+            <i class="fa-solid fa-temperature-half"></i> 
+            <span class="menu-label">Meteorología</span>
+            <span class="menu-tooltip">Clima</span>
           </button>
 
-          <button class="menu-btn" id="btn_hist" title="Historial">
-            <i class="fa-solid fa-chart-line"></i> <span class="menu-label">Historial</span>
-          </button>
-          
           <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
             <i class="fa-solid fa-play" id="playIcon"></i>
+            <span class="menu-tooltip">Animación de pronóstico</span>
           </button>
         </div>
 
         <button class="back-btn" id="btn_back" title="Volver al inicio" onclick="location.reload()">
           <i class="fa-solid fa-arrow-left"></i>
+          <span class="menu-tooltip">Volver al inicio</span>
         </button>
       </div>
 
@@ -416,6 +418,9 @@
                 </button>
                 <button class="footer-btn" id="btn_recarga">
                   <i class="fa-solid fa-reload"></i> Limpiar Filtro
+                </button>
+                <button class="footer-btn" id="btn_hist" title="Pronóstico">
+                  <i class="fa-solid fa-chart-line"></i> Pronóstico
                 </button>
               </div>
             </div>

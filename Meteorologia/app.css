@@ -170,16 +170,18 @@ body.map-active #main-content {
     right: auto;
     width: 100%; /* Ocupar todo el ancho disponible */
     height: auto; /* Altura automática */
+    max-height: calc(100vh - 200px); /* Altura máxima para permitir scroll */
     background: transparent; /* Fondo transparente para integrarse */
     border-radius: 0;
     box-shadow: none; /* Sin sombra */
     z-index: auto;
-    display: block; /* Siempre visible */
+    display: flex; /* Cambio a flex para scrollbar */
     flex-direction: column;
     transform: none; /* Sin transformaciones */
     transition: none; /* Sin transiciones de movimiento */
     margin-top: 15px; /* Espacio superior */
     padding: 0; /* Sin padding externo */
+    overflow-y: auto; /* Habilitar scrollbar vertical */
 }
 
 .weather-controls.is-open { transform: none; } /* Eliminar transformación */
@@ -191,11 +193,34 @@ body.map-active #main-content {
     overflow-y: visible; /* Sin scroll interno */
     display: flex; 
     flex-direction: column; 
-    flex-grow: 1; 
+    flex-grow: 0; /* Cambiado de 1 a 0 para que el footer quede abajo del contenido */
     background: transparent; /* Fondo transparente */
 }
-.close-btn { display: none; } /* Ocultar botón de cerrar */
-.close-btn:hover { color: var(--primary-brand-color); }
+
+/* Botón de cerrar - oculto en desktop, visible en móvil */
+.close-btn { 
+    display: none; /* Oculto por defecto en desktop */
+}
+.close-btn:hover { 
+    color: var(--primary-brand-color); 
+}
+
+/* Mostrar botón de cerrar solo en móvil */
+@media (max-width: 768px) {
+    .close-btn {
+        display: block !important;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        font-size: 24px;
+        color: var(--primary-brand-color);
+        cursor: pointer;
+        z-index: 10;
+    }
+}
+
 .control-group { margin-bottom: 20px; }
 .control-group label { display: block; margin-bottom: 8px; color: var(--text-color); font-weight: 500; font-size: 14px; }
 .control-group select, .control-group input { width: 100%; padding: 10px; border: 2px solid var(--medium-gray); border-radius: 8px; font-size: 14px; font-family: 'Poppins', sans-serif; transition: all 0.3s ease; }
@@ -268,6 +293,7 @@ body.map-active #main-content {
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    margin-top: auto; /* Empujar hacia abajo */
 }
 
 .footer-btn {
@@ -286,6 +312,12 @@ body.map-active #main-content {
     align-items: center;
     justify-content: center;
     gap: 5px;
+}
+
+/* Botón de historial más ancho que ocupe toda la fila */
+.footer-btn#btn_hist {
+    flex: 1 1 100%; /* Ocupa todo el ancho disponible */
+    min-width: 100%;
 }
 
 .footer-btn:hover {
@@ -384,6 +416,51 @@ body.map-active #main-content {
 .side-menu .back-btn {
     margin-top: 490px; /* Empuja el botón hacia abajo */
     margin-bottom: 15px; /* Espacio desde el bottom para que sea visible */
+}
+
+/* ===== Tooltips expandibles para side menu ===== */
+.side-menu .menu-tooltip {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--primary-brand-color);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 0 8px 8px 0;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    margin-left: -10px;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Mostrar tooltip al hacer hover en el botón */
+.side-menu .menu-btn:hover .menu-tooltip,
+.side-menu .play-btn:hover .menu-tooltip,
+.side-menu .back-btn:hover .menu-tooltip {
+    opacity: 1;
+    visibility: visible;
+    margin-left: 0;
+}
+
+/* Asegurar que los botones tengan position relative para los tooltips */
+.side-menu .menu-btn,
+.side-menu .play-btn,
+.side-menu .back-btn {
+    position: relative;
+}
+
+/* Ocultar tooltips en móvil */
+@media (max-width: 768px) {
+    .side-menu .menu-tooltip {
+        display: none;
+    }
 }
 
 /* Side menu derecho para filtros - OVERLAY FIJO */
@@ -685,19 +762,7 @@ body:not(.map-active) .side-menu-right {
     align-items: center;
 }
 
-/* --- And replace it with this --- */
-.modal-content {
-    background: white;
-    border-radius: 15px;
-    padding: 25px;
-    width: 90%; /* Add this for flexibility */
-    height: 90%;
-    max-width: 100%; /* Increase this value */
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    position: relative;
-}
+/* --- Estilos de modal eliminados para evitar conflicto, se definen más abajo específicamente --- */
 
 .modal-header {
     display: flex;
@@ -824,9 +889,32 @@ body:not(.map-active) .side-menu-right {
 /* ADDED: Historial Dashboard Styles */
 /* Fix for historial dashboard positioning */
 /* Desktop: Make historial-dashboard use full available width (from sidebar edge to right edge) */
+#hist {
+    display: none; /* Oculto por defecto - solo visible al hacer clic en el botón historial */
+}
+
 #historial-dashboard {
     left: var(--sidebar-width) !important;
     width: calc(100% - var(--sidebar-width)) !important;
+    display: none; /* Oculto por defecto - solo visible al hacer clic en el botón */
+    position: fixed !important;
+    top: 0 !important;
+    height: 100vh !important;
+    z-index: 999 !important; /* Por encima de side-menu-right y filter-info */
+    overflow-y: auto !important;
+    background-color: #f8f9fa !important;
+    padding-top: 70px !important; /* Espacio para el header */
+}
+
+/* Ocultar side-menu-right cuando historial está visible */
+body:not(.map-active) .side-menu-right,
+#hist:not([style*="display: none"]) ~ * .side-menu-right {
+    display: none !important;
+}
+
+/* Ocultar filter-info cuando historial está visible */
+body:not(.map-active) #filter-info {
+    display: none !important;
 }
 
 /* Responsive adjustments */
@@ -835,12 +923,32 @@ body:not(.map-active) .side-menu-right {
         --sidebar-width: 100%;
     }
     
+    /* Ocultar side-menu-right en móvil */
+    .side-menu-right {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
     body.map-active #app {
         display: flex !important;
         flex-grow: 1;
         overflow: hidden;
         margin-top: 80px;
         height: calc(100vh - 80px);
+    }
+    
+    /* Permitir scroll cuando el historial está visible en móvil */
+    body:not(.map-active) #app {
+        display: block !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: auto !important;
+        min-height: 100vh !important;
+    }
+    
+    body:not(.map-active) {
+        overflow-y: auto !important;
+        height: auto !important;
     }
     
     body.map-active .side-menu { 
@@ -857,6 +965,11 @@ body:not(.map-active) .side-menu-right {
     #main-content {
         width: 100%;
         height: calc(100% - 80px);
+    }
+    
+    /* Ocultar main-content cuando el historial está visible en móvil */
+    body:not(.map-active) #main-content {
+        display: none !important;
     }
     
     .menu-btn { 
@@ -890,7 +1003,7 @@ body:not(.map-active) .side-menu-right {
         display: flex;
         flex-direction: column;
         gap: 10px;
-        z-index: 1;
+        z-index: 7000; /* Incrementado para estar sobre todos los elementos */
     }
     
     .data-panel { 
@@ -947,10 +1060,39 @@ body:not(.map-active) .side-menu-right {
     } 
 
     #historial-dashboard {
-        top: -85px;
-        left: 0;
-        width: 100%;
-        padding: 15px;
+        position: static !important; /* Cambiado de relative a static para que no se corte */
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important; /* Ancho completo del viewport */
+        max-width: 100vw !important;
+        padding: 15px 12px 36px !important;
+        margin: 0 !important; /* Sin margen lateral */
+        margin-top: 160px !important; /* Espacio para el header en móvil */
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        z-index: 5000 !important;
+        background-color: #f8f9fa !important;
+        min-height: auto !important; /* Dejar que el contenido determine la altura */
+        height: auto !important;
+        overflow: visible !important; /* Sin scroll interno, usar el scroll del body */
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+    
+    /* Asegurar que el contenido interno del historial no se salga */
+    #historial-dashboard * {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* Ocultar weather-controls completamente cuando el historial está visible en móvil */
+    body:not(.map-active) .weather-controls,
+    body:not(.map-active) #weather-controls {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
     
     /* Hide filter-info in mobile when historial is shown */
@@ -981,11 +1123,12 @@ body:not(.map-active) .side-menu-right {
     
     /* Ensure filter info is visible in mobile */
     #filter-info {
-        top: 140px !important;
-        right: 50% !important;
+        top: 90px !important;
+        left: 24.5% !important;
+        right: 30% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100% - 20px) !important;
-        z-index: 1500;
+        z-index: 999;
     }
 }
 
@@ -1253,10 +1396,12 @@ body:not(.map-active) .side-menu-right {
   width: 85% !important;
   max-width: 1400px !important;
   margin: 30px auto !important;
+  display: flex !important;
+  align-items: center !important;
+  min-height: calc(100vh - 60px) !important; /* Centrado vertical */
 }
 
-.modal-content {
-  top: 10px;
+.modal-dialog .modal-content {
   border: none !important;
   border-radius: 16px !important;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
@@ -1266,6 +1411,15 @@ body:not(.map-active) .side-menu-right {
   width: 100% !important;
   contain: layout; /* evita recálculos que afecten el navbar */
   overscroll-behavior: contain; /* evita scroll bubbling */
+  margin: 0 auto; /* Centrado horizontal */
+}
+
+/* En móvil, los modales con gráficas ocupan casi todo el ancho */
+@media (max-width: 768px) {
+  .modal-dialog {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
 }
 
 /* Header del modal con gradiente y estilo moderno */
@@ -1275,16 +1429,6 @@ body:not(.map-active) .side-menu-right {
   border-bottom: none !important;
   padding: 20px 25px;
   position: relative;
-}
-
-.modal-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #c19862, #d4af7a, #c19862);
 }
 
 .modal-title {
@@ -1607,7 +1751,7 @@ body:not(.map-active) .side-menu-right {
   body.map-active #app { margin-top:150px; height:calc(100vh - 150px); }
   #map { top:0; height:100% !important; }
   /* Off-canvas style: keep panel hidden translating full width */
-  .weather-controls { width:85%; max-width:420px; height:100%; top:0 !important; right:0; border-radius:0 0 0 12px; }
+  .weather-controls { width:85%; max-width:420px; height:100%; top:0 !important; right:10; border-radius:0 0 0 12px; }
   /* Legacy rule kept but overridden later by refined block */
   .weather-controls:not(.is-open){ transform:translateX(100%) !important; }
   .weather-controls.is-open { box-shadow:-4px 0 18px rgba(0,0,0,.25); }
@@ -1622,75 +1766,80 @@ body:not(.map-active) .side-menu-right {
 
 /* ===== Refined MOBILE weather-controls overlay (final override) ===== */
 @media (max-width:768px){
-  .weather-controls {
+  /* Forzar que side-menu-right sea visible pero posicionado fuera de pantalla
+     para que su hijo weather-controls pueda posicionarse independientemente */
+  #side-menu-right,
+  .side-menu-right {
+    display: block !important; /* Cambiar de none a block */
     position: fixed !important;
-    top: 235px !important; /* debajo de navbar / search */
-    right: 8px !important;
+    left: -9999px !important; /* Mover fuera de pantalla */
+    top: -9999px !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  
+  /* Pero weather-controls dentro debe ser visible de forma independiente */
+  .weather-controls,
+  #weather-controls {
+    position: fixed !important;
+    top: 220px !important;
+    right: 10 !important;
     left: auto !important;
-    width: min(420px, 92%);
-    height: auto;               /* alto dinámico */
-    max-height: calc(94vh - 190px); /* ventana menos header y margen inferior */
-    border-radius: 16px;        /* apariencia de tarjeta flotante */
-    box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
-    background: #ffffff !important; /* asegurar fondo sólido durante animación */
-    z-index: 6000;              /* por encima de gradiente y escala */
-    transform: translateX(calc(100% + 64px)); /* estado cerrado totalmente fuera + margen para pseudo-overlay */
-    transition: transform .35s cubic-bezier(.4,.0,.2,1);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;           /* bordes redondeados limpios */
-    will-change: transform;     /* optimización GPU */
-    backface-visibility: hidden;
-    contain: layout paint style;
+    width: 95% !important;
+    max-width: 420px !important;
+    height: auto !important;
+    max-height: calc(100vh - 100px) !important;
+    border-radius: 16px 0 0 16px !important;
+    box-shadow: -4px 0 18px rgba(0,0,0,.25) !important;
+    background: #ffffff !important;
+    z-index: 6000 !important;
+    transform: translateX(0) !important; /* Visible por defecto para debug */
+    transition: transform .35s cubic-bezier(.4,.0,.2,1) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
-  /* Banda de extensión para cubrir controles mientras se desliza */
-  .weather-controls::after {
-    content:"";
-    position:absolute;
-    top:0; right:-64px; height:100%; width:64px;
-    background:#ffffff; /* misma tarjeta */
-    pointer-events:none;
+  
+  /* Estado cerrado - fuera de pantalla a la derecha */
+  .weather-controls:not(.is-open),
+  #weather-controls:not(.is-open){
+    transform: translateX(100%) !important;
+    pointer-events: none !important;
   }
-  /* Evitar que los botones internos se vean "volar" durante la animación */
-  .weather-controls .controls-header,
-  .weather-controls .controls-body,
-  .weather-controls .animation-controls,
-  .weather-controls .controls-footer {
-    opacity:0;
-    transition: opacity .18s ease;
-  }
-  /* Al estar abierta se muestran tras un breve retardo para que primero termine el desplazamiento */
-  .weather-controls.is-open .controls-header,
-  .weather-controls.is-open .controls-body,
-  .weather-controls.is-open .animation-controls,
-  .weather-controls.is-open .controls-footer {
-    opacity:1;
-    transition-delay:.07s; /* leve retardo para evitar parpadeo durante el slide */
-  }
-  /* Mientras está cerrándose (cuando pierde .is-open) desaparecen de inmediato */
-  .weather-controls:not(.is-open) .controls-header,
-  .weather-controls:not(.is-open) .controls-body,
-  .weather-controls:not(.is-open) .animation-controls,
-  .weather-controls:not(.is-open) .controls-footer { opacity:0; transition-delay:0s; }
-  /* Estado abierto */
-  .weather-controls.is-open { 
-    transform: translateX(0) !important; /* visible */
-    box-shadow: 0 10px 32px -4px rgba(0,0,0,.35);
-    pointer-events: auto;
-    visibility: visible;
-    z-index: 6000;
-  }
-  /* Estado cerrado (override definitivo) */
-  .weather-controls:not(.is-open){
-    transform: translateX(calc(100% + 64px)) !important; /* fuera de pantalla + banda de cobertura */
-    box-shadow: none !important;
-    pointer-events: none;
-    visibility: hidden; /* evita foco / tab */
+  
+  /* Estado abierto - visible en pantalla */
+  .weather-controls.is-open,
+  #weather-controls.is-open { 
+    transform: translateX(0) !important;
+    box-shadow: -4px 0 18px rgba(0,0,0,.25) !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
-  /* Header compacto en móvil */
-  .weather-controls .controls-header { padding:14px 16px 10px 16px; }
+  /* Header compacto en móvil - VISIBLE */
+  .weather-controls .controls-header { 
+    display: flex !important; /* Mostrar header en móvil */
+    padding: 14px 16px 10px 16px;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+  }
   .weather-controls .controls-header h3 { font-size:1rem; }
+  
+  /* Botón de cerrar visible en móvil */
+  .weather-controls .close-btn,
+  .weather-controls #close-controls-btn {
+    display: block !important;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: var(--primary-brand-color);
+    cursor: pointer;
+  }
   .weather-controls .controls-body {
     padding:16px 16px 12px 16px;
     overflow-y:auto; /* restaurar como en MeteorologiaGit para evitar conflicto */
