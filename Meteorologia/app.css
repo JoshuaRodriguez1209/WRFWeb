@@ -409,13 +409,14 @@ body.map-active #main-content {
     flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-top: 25px; /* Reducido aún más */
+    margin-top: 25px;
+    margin-bottom: 35px; /* Espacio entre botones principales y play button */
 }
 
-/* Posicionar el back button hacia abajo pero visible */
+/* Posicionar el back button dinámicamente */
 .side-menu .back-btn {
-    margin-top: 490px; /* Empuja el botón hacia abajo */
-    margin-bottom: 15px; /* Espacio desde el bottom para que sea visible */
+    margin-top: clamp(150px, calc(100vh - 600px), 350px); /* Dinámico según altura viewport */
+    margin-bottom: 15px;
 }
 
 /* ===== Tooltips expandibles para side menu ===== */
@@ -477,7 +478,7 @@ body.map-active #main-content {
     border-left: 1px solid var(--border-color);
     box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
     z-index: 999; /* Por encima de otros elementos */
-    overflow-y: hidden; /* Sin scroll - contenido optimizado */
+    overflow-y: auto; /* Sin scroll - contenido optimizado */
 }
 
 /* Mostrar side-menu-right solo en modo mapa */
@@ -900,8 +901,8 @@ body:not(.map-active) .side-menu-right {
     position: fixed !important;
     top: 0 !important;
     height: 100vh !important;
-    z-index: 999 !important; /* Por encima de side-menu-right y filter-info */
-    overflow-y: auto !important;
+    z-index: 997 !important; /* Por encima de side-menu-right y filter-info */
+    overflow-y:scroll !important;
     background-color: #f8f9fa !important;
     padding-top: 70px !important; /* Espacio para el header */
 }
@@ -1083,7 +1084,7 @@ body:not(.map-active) #filter-info {
     
     /* Asegurar que el contenido interno del historial no se salga */
     #historial-dashboard * {
-        max-width: 100% !important;
+        /*max-width: 100% !important;*/
         box-sizing: border-box !important;
     }
     
@@ -1124,7 +1125,7 @@ body:not(.map-active) #filter-info {
     /* Ensure filter info is visible in mobile */
     #filter-info {
         top: 90px !important;
-        left: 24.5% !important;
+        left: 110px !important;
         right: 30% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100% - 20px) !important;
@@ -1787,8 +1788,7 @@ body:not(.map-active) #filter-info {
     left: auto !important;
     width: 95% !important;
     max-width: 420px !important;
-    height: auto !important;
-    max-height: calc(100vh - 100px) !important;
+    height: calc(100vh - 240px) !important; /* Altura fija para que overflow funcione */
     border-radius: 16px 0 0 16px !important;
     box-shadow: -4px 0 18px rgba(0,0,0,.25) !important;
     background: #ffffff !important;
@@ -1797,7 +1797,7 @@ body:not(.map-active) #filter-info {
     transition: transform .35s cubic-bezier(.4,.0,.2,1) !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow: visible !important;
+    overflow: hidden !important; /* Ocultar overflow en el contenedor principal */
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
@@ -1820,13 +1820,14 @@ body:not(.map-active) #filter-info {
     opacity: 1 !important;
   }
 
-  /* Header compacto en móvil - VISIBLE */
+  /* Header compacto en móvil - VISIBLE - altura fija */
   .weather-controls .controls-header { 
     display: flex !important; /* Mostrar header en móvil */
     padding: 14px 16px 10px 16px;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* No reducir altura */
   }
   .weather-controls .controls-header h3 { font-size:1rem; }
   
@@ -1840,12 +1841,23 @@ body:not(.map-active) #filter-info {
     color: var(--primary-brand-color);
     cursor: pointer;
   }
+  
+  /* Cuerpo scrolleable - altura mínima 0 para permitir overflow */
   .weather-controls .controls-body {
-    padding:16px 16px 12px 16px;
-    overflow-y:auto; /* restaurar como en MeteorologiaGit para evitar conflicto */
-    flex:1 1 auto;
+    padding: 16px 16px 12px 16px;
+    overflow-y: auto !important; /* Solo el body es scrolleable */
+    overflow-x: hidden !important;
+    flex: 1 1 0 !important; /* Cambiar a 0 para permitir shrink */
+    min-height: 0 !important; /* Crítico para que funcione overflow en flex child */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain; /* evita que scroll interno afecte navbar */
+  }
+  
+  /* Footer con altura fija */
+  .weather-controls .controls-footer { 
+    padding: 10px 0 12px 0; 
+    gap: 8px;
+    flex-shrink: 0; /* No reducir altura */
   }
   .weather-controls .control-group { margin-bottom:14px; }
   .weather-controls .control-group label { font-size:13px; margin-bottom:6px; }

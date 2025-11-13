@@ -192,7 +192,7 @@ body {
     cursor: pointer;
     flex-direction: column;
     justify-content: space-between;
-    width: 35px;
+    width: 50px;
     height: 24px;
 }
 
@@ -246,6 +246,19 @@ body {
         max-width: 95%;
         margin: 10px;
         padding: 15px;
+        overflow-x: hidden;
+    }
+    
+    /* Asegurar que el contenido no se desborde */
+    .modal-content * {
+        max-width: 100%;
+    }
+    
+    /* Grid de gráficas responsive */
+    .modal-content .charts-grid {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
     }
 }
 
@@ -885,11 +898,27 @@ body.map-active #app #map { overscroll-behavior: contain; }
   overflow: visible;
 }
 
-/* En móvil, centrar la escala */
+/* En móvil, centrar la escala y hacerla crecer del centro a los bordes */
 @media (max-width: 768px) {
   .ol-scale-line {
     left: 50% !important;
+    right: auto !important;
     transform: translateX(-50%) !important; /* Centrar en móvil */
+    transform-origin: center !important; /* Crecer desde el centro */
+    text-align: center !important; /* Centrar contenido interno */
+  }
+  
+  /* Hacer que la barra crezca desde el centro */
+  .ol-scale-line-inner {
+    transform-origin: center !important;
+    position: relative !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* Anclar al centro del contenedor */
+    display: inline-block !important;
+  }
+  
+  .ol-scale-line-body {
+    transform-origin: center !important;
   }
 }
 
@@ -922,6 +951,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   box-shadow: 0 1px 2px rgba(0,0,0,0.45);
   background: #fff; /* fondo base para el primer segmento */
 }
+
 .ol-scale-line-segment {
   flex: 1 1 auto;
   height: 100%;
@@ -958,6 +988,12 @@ body.map-active #app #map { overscroll-behavior: contain; }
 .ol-scale-line .ol-scale-line-inner {
   font-size: 0 !important;      /* oculta el texto sin afectar el canvas/div de la barra */
   line-height: 0 !important;
+}
+#app .ol-scale-line .ol-scale-line-inner canvas,
+.ol-scale-line .ol-scale-line-inner canvas,
+#app .ol-scale-line .ol-scale-line-inner > div:not(.ol-scale-line-body):not(.ol-scale-line-ticks),
+.ol-scale-line .ol-scale-line-inner > div:not(.ol-scale-line-body):not(.ol-scale-line-ticks) {
+  display: none !important; /* Ocultar la barra nativa de OL; mantener nuestra barra y ticks */
 }
 #app .ol-scale-line .ol-scale-line-inner span,
 .ol-scale-line .ol-scale-line-inner span {
@@ -1029,6 +1065,39 @@ body.map-active #app #map { overscroll-behavior: contain; }
   transition: width 0.3s ease;
   overflow: hidden;
   z-index: 3000;
+}
+
+/* Búsqueda y Leyenda: mobile debajo de controles */
+.search-mobile-slot,
+.legend-mobile-slot { display: none; }
+
+@media (max-width: 768px) {
+  #search-section,
+  #legend-section { display: none; }
+  
+  .search-mobile-slot { 
+    display: block; 
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .legend-mobile-slot { 
+    display: block; 
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .search-mobile-slot h4,
+  .legend-mobile-slot h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .legend-mobile-slot .legend-content { margin-top: 6px; }
 }
 
 .side-menu.expanded ~ #map {
@@ -1186,7 +1255,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 #gradient-container.horizontal-mode.embedded.bottom-floating {
   position: fixed; /* Asegura que no se mueva */
   top: 85%; /* más pegado a la parte inferior */
-  left: 6%;         /* 👈 Esto es crucial */
+  left: 90px;         /* 👈 Esto es crucial */
   transform: none;
   width: 450px; /* ligeramente más compacto */
   max-width: 480px;
@@ -1599,7 +1668,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 #filter-info {
   position: absolute;
   top: calc(var(--header-height) - 45px);
-  left: 6%; /* Cambiado de 40% a 15% para mover hacia la izquierda */
+  left: 90px; /* Cambiado de 40% a 15% para mover hacia la izquierda */
   z-index: 998;
   font-weight: 500;
   color: #333;
@@ -1828,6 +1897,41 @@ body.map-active #app #map { overscroll-behavior: contain; }
   display: flex;
   flex-direction: column;
   width: 100%;
+}
+
+/* Instrucciones de uso del historial */
+.usage-instructions {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-left: 4px solid var(--primary-brand-color);
+  border-radius: 8px;
+  padding: 20px 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.usage-instructions h3 {
+  color: var(--primary-brand-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.usage-instructions ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #333;
+}
+
+.usage-instructions li {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.usage-instructions li:last-child {
+  margin-bottom: 0;
 }
 
 /* Asegurar que el combobox ocupe todo el ancho disponible */
@@ -2174,17 +2278,25 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 @media (max-width: 768px){
   .charts-grid{
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important; /* Forzar una sola columna en móvil */
     gap: 20px;
     padding: 15px 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   .chart-card{ 
     padding: 15px; 
     min-height: 280px;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   .chart-card canvas{
     height: 240px !important;
     min-height: 240px;
+    max-width: 100% !important;
+    width: 100% !important;
   }
   
   #historial-dashboard {
@@ -2192,7 +2304,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
     width: 100% !important;
     padding: 12px 12px 32px !important;
     margin: 120px 0 20px 0 !important;
-    overflow: visible !important;
+    overflow-x: hidden !important;
   }
 }
 
@@ -2801,15 +2913,22 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 @media (max-width: 768px) {
-  :root { --scale-bottom-mobile: 40px; }
+  :root { --scale-bottom-mobile: 30px; }
 
-  /* En móvil: centrada y un poco arriba (sobre map-legend) */
+  /* En móvil: centrada en 50% para crecer desde el centro */
   #app .ol-scale-line,
   .ol-scale-line.override-position,
   .ol-scale-line {
     bottom: var(--scale-bottom-mobile) !important;
-    left: 20% !important;
-    transform: translateX(-50%) !important;
+    left: 50% !important; /* Centrar en el medio de la pantalla */
+    right: auto !important;
+    transform: translateX(-50%) !important; /* Centrar desde el punto medio */
+    transform-origin: center center !important; /* Crecer desde el centro */
+  }
+  
+  /* Asegurar que el contenido interno también crezca desde el centro */
+  .ol-scale-line-inner,
+  .ol-scale-line-body {
     transform-origin: center center !important;
   }
 }

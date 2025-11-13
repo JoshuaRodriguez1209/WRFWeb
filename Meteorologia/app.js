@@ -223,8 +223,8 @@ var m_control = new ol.control.Control({ element: notification });
 var m_view = new ol.View({
   projection: "EPSG:4326",
   center: [-97.5711, 19.6105],
-  zoom: 8.6,
-  minZoom: 8.6,
+  zoom: 8.4,
+  minZoom: 8.4,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -287,6 +287,7 @@ function ensureCustomScaleBar() {
   const current = body.querySelectorAll('.ol-scale-line-segment').length;
   if (current !== needed) {
     body.innerHTML = '';
+    // Insertar segmentos normalmente - el CSS manejará la dirección en móvil
     for (let i = 0; i < needed; i++) {
       const seg = document.createElement('div');
       seg.className = 'ol-scale-line-segment' + (i % 2 === 1 ? ' alt' : '');
@@ -393,7 +394,10 @@ function constrainScaleLine() {
     if (inner.getBoundingClientRect().width < 200) {
       inner.style.minWidth = '220px';
     }
-    // En móvil, crecer desde el centro
+    // En móvil, crecer desde el centro: centrar el inner respecto al contenedor
+    inner.style.position = 'relative';
+    inner.style.left = '50%';
+    inner.style.transform = 'translateX(-50%)';
     inner.style.transformOrigin = 'center center';
     return; // no aplicar reducción
   }
@@ -419,6 +423,72 @@ window.addEventListener('resize', constrainScaleLine);
 // Llamar después de un pequeño delay para asegurar render de OL
 setTimeout(constrainScaleLine, 800);
 m_map.on('moveend', () => setTimeout(constrainScaleLine, 50));
+
+// Relocalizar Búsqueda y Simbología en móvil (debajo de weather-controls)
+(function setupMobileRelocation(){
+  let searchOriginalParent = null;
+  let legendOriginalParent = null;
+  
+  function relocateForMobile() {
+    // Búsqueda
+    const searchControl = document.getElementById('municipio-map-control');
+    const searchSection = document.getElementById('search-section');
+    const searchSlot = document.getElementById('search-mobile-slot');
+    
+    // Leyenda
+    const legendContent = document.getElementById('legend-content');
+    const legendSection = document.getElementById('legend-section');
+    const legendSlot = document.getElementById('legend-mobile-slot');
+    
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      // Mover búsqueda a móvil
+      if (searchControl && searchSection && searchSlot && searchControl.parentElement !== searchSlot) {
+        if (!searchOriginalParent) searchOriginalParent = searchSection;
+        // Agregar título
+        if (!searchSlot.querySelector('h4')) {
+          const title = document.createElement('h4');
+          title.textContent = 'Buscar Municipio';
+          searchSlot.appendChild(title);
+        }
+        searchSlot.appendChild(searchControl);
+      }
+      
+      // Mover leyenda a móvil
+      if (legendContent && legendSection && legendSlot && legendContent.parentElement !== legendSlot) {
+        if (!legendOriginalParent) legendOriginalParent = legendSection;
+        // Agregar título
+        if (!legendSlot.querySelector('h4')) {
+          const title = document.createElement('h4');
+          title.textContent = 'Simbología';
+          legendSlot.appendChild(title);
+        }
+        legendSlot.appendChild(legendContent);
+      }
+    } else {
+      // Restaurar a desktop
+      if (searchOriginalParent && searchControl && searchControl.parentElement !== searchOriginalParent) {
+        searchOriginalParent.appendChild(searchControl);
+        // Limpiar título del slot
+        const searchTitle = searchSlot?.querySelector('h4');
+        if (searchTitle) searchTitle.remove();
+      }
+      
+      if (legendOriginalParent && legendContent && legendContent.parentElement !== legendOriginalParent) {
+        legendOriginalParent.appendChild(legendContent);
+        // Limpiar título del slot
+        const legendTitle = legendSlot?.querySelector('h4');
+        if (legendTitle) legendTitle.remove();
+      }
+    }
+  }
+  
+  window.addEventListener('resize', relocateForMobile);
+  document.addEventListener('DOMContentLoaded', relocateForMobile);
+  // Ejecutar también tras un pequeño retardo por si el panel aún no existe
+  setTimeout(relocateForMobile, 600);
+})();
 
 // Función para aplicar el recorte a una capa
 const clipLayer = (layer) => {
@@ -2365,6 +2435,13 @@ function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones 
     clip: 8
   };
 
+  // Calcular rango y padding para ajustar a los datos
+  const values = dats.filter(v => Number.isFinite(v));
+  const gmin = values.length ? Math.min(...values) : 0;
+  const gmax = values.length ? Math.max(...values) : 0;
+  const range = Math.max(1e-9, gmax - gmin);
+  const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1));
+
   const ctx = canva.getContext('2d', { willReadFrequently: true });
     const chart = new Chart(ctx, {
     type: tipo,
@@ -2397,9 +2474,10 @@ function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones 
       // --- INICIO DE MODIFICACIÓN ---
       scales: {
         y: {
-          // Si la unidad es "Puntos ICA", forzar inicio en 0 y sugerir max 500
-          beginAtZero: (unid === "Puntos ICA"), 
-          suggestedMax: (unid === "Puntos ICA") ? 500 : undefined,
+          // Usar rango dinámico basado en los datos
+          beginAtZero: false,
+          suggestedMax: gmax + pad,
+          suggestedMin: gmin - pad,
           ticks: {
             padding: 6,
             color: '#555',
@@ -3167,7 +3245,9 @@ async function createHistoricalView(jsonPath, container, tipo) {
   try {
     const response = await fetch(jsonPath);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Extraer información del archivo para un mensaje más claro
+      const fileName = jsonPath.split('/').pop();
+      throw new Error(`HTTP error! status: ${response.status}\n\nArchivo: ${jsonPath}\n\nEste punto no tiene datos de meteograma disponibles. Solo las estaciones de monitoreo tienen datos históricos.`);
     }
     
     const data = await response.json();
@@ -3309,8 +3389,42 @@ const WeatherRiskBands = {
     { min: 10, max: 25, label: "Templado", color: "rgba(0, 228, 0, 0.4)", class: "clima-templado" },
     { min: 25, max: 30, label: "Calor", color: "rgba(255, 255, 0, 0.4)", class: "clima-calor" },
     { min: 30, max: Infinity, label: "Mucho Calor", color: "rgba(255, 126, 0, 0.4)", class: "clima-mucho-calor" }
+  ],
+  rh: [ // Bandas para Humedad Relativa en %
+    { min: 0, max: 30, label: "Muy Seco", color: "rgba(255, 126, 0, 0.4)", class: "humedad-muy-seco" },
+    { min: 30, max: 50, label: "Seco", color: "rgba(255, 255, 0, 0.4)", class: "humedad-seco" },
+    { min: 50, max: 70, label: "Confortable", color: "rgba(0, 228, 0, 0.4)", class: "humedad-confortable" },
+    { min: 70, max: 90, label: "Húmedo", color: "rgba(0, 150, 255, 0.4)", class: "humedad-humedo" },
+    { min: 90, max: 100, label: "Muy Húmedo", color: "rgba(0, 0, 255, 0.4)", class: "humedad-muy-humedo" }
+  ],
+  psl: [ // Bandas para Presión en hPa
+    { min: -Infinity, max: 1000, label: "Baja", color: "rgba(255, 126, 0, 0.4)", class: "presion-baja" },
+    { min: 1000, max: 1013, label: "Normal-Baja", color: "rgba(255, 255, 0, 0.4)", class: "presion-normal-baja" },
+    { min: 1013, max: 1020, label: "Normal", color: "rgba(0, 228, 0, 0.4)", class: "presion-normal" },
+    { min: 1020, max: 1030, label: "Normal-Alta", color: "rgba(0, 150, 255, 0.4)", class: "presion-normal-alta" },
+    { min: 1030, max: Infinity, label: "Alta", color: "rgba(143, 63, 151, 0.4)", class: "presion-alta" }
+  ],
+  wnd: [ // Bandas para Viento en km/h
+    { min: 0, max: 5, label: "Calma", color: "rgba(0, 228, 0, 0.4)", class: "viento-calma" },
+    { min: 5, max: 20, label: "Brisa", color: "rgba(0, 150, 255, 0.4)", class: "viento-brisa" },
+    { min: 20, max: 40, label: "Moderado", color: "rgba(255, 255, 0, 0.4)", class: "viento-moderado" },
+    { min: 40, max: 60, label: "Fuerte", color: "rgba(255, 126, 0, 0.4)", class: "viento-fuerte" },
+    { min: 60, max: Infinity, label: "Muy Fuerte", color: "rgba(255, 0, 0, 0.4)", class: "viento-muy-fuerte" }
+  ],
+  pre: [ // Bandas para Precipitación en mm
+    { min: 0, max: 0.1, label: "Sin Lluvia", color: "rgba(240, 240, 240, 0.4)", class: "precip-sin" },
+    { min: 0.1, max: 2.5, label: "Llovizna", color: "rgba(0, 228, 0, 0.4)", class: "precip-llovizna" },
+    { min: 2.5, max: 10, label: "Lluvia Ligera", color: "rgba(0, 150, 255, 0.4)", class: "precip-ligera" },
+    { min: 10, max: 50, label: "Lluvia Moderada", color: "rgba(255, 255, 0, 0.4)", class: "precip-moderada" },
+    { min: 50, max: Infinity, label: "Lluvia Fuerte", color: "rgba(255, 0, 0, 0.4)", class: "precip-fuerte" }
+  ],
+  sw: [ // Bandas para Radiación Solar en w/m²
+    { min: 0, max: 100, label: "Muy Baja", color: "rgba(143, 63, 151, 0.4)", class: "radiacion-muy-baja" },
+    { min: 100, max: 300, label: "Baja", color: "rgba(0, 150, 255, 0.4)", class: "radiacion-baja" },
+    { min: 300, max: 500, label: "Moderada", color: "rgba(0, 228, 0, 0.4)", class: "radiacion-moderada" },
+    { min: 500, max: 700, label: "Alta", color: "rgba(255, 255, 0, 0.4)", class: "radiacion-alta" },
+    { min: 700, max: Infinity, label: "Muy Alta", color: "rgba(255, 126, 0, 0.4)", class: "radiacion-muy-alta" }
   ]
-  // Puedes añadir más variables aquí, ej: rh (Humedad)
 };
 
 // Bandas de colores ICA (para fondos de tarjeta/tabla)
@@ -3542,10 +3656,15 @@ Chart.register({
     if (!yScale) return;
 
     zones.forEach(zone => {
-      // Evitar valores no numéricos
+      // Evitar valores no numéricos (pero Infinity es válido)
       if (typeof zone.min !== 'number' || typeof zone.max !== 'number') return;
-      const yTop = yScale.getPixelForValue(zone.max);
-      const yBottom = yScale.getPixelForValue(zone.min);
+      
+      // Manejar Infinity usando los límites de la escala
+      const actualMax = zone.max === Infinity ? yScale.max : zone.max;
+      const actualMin = zone.min === -Infinity ? yScale.min : zone.min;
+      
+      const yTop = yScale.getPixelForValue(actualMax);
+      const yBottom = yScale.getPixelForValue(actualMin);
 
       // Recortar al área del gráfico
       const top = Math.max(yTop, chartArea.top);
@@ -3682,8 +3801,8 @@ const niceStep = (() => {
       scales: {
       y: {
         beginAtZero: false,
-        suggestedMin: zones.length ? Math.min(gmin - pad, zones[0].min) : gmin - pad,
-        suggestedMax: zones.length ? Math.max(gmax + pad, zones[zones.length - 1].max) : gmax + pad,
+        suggestedMin: gmin - pad,
+        suggestedMax: gmax + pad,
         ticks: {
           stepSize: niceStep,
           maxTicksLimit: 6,
@@ -3942,10 +4061,10 @@ function renderIndividualCharts(datasets, labels, type) {
         },
         scales: {
           y: {
-            // Ajustar escala si es ICA
-            beginAtZero: (finalUnid === "Puntos ICA"),
-            suggestedMax: (finalUnid === "Puntos ICA") ? 500 : (backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad),
-            suggestedMin: (finalUnid === "Puntos ICA") ? 0 : (backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad),
+            // Usar rango dinámico basado en los datos
+            beginAtZero: false,
+            suggestedMax: gmax + pad,
+            suggestedMin: gmin - pad,
             title: {
               display: true,
               text: finalUnid,
@@ -3953,8 +4072,8 @@ function renderIndividualCharts(datasets, labels, type) {
               font: { family: "'Poppins', sans-serif" }
             },
             ticks: {
-              stepSize: (finalUnid === "Puntos ICA") ? 50 : niceStep, // Ticks fijos para ICA
-              maxTicksLimit: (finalUnid === "Puntos ICA") ? 11 : 6,
+              stepSize: niceStep,
+              maxTicksLimit: 6,
               padding: 6,
               callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
               font: { family: "'Poppins', sans-serif" }

@@ -83,7 +83,7 @@
                 <li><a href="#" id="btn_wrf_info">¿CÓMO FUNCIONA EL PRONÓSTICO?</a></li>
                 <li class="mobile-only"><a href="#" id="btn_atmos_mobile">Clima</a></li>
                 <li class="mobile-only"><a href="#" id="btn_aire_mobile">Calidad del aire</a></li>
-                <li class="mobile-only"><a href="#" id="btn_hist_mobile">Historial</a></li>
+                <li class="mobile-only"><a href="#" id="btn_hist_mobile">Pronóstico</a></li>
             </ul>
             
         </nav>
@@ -235,12 +235,12 @@
             <span class="menu-label">Meteorología</span>
             <span class="menu-tooltip">Clima</span>
           </button>
-
-          <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
-            <i class="fa-solid fa-play" id="playIcon"></i>
-            <span class="menu-tooltip">Animación de pronóstico</span>
-          </button>
         </div>
+
+        <button class="play-btn" id="btn_toggle_animation" title="Reproducir">
+          <i class="fa-solid fa-play" id="playIcon"></i>
+          <span class="menu-tooltip">Animación de pronóstico</span>
+        </button>
 
         <button class="back-btn" id="btn_back" title="Volver al inicio" onclick="location.reload()">
           <i class="fa-solid fa-arrow-left"></i>
@@ -282,6 +282,17 @@
       <div id="hist">
         <!-- Historial Dashboard -->
         <div id="historial-dashboard" style="display:none;">
+          
+          <!-- Instrucciones de uso -->
+          <div class="usage-instructions">
+            <h3>Cómo usar el pronóstico:</h3>
+            <ol>
+              <li>Seleccione el municipio del que quiere ver el pronóstico</li>
+              <li>Seleccione el tipo de datos que quiere mostrar (Clima o Calidad del Aire)</li>
+              <li>Puede hacer clic en los botones de variables para deshabilitar o habilitar gráficas</li>
+            </ol>
+          </div>
+          
           <div class="dashboard-header">
             <div class="location-selector">
               <label for="hist-cabecera-select">Seleccione un municipio</label>
@@ -423,12 +434,18 @@
                   <i class="fa-solid fa-chart-line"></i> Pronóstico
                 </button>
               </div>
+
+              <!-- Slot para Buscar Municipio en móvil (después de botones) -->
+              <div id="search-mobile-slot" class="search-mobile-slot"></div>
+              
+              <!-- Slot para Simbología en móvil (después de búsqueda) -->
+              <div id="legend-mobile-slot" class="legend-mobile-slot"></div>
             </div>
           </div>
         </div>
         
         <!-- 2. Buscar Municipio (segundo) -->
-        <div class="control-section">
+        <div class="control-section" id="search-section">
           <h4>Buscar Municipio</h4>
           <div id="municipio-map-control">
             <select id="map-search" class="form-control" style="display: none;">
@@ -438,17 +455,9 @@
         </div>
         
         <!-- 3. Simbología (tercero/último) -->
-        <div class="control-section">
+        <div class="control-section" id="legend-section">
           <h4>Simbología</h4>
-          <div class="legend-content">
-            <div class="legend-item">
-              <div class="legend-symbol">
-                <svg width="20" height="20" viewBox="0 0 20 20">
-                  <polygon points="10,2 18,18 2,18" fill="#c19862" stroke="#fff" stroke-width="2"/>
-                </svg>
-              </div>
-              <span>Cabeceras Municipales</span>
-            </div>
+          <div class="legend-content" id="legend-content">
             <div class="legend-item">
               <div class="legend-symbol">
                 <svg width="20" height="20" viewBox="0 0 20 20">
@@ -456,6 +465,14 @@
                 </svg>
               </div>
               <span>Estaciones de Monitoreo</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-symbol">
+                <svg width="20" height="20" viewBox="0 0 20 20">
+                  <polygon points="10,2 18,18 2,18" fill="#c19862" stroke="#fff" stroke-width="2"/>
+                </svg>
+              </div>
+              <span>Cabeceras Municipales</span>
             </div>
             <div class="legend-hint">
               <svg width="16" height="16" viewBox="0 0 16 16" style="vertical-align: middle; margin-right: 4px;">

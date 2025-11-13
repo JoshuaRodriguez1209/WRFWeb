@@ -554,10 +554,10 @@ function updateHistoricalView() {
     const runHour = String(runData.hour).padStart(2, '0');
     const runDir = runData.name; // Nombre completo como "2025103000"
     
-    // Construct the correct file path
+    // Construct the correct file path for cabeceras
     const basePath = 'runs';
     const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
-    const path = `${basePath}/${runDir}/meteogramas/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
+    const path = `${basePath}/${runDir}/cabeceras/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
 
     console.log('🔍 Loading historical data from:', path);
     console.log('📊 Using run data:', runData);
