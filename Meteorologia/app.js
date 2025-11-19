@@ -1768,7 +1768,7 @@ function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
   if (runBase && !runBase.endsWith('/')) runBase += '/';
   // dirFragment comienza y termina con slash? aseguramos solo uno al final
   if (dirFragment.startsWith('/')) dirFragment = dirFragment.substring(1);
-  if (!dirFragment.endsWith('/')) dirFragment += '';// ya incluye la barra inicial en concatenación final
+  if (!dirFragment.endsWith('/')) dirFragment += '/'; // asegurar barra final
   if (typeFragment.startsWith('/')) typeFragment = typeFragment.substring(1);
   console.log('[buildJsonUrl]', {runBase, dirFragment, typeFragment, clave, fech, hor});
   return runBase + dirFragment + typeFragment + clave + '_' + fech + '_' + hor + 'z.json';
@@ -1777,13 +1777,35 @@ function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
 //-------------------------------------------------------------------------------
 function show_feature(tipo, dir_dat, show_dialog) {
   var dirProp = m_feature.get("dir") || '';
+  // Si la feature es una cabecera, preferimos leer desde la carpeta 'meteogramas'
+  // para que el popup y el historial apunten al mismo archivo producido.
+  try {
+    if (m_feature.get && m_feature.get('local') === 'cabecera') {
+      // Forzar uso de archivos en 'cabeceras' (valores interpolados por municipio)
+      dirProp = 'cabeceras/';
+    }
+  } catch (e) {
+    // fallback: usar el valor original
+  }
   // Normalizar para evitar doble slash o faltante
   var dir = dirProp + dir_dat;
   var clave = m_feature.get("clave");
-  var name = m_feature.get("nombre");
+  var nombreMunicipio = m_feature.get("nombre");
 
-  var fech = m_dir_runs.substring(7, 15);
-  var hor = m_dir_runs.substring(15, 17);
+  // Extraer fecha y hora de la run de forma robusta tomando el segmento final
+  // Ejemplo esperado: 'runs/2025103000' -> name = '2025103000' -> fech='20251030', hor='00'
+  var fech = '';
+  var hor = '';
+  try {
+    var parts = m_dir_runs.split('/').filter(Boolean);
+    var runName = parts.length ? parts[parts.length - 1] : m_dir_runs;
+    if (runName && runName.length >= 10) {
+      fech = runName.substring(0, 8);
+      hor = runName.substring(8, 10);
+    }
+  } catch (e) {
+    console.warn('Unable to parse run date/hour from m_dir_runs:', m_dir_runs, e);
+  }
 
   var tipo_ext;
 
@@ -1796,9 +1818,15 @@ function show_feature(tipo, dir_dat, show_dialog) {
   var dir_json = buildJsonUrl(m_dir_runs, dirProp, dir_dat, clave, fech, hor);
   console.log('[show_feature] JSON URL ->', dir_json);
 
-  m_str_file_csv = name + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
+  m_str_file_csv = (nombreMunicipio || clave) + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
 
   var contenDialog = $("<div></div>");
+  // Indicar la fuente de datos para mayor claridad
+  try {
+    if (m_feature.get && m_feature.get('local') === 'cabecera') {
+      contenDialog.append('<div class="data-source" style="font-size:0.95em;color:#444;margin-bottom:8px;">Fuente: <strong>cabeceras</strong> (valores interpolados por municipio)</div>');
+    }
+  } catch (e) {}
 
   if (tipo == "meteo") {
     set_chart_meteo(dir_json, contenDialog, show_dialog);
@@ -1812,7 +1840,7 @@ function show_feature(tipo, dir_dat, show_dialog) {
   if (show_dialog) {
     BootstrapDialog.show({
       cssClass: "modal-dialog",
-      title: `<span style="font-size: 1.7em; font-weight: bold;">${name}</span>`,
+      title: `<span style="font-size: 1.7em; font-weight: bold;">${nombreMunicipio || clave}</span>`,
       closable: true,
       message: contenDialog,
     });
@@ -2500,8 +2528,9 @@ function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones 
           },
           ticks: {
             autoSkip: true,
-            maxRotation: 45,
-            minRotation: 45,
+            maxTicksLimit: 8,
+            maxRotation: 0,
+            minRotation: 0,
             autoSkipPadding: 8,
             color: '#666',
             font: { family: 'Poppins', size: 11 }
@@ -2640,7 +2669,7 @@ $("#meteo").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Pronóstico Meteorológico del Estado de Puebla";
+  h1.textContent = "Pronóstico de Clima del Estado de Puebla";
 });
 
 $("#cali").click(function () {
@@ -2663,7 +2692,7 @@ $("#cali").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Calidad del Aire del Estado de Puebla";
+  h1.textContent = "Pronóstico de Calidad del Aire del Estado de Puebla";
   // Activar botón lateral de calidad del aire y sincronizar título del header
   try {
     document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -4062,6 +4091,20 @@ function renderIndividualCharts(datasets, labels, type) {
       return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
     })();
 
+      // Determinar opciones de escala Y reutilizando la lógica del popup
+      // Para ICA usamos el helper `getDynamicScaleLimits` (si existe)
+      let yScaleOptions = {};
+      if (finalUnid === 'Puntos ICA' && typeof window.getDynamicScaleLimits === 'function') {
+        yScaleOptions = window.getDynamicScaleLimits(dats);
+      } else {
+        // Para variables meteorológicas y otras, proponemos límites con padding
+        yScaleOptions = {
+          suggestedMax: gmax + pad,
+          suggestedMin: Math.max(gmin - pad, Number.isFinite(gmin) ? gmin - pad : 0),
+          beginAtZero: false
+        };
+      }
+
     // (El plugin 'backgroundColorPlugin' ya está registrado globalmente)
 
     // Crear la gráfica individual
@@ -4102,26 +4145,27 @@ function renderIndividualCharts(datasets, labels, type) {
           }
         },
         scales: {
-          y: {
-            // Usar rango dinámico basado en los datos
-            beginAtZero: false,
-            suggestedMax: gmax + pad,
-            suggestedMin: gmin - pad,
-            title: {
-              display: true,
-              text: finalUnid,
-              color: '#666',
-              font: { family: "'Poppins', sans-serif" }
+            y: {
+              // Reusar opciones calculadas arriba (para mantener consistencia con popup)
+              ...yScaleOptions,
+              // Si hay bandas de fondo, asegurar que sugeridos incluyan las bandas
+              suggestedMax: (yScaleOptions.suggestedMax !== undefined) ? yScaleOptions.suggestedMax : (backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad),
+              suggestedMin: (yScaleOptions.suggestedMin !== undefined) ? yScaleOptions.suggestedMin : (backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad),
+              title: {
+                display: true,
+                text: finalUnid,
+                color: '#666',
+                font: { family: "'Poppins', sans-serif" }
+              },
+              ticks: {
+                stepSize: (finalUnid === "Puntos ICA") ? 50 : niceStep,
+                maxTicksLimit: (finalUnid === "Puntos ICA") ? 11 : 6,
+                padding: 6,
+                callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
+                font: { family: "'Poppins', sans-serif" }
+              },
+              grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
             },
-            ticks: {
-              stepSize: niceStep,
-              maxTicksLimit: 6,
-              padding: 6,
-              callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
-              font: { family: "'Poppins', sans-serif" }
-            },
-            grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
-          },
           x: {
             title: {
               display: true,

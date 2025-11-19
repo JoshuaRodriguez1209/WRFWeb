@@ -323,7 +323,7 @@ $(document).on("click", "#btn_atmos", function () {
   // Activar modo mapa
   document.body.classList.add('map-active');
   
-  $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico de Clima del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gatmos.html";
@@ -371,7 +371,7 @@ $(document).on("click", "#btn_aire", function () {
   // Activar modo mapa
   document.body.classList.add('map-active');
 
-  $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico de Calidad del Aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gchem.html";
@@ -557,6 +557,7 @@ function updateHistoricalView() {
     // Construct the correct file path for cabeceras
     const basePath = 'runs';
     const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
+    // Usar la carpeta 'cabeceras' como fuente canónica de datos por municipio
     const path = `${basePath}/${runDir}/cabeceras/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
 
     console.log('🔍 Loading historical data from:', path);
