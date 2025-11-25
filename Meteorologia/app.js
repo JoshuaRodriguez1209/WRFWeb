@@ -1940,6 +1940,8 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
   </div>`;
           // --- FIN DE MODIFICACIÓN ---
 
+          // Nota: la leyenda ICA no se muestra en la vista de clima.
+          // (Se muestra sólo en calidad del aire - `set_chart_chem`).
           contenDialog.append(resumenHTML);
           set_canva(contenDialog, djson["t2m"], "line", str_file, "Temperatura", "°C", "rgb(255, 0, 0)");
           set_canva(contenDialog, djson["rh"],  "line", str_file, "Humedad", "%", "rgb(0, 0, 255)");
@@ -2057,6 +2059,8 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
           // --- FIN DE MODIFICACIÓN ---
           // --- FIN DE MODIFICACIÓN ---
 
+          // Añadir leyenda ICA antes del resumen de contaminantes
+          try { contenDialog.append(createICALegend()); } catch(e){ console.warn('createICALegend error', e); }
           contenDialog.append(resumenHTML);
           // (Los datos originales de concentración se siguen pasando a set_canva)
           set_canva(contenDialog, djson["CO"],   "line", str_file, "Monóxido de Carbono", "ppm",   "#8B4513");
@@ -2348,25 +2352,53 @@ bgZones = window.filterZonesByData ? window.filterZonesByData(staticZones, dats)
   `);
   card.append(header);
 
-  // 3. Añadir la leyenda MINI (ICA o Clima) y el enlace "Ver más"
-  
-  if (isChem) {
-    // Contaminante: Añadir leyenda ICA y enlace "Ver más"
-    const legendHTML = window.renderICAMiniHTML ? window.renderICAMiniHTML(bgZones) : '';
-    card.append($(legendHTML));
+  // 3. Añadir la leyenda MINI dentro de cada gráfica (si aplica).
+  // Para contaminantes reutilizamos la mini-leyenda ICA existente; para clima
+  // generamos una mini-leyenda que muestra las bandas (rango y etiqueta)
+  // encima de la tabla/canvas para que el usuario vea qué significa cada color.
+  if (isMeteo && bgZones && bgZones.length) {
+    // Helper local: convertir color (rgb/rgba/#hex) a tono pastel (rgba con alpha)
+    // y calcular color de texto apropiado mezclando contra blanco (background).
+    function solidAndContrast(colorStr) {
+      const alpha = 0.55; // grado de transparencia para efecto pastel
+      if (!colorStr) return { solid: `rgba(200,200,200,${alpha})`, text: '#000' };
+      let r,g,b;
+      const rgbaMatch = colorStr.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+      if (rgbaMatch) {
+        r = parseInt(rgbaMatch[1],10); g = parseInt(rgbaMatch[2],10); b = parseInt(rgbaMatch[3],10);
+      } else {
+        const hexMatch = colorStr.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (hexMatch) {
+          let hex = hexMatch[1];
+          if (hex.length === 3) hex = hex.split('').map(h=>h+h).join('');
+          r = parseInt(hex.substring(0,2),16);
+          g = parseInt(hex.substring(2,4),16);
+          b = parseInt(hex.substring(4,6),16);
+        }
+      }
+      // Fallback a gris si no parsea
+      if (r === undefined) { r=200; g=200; b=200; }
+      const pastel = `rgba(${r},${g},${b},${alpha})`;
+      // Calcular color resultante al mezclar sobre blanco: blended = alpha*rgb + (1-alpha)*255
+      const blend = (c) => Math.round(alpha * c + (1 - alpha) * 255);
+      const br = blend(r), bg = blend(g), bb = blend(b);
+      // Luminancia aproximada del color mezclado
+      const luminance = 0.2126 * br + 0.7152 * bg + 0.0722 * bb;
+      const text = luminance > 150 ? '#000' : '#fff';
+      return { solid: pastel, text };
+    }
 
-  } else if (isMeteo && WeatherRiskBands[varKey]) {
-    // Clima (con bandas definidas): Añadir leyenda de clima
-    let weatherLegendHTML = '<div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
+    let weatherLegendHTML = '<div class="clima-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
     weatherLegendHTML += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;"><tr>';
     weatherLegendHTML += `<td style="font-weight:700;text-align:left;padding:4px 2px;">${finalTitle}</td>`;
-    
-    WeatherRiskBands[varKey].forEach(band => {
-      weatherLegendHTML += `<td style="padding:4px 2px; background-color: ${band.color};">${band.label}</td>`;
+    bgZones.forEach(b => {
+      const label = b.label || (b.min + '-' + b.max);
+      const col = b.color || 'rgba(200,200,200,0.6)';
+      const parsed = solidAndContrast(col);
+      weatherLegendHTML += `<td style="padding:4px 2px;background:${parsed.solid};color:${parsed.text};">${label}</td>`;
     });
-    
     weatherLegendHTML += '</tr></table></div>';
-    card.append(weatherLegendHTML);
+    card.append($(weatherLegendHTML));
   }
   
   // --- FIN DE MODIFICACIÓN ---
@@ -3465,6 +3497,60 @@ function getICAColorForValue(icaValue) {
     }
   }
   return { color: "rgba(240, 240, 240, 0.4)", class: "riesgo-desconocido" }; // Default
+}
+
+/**
+ * Construye el HTML de la leyenda ICA para insertar en popups/modales.
+ * Usa la constante `ICAColors` para generar segmentos y etiquetas.
+ */
+function createICALegend() {
+  // Definir etiquetas legibles y rangos basados en ICAColors
+  const labels = [
+    { title: 'Buena', range: '0-50' },
+    { title: 'Regular', range: '51-100' },
+    { title: 'Mala', range: '101-150' },
+    { title: 'Muy mala', range: '151-200' },
+    { title: 'Extremadamente Mala', range: '201-300' },
+    { title: 'Peligrosa', range: '301-500' }
+  ];
+
+  // Estimar ancho relativo de cada banda (usar 50/50/50/50/100/200 => total 500)
+  const spans = [50,50,50,50,50,50];
+  const total = spans.reduce((a,b)=>a+b,0);
+
+  let segmentsHTML = '';
+  for (let i=0;i<ICAColors.length;i++){
+    const band = ICAColors[i];
+    const weight = spans[i] || 50;
+    // Usar color con opacidad mayor para la barra (sin alpha transparente)
+    let color = band.color;
+    // Si el color tiene rgba con alpha, intentar forzar alpha a 1
+    color = color.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/,'rgba($1,$2,$3,1)');
+    // Usar flex con sintaxis completa para evitar inconsistencias en algunos navegadores
+    segmentsHTML += `<div class="ica-segment" title="${labels[i].title} (${labels[i].range})" style="flex: ${weight} 1 0%; background: ${color};"></div>`;
+  }
+
+  let labelsHTML = '';
+  for (let i=0;i<labels.length;i++){
+    const weight = spans[i] || 50;
+    labelsHTML += `<div class="ica-label" style="flex: ${weight} 1 0%; text-align:center;">` +
+                  `<strong>${labels[i].title}</strong>` +
+                  `<div class="ica-range">${labels[i].range}</div>` +
+                  `</div>`;
+  }
+
+  const html = `
+    <div class="ica-legend">
+      <h2><i class="fa-solid fa-wind"></i> Índice de Calidad del Aire (ICA)</h2>
+      <div class="ica-legend-bar" aria-hidden="true">${segmentsHTML}</div>
+      <div class="ica-legend-labels">${labelsHTML}</div>
+      <div class="ica-legend-actions" style="margin-top:0px;text-align:right;">
+        <a href="#" class="ver-riesgos-link" style="font-size:0.95rem;color:var(--primary-brand-color);"> <i class="fa-solid fa-circle-info"></i> Ver más</a>
+      </div>
+    </div>
+  `;
+
+  return html;
 }
 
 /**

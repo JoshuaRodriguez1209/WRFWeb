@@ -387,37 +387,77 @@ body.map-active #main-content {
 
 /* Side menu when map is active */
 .side-menu {
-    width: var(--sidebar-width);
-    background-color: #fff;
-    padding: 15px 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start; /* Cambiado de space-between a flex-start */
-    gap: 15px;
-    border-right: 1px solid var(--border-color);
-    z-index: 999;
-    flex-shrink: 0;
-    height: 100vh; /* Cambiado de 100% a 100vh para asegurar altura completa */
-    min-height: 500px; /* Altura mínima para asegurar espacio */
-    overflow: visible; /* Asegurar que el contenido sea visible */
+  --header-offset: var(--header-height, 64px);
+  position: fixed;
+  top: var(--header-offset); /* Siempre debajo del header */
+  left: 0;
+  width: var(--sidebar-width);
+  /* Hacer background levemente translúcido para que no se vea "full color" */
+  background-color: rgba(255,255,255,0.95);
+  padding: 15px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+  border-right: 1px solid var(--border-color);
+  /* Bajar z-index para que los modales (z-index:2000) aparezcan por encima */
+  z-index: 900;
+  flex-shrink: 0;
+  height: calc(100vh - var(--header-offset)); /* Ocupa todo el alto debajo del header */
+  min-height: 320px; /* Altura mínima razonable */
+  overflow: visible; /* Permitir que los tooltips salgan por encima del mapa */
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+}
+
+/* Mini-leyenda de Clima (popup / tarjetas) */
+.clima-legend-mini {
+  border-radius: 8px;
+  background: rgba(255,255,255,0.95);
+  padding: 6px 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  color: var(--text-color);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.clima-legend-mini table { width: 100%; border-collapse: collapse; }
+.clima-legend-mini td { padding: 6px 6px; text-align: center; font-weight: 600; border-radius: 4px; }
+.clima-legend-mini td:first-child { text-align: left; font-weight: 700; color: var(--primary-brand-color); }
+.clima-legend-mini td:not(:first-child) { font-weight: 600; color: #111; }
+
+/* Estilos para la mini-leyenda ICA cuando se usa en otras partes (si existe) */
+.ica-legend-mini { background: transparent; padding: 4px 0; }
+.ica-legend-mini table td { padding: 4px 6px; font-size: 11px; font-weight: 700; border-radius: 3px; }
+.ica-legend-mini .ver-riesgos-link { display: inline-block; margin-top: 6px; font-size: 12px; color: var(--primary-brand-color); }
+
+/* Accesibilidad: asegurar contraste de texto en celdas con colores oscuros */
+/* Note: text color for colored legend cells is computed in JS to ensure contrast. */
+
+@media (max-width: 520px) {
+  .clima-legend-mini { font-size: 12px; padding: 6px 6px; }
+  .clima-legend-mini td { padding: 4px 4px; }
 }
 
 /* Contenedor para los botones principales del menú */
 .side-menu .menu-buttons-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    margin-top: 25px;
-    margin-bottom: 35px; /* Espacio entre botones principales y play button */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px; /* Reducir para que los botones estén más arriba y quepan sin scroll */
+  margin-bottom: 12px;
 }
 
 /* Posicionar el back button dinámicamente */
 .side-menu .back-btn {
-    margin-top: clamp(150px, calc(100vh - 600px), 350px); /* Dinámico según altura viewport */
-    margin-bottom: 15px;
+  margin-top: auto; /* Empuja el botón hacia el fondo del side-menu */
+  margin-bottom: 18px;
+  align-self: center;
 }
+
+/* Si quieres que el botón ocupe todo el ancho interno del sidebar,
+   descomenta la siguiente regla */
+/* .side-menu .back-btn { width: calc(var(--sidebar-width) - 24px); } */
 
 /* ===== Tooltips expandibles para side menu ===== */
 .side-menu .menu-tooltip {
@@ -437,8 +477,39 @@ body.map-active #main-content {
     transition: all 0.3s ease;
     margin-left: -10px;
     pointer-events: none;
-    z-index: 10000;
+    z-index: 1000000; /* Elevar para que supere capas del mapa */
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Contenedor top-level para tooltips flotantes (si se crea por JS) */
+#floating-tooltips-root {
+  position: fixed !important;
+  inset: 0 !important;
+  pointer-events: none !important; /* allow clicks to pass through except on clones */
+  z-index: 2147483647 !important; /* maximum safe z-index */
+}
+
+/* Estilos del clon flotante para asegurar visibilidad sobre el mapa */
+.floating-tooltip-clone {
+  pointer-events: auto !important;
+  position: absolute !important;
+  background: var(--primary-brand-color) !important;
+  color: #fff !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  white-space: nowrap !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  display: block !important;
+  max-width: calc(100vw - 40px) !important;
+  transform: translateY(0) !important;
+  transition: opacity 0.12s ease !important;
+  opacity: 0 !important;
+}
+
+.floating-tooltip-clone.show {
+  opacity: 1 !important;
 }
 
 /* Mostrar tooltip al hacer hover en el botón */
@@ -466,19 +537,51 @@ body.map-active #main-content {
 
 /* Side menu derecho para filtros - OVERLAY FIJO */
 .side-menu-right {
-    position: fixed;
-    top: 195px; /* Debajo del nav-menu */
+  position: fixed;
+  top: 195px; /* Debajo del nav-menu */
+  right: 0;
+  bottom: 0; /* Pegar al fondo de la pantalla */
+  width: 400px;
+  /* Usar top+bottom en lugar de height para asegurar que quede pegado abajo
+     y que el cálculo se adapte correctamente en distintos monitores. */
+  background-color: #ffffff;
+  padding: 15px;
+  display: none; /* Oculto por defecto */
+  flex-direction: column;
+  border-left: 1px solid var(--border-color);
+  box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+  z-index: 999; /* Por encima de otros elementos */
+  overflow-y: auto; /* Contenido desplazable si es necesario */
+  box-sizing: border-box; /* Asegura que padding no cambie el tamaño total */
+}
+
+/* Forzar que el panel esté exactamente pegado al borde derecho y abajo
+   y eliminar cualquier radio o margen que pudiera dejar espacio visible. */
+.side-menu-right {
+    margin: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-radius: 0 !important;
+    background-clip: padding-box;
+    /* Mantener una sombra sutil pero que no genere la sensación de gap */
+    box-shadow: -2px 0 12px rgba(0,0,0,0.08);
+    /* Mantener z-index por debajo de los modales (municipality-modal tiene 2000) */
+    z-index: 900;
+}
+
+/* Hacer el panel responsivo: en pantallas pequeñas ocupar todo el ancho
+   y superponerse sobre el contenido principal. */
+@media (max-width: 768px) {
+  .side-menu-right {
+    top: var(--nav-height, 120px); /* permitir ajustar si la nav cambia */
+    left: 0;
     right: 0;
-    width: 400px;
-    height: calc(100vh - 190px); /* Altura ajustada para no cubrir el nav */
-    background-color: #ffffff;
-    padding: 15px;
-    display: none; /* Oculto por defecto */
-    flex-direction: column;
-    border-left: 1px solid var(--border-color);
-    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
-    z-index: 999; /* Por encima de otros elementos */
-    overflow-y: auto; /* Sin scroll - contenido optimizado */
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 15px); /* iPhone safe area */
+  }
 }
 
 /* Mostrar side-menu-right solo en modo mapa */
@@ -2287,3 +2390,53 @@ body.large-cursor {
 .stats-table tr.clima-templado { background-color: rgba(0, 228, 0, 0.2); }
 .stats-table tr.clima-calor { background-color: rgba(255, 255, 0, 0.2); }
 .stats-table tr.clima-mucho-calor { background-color: rgba(255, 126, 0, 0.2); }
+
+/* ICA legend styles for popups */
+.ica-legend { margin: 0 0 8px 0; width: 100%; }
+.ica-legend-bar { display:flex; height: 26px; width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); }
+.ica-segment { height: 100%; }
+.ica-legend-labels { display:flex; gap:8px; margin-top:8px; font-size:12px; color:#333; }
+.ica-label { text-align:center; }
+.ica-label .ica-range { font-size:11px; color:#666; margin-top:4px; }
+
+@media (max-width:640px){
+  .ica-legend-bar { height: 20px; }
+  .ica-legend-labels { font-size:11px; }
+}
+
+/* Make ICA legend sticky inside modal dialogs so it remains visible while scrolling graphs */
+.modal-dialog .modal-content .ica-legend {
+  position: sticky;
+  top: 0 !important;
+  left: 0;
+  right: 0;
+  width: 100%;
+  margin-top: 0;
+  padding-top: 0; /* eliminar espacio arriba para quedar pegado */
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.95));
+  z-index: 9999; /* colocarlo por encima para asegurar que se vea pegado al tope */
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+/* Remove extra top padding inside modal body so sticky element sits flush beneath any header */
+.modal-dialog .modal-content .modal-body {
+  padding-top: 0 !important;
+}
+
+/* If you prefer the legend to stick to the viewport top (over the modal header),
+   uncomment the rule below and comment the sticky rule above. This makes it fixed
+   so it will remain at the very top of the window. */
+/* .modal-dialog .modal-content .ica-legend {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 1060 !important;
+} */
+
+/* Ensure modal content has a scrollable area so sticky works reliably */
+.modal-dialog .modal-content {
+  max-height: calc(100vh - 140px);
+  overflow: auto;
+}
