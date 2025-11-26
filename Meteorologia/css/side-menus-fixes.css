@@ -1,0 +1,95 @@
+/* Minimal fixes for side menus: enable internal scrolling without
+   changing layout or positions defined in existing stylesheets.
+   This file intentionally avoids !important and does not override
+   positioning so it won't break the original layout. */
+
+.side-menu,
+.side-menu-right {
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow the left sidebar to scroll internally if its content
+   becomes taller than available viewport space. Use the existing
+   header/height variables to compute a safe max-height. */
+.side-menu {
+  /* keep a small gap from the header and allow internal scrolling */
+  max-height: calc(100vh - var(--header-height) - 24px);
+  /* Force internal scrolling if other styles hide it */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  /* try to position the left menu just below the header if not already set */
+  top: calc(var(--header-height) + 8px) !important;
+  /* ensure explicit height for browsers that prefer height over max-height */
+  height: calc(100vh - var(--header-height) - 24px) !important;
+}
+
+/* Ensure the right controls panel can scroll internally when shown.
+   We don't change its position or width here (those are defined in
+   `app.css` and should remain authoritative). */
+.side-menu-right {
+  /* ensure the right controls panel is fully inside the viewport
+    and adapts to different screen sizes */
+    /* Make the panel stretch from below the header down to (near) the
+      bottom of the viewport — using top/bottom is more robust across
+      browsers (including Safari) than a computed height. */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    top: var(--header-height) !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Let positioning (top + bottom) determine the height so the panel
+      fills the available space without awkward gaps. */
+    height: auto !important;
+  /* make width responsive but ensure it doesn't overflow */
+  width: min(420px, 34vw) !important;
+  right: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* Keep mobile behavior intact — do not force fixed positioning. */
+@media (max-width: 992px) {
+  .side-menu,
+  .side-menu-right {
+    max-height: none;
+    overflow: visible;
+  }
+}
+
+/* Subtle scrollbar styling: thin and low-contrast by default,
+   becomes more visible on hover (less intrusive visually). */
+.side-menu,
+.side-menu-right {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(90,27,48,0.18) transparent;
+}
+
+/* WebKit browsers */
+.side-menu::-webkit-scrollbar,
+.side-menu-right::-webkit-scrollbar {
+  width: 8px;
+}
+.side-menu::-webkit-scrollbar-track,
+.side-menu-right::-webkit-scrollbar-track {
+  background: transparent;
+}
+.side-menu::-webkit-scrollbar-thumb,
+.side-menu-right::-webkit-scrollbar-thumb {
+  background: rgba(90,27,48,0.08);
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+.side-menu:hover::-webkit-scrollbar-thumb,
+.side-menu-right:hover::-webkit-scrollbar-thumb {
+  background: rgba(90,27,48,0.22);
+}
+
+/* Slightly adjust right panel width to be responsive but not overpowering */
+.side-menu-right {
+  width: clamp(300px, 34vw, 420px) !important;
+}
+
+/* Add a tiny inner padding bottom so the last control isn't flush to the bottom */
+.side-menu-right .control-section:last-child {
+  padding-bottom: 18px;
+}

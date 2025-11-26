@@ -16,9 +16,9 @@ body {
     background: #f5f5f5;
     /* THIS IS THE KEY FIX: Makes space for the fixed header */
     padding-top: var(--header-height);
-  overflow-x: hidden;
-  overflow-y: auto; /* siempre permitir scroll del documento */
+    overflow: hidden; /* Sin scroll en el body, el scroll está en los contenedores internos */
     min-height: 100vh;
+    height: 100vh; /* Altura fija para evitar scroll externo */
 }
 
 .header-container {
@@ -38,6 +38,8 @@ body {
     padding: 0px 80px; /* Reduced padding for a shorter header */
     border-bottom: 1px solid #e0e0e0;
     box-shadow: rgba(0, 0, 0, 0.1) 0px 6px 6px -1px, rgba(0, 0, 0, 0.1) 0px 6px 4px -1px;
+    position: relative;
+    z-index: 1100; /* Aumentado para estar sobre side-menu (1050) y filter-info (1001) */
 }
 
 .logos-left {
@@ -92,6 +94,8 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 8px 40px; /* Reduced padding */
+    position: relative;
+    z-index: 1100; /* Aumentado para estar sobre side-menu (1050) y filter-info (1001) */
 }
 
 .nav-links {
@@ -102,7 +106,7 @@ body {
 }
 
 .nav-links a {
-    color: #999;
+    color: #74767b;
     text-decoration: none;
     font-size: 13px;
     font-weight: 600;
@@ -188,7 +192,7 @@ body {
     cursor: pointer;
     flex-direction: column;
     justify-content: space-between;
-    width: 35px;
+    width: 50px;
     height: 24px;
 }
 
@@ -214,15 +218,48 @@ body {
     overflow-y: auto;
 }
 
+/* Estilos base para modal-content (usado por glosario y modales informativos) */
 .modal-content {
     background: white;
     border-radius: 12px;
-    max-width: 700px;
+    max-width: 700px;  /* Modal más pequeño para glosario/información */
     width: 90%;
     max-height: 85vh;
     overflow-y: auto;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     margin: 20px;
+    padding: 25px;
+    position: relative;
+}
+
+/* Modal más grande para datos de municipios con gráficas */
+.modal-dialog .modal-content {
+    max-width: 1400px !important;  /* Modal grande para gráficas */
+    width: 100% !important;
+    padding: 0;  /* El padding lo manejan los elementos internos */
+}
+
+/* Responsive para móvil */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        margin: 10px;
+        padding: 15px;
+        overflow-x: hidden;
+    }
+    
+    /* Asegurar que el contenido no se desborde */
+    .modal-content * {
+        max-width: 100%;
+    }
+    
+    /* Grid de gráficas responsive */
+    .modal-content .charts-grid {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
 }
 
 .modal-header {
@@ -634,7 +671,7 @@ html {
   display: none;
   position: relative;
   margin-top: 60px; /* This adds the space */
-  height: calc(100vh - var(--header-height) - 30px); /* This adjusts the height for the new margin */
+  height: auto; /* This adjusts the height for the new margin */
 }
 
 
@@ -844,11 +881,11 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 .ol-scale-line {
-  position: relative !important;
-  bottom: 200px !important; /* Justo encima del map-legend (que está en bottom: 150px) */
-  left: 50% !important; /* Centrado horizontalmente */
-  transform: translateX(-50%) !important; /* Ajuste para centrar perfectamente */
+  position: absolute !important;
+  bottom: 200px !important; /* Justo encima del map-legend */
+  left: 50px !important; /* 10px desde el borde del sidebar */
   right: auto !important;
+  transform: none !important; /* Sin transformación en desktop */
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;
@@ -856,9 +893,33 @@ body.map-active #app #map { overscroll-behavior: contain; }
   font-family: "Poppins", sans-serif !important;
   z-index: 1600 !important;
   pointer-events: none;
-  width: auto !important; /* tamaño según contenido */
-  max-width: 33vw; /* tope si la escala realmente crece demasiado */
-  overflow: visible; /* permitir pintar la barra completa (el escalado JS la ajusta) */
+  width: auto !important;
+  max-width: 33vw;
+  overflow: visible;
+}
+
+/* En móvil, centrar la escala y hacerla crecer del centro a los bordes */
+@media (max-width: 768px) {
+  .ol-scale-line {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important; /* Centrar en móvil */
+    transform-origin: center !important; /* Crecer desde el centro */
+    text-align: center !important; /* Centrar contenido interno */
+  }
+  
+  /* Hacer que la barra crezca desde el centro */
+  .ol-scale-line-inner {
+    transform-origin: center !important;
+    position: relative !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important; /* Anclar al centro del contenedor */
+    display: inline-block !important;
+  }
+  
+  .ol-scale-line-body {
+    transform-origin: center !important;
+  }
 }
 
 /* Contenedor interno renderizado por OL cuando bar:true */
@@ -890,6 +951,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   box-shadow: 0 1px 2px rgba(0,0,0,0.45);
   background: #fff; /* fondo base para el primer segmento */
 }
+
 .ol-scale-line-segment {
   flex: 1 1 auto;
   height: 100%;
@@ -926,6 +988,12 @@ body.map-active #app #map { overscroll-behavior: contain; }
 .ol-scale-line .ol-scale-line-inner {
   font-size: 0 !important;      /* oculta el texto sin afectar el canvas/div de la barra */
   line-height: 0 !important;
+}
+#app .ol-scale-line .ol-scale-line-inner canvas,
+.ol-scale-line .ol-scale-line-inner canvas,
+#app .ol-scale-line .ol-scale-line-inner > div:not(.ol-scale-line-body):not(.ol-scale-line-ticks),
+.ol-scale-line .ol-scale-line-inner > div:not(.ol-scale-line-body):not(.ol-scale-line-ticks) {
+  display: none !important; /* Ocultar la barra nativa de OL; mantener nuestra barra y ticks */
 }
 #app .ol-scale-line .ol-scale-line-inner span,
 .ol-scale-line .ol-scale-line-inner span {
@@ -997,6 +1065,39 @@ body.map-active #app #map { overscroll-behavior: contain; }
   transition: width 0.3s ease;
   overflow: hidden;
   z-index: 3000;
+}
+
+/* Búsqueda y Leyenda: mobile debajo de controles */
+.search-mobile-slot,
+.legend-mobile-slot { display: none; }
+
+@media (max-width: 768px) {
+  #search-section,
+  #legend-section { display: none; }
+  
+  .search-mobile-slot { 
+    display: block; 
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .legend-mobile-slot { 
+    display: block; 
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+  }
+  
+  .search-mobile-slot h4,
+  .legend-mobile-slot h4 {
+    margin: 0 0 10px 0;
+    color: var(--text-color);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  
+  .legend-mobile-slot .legend-content { margin-top: 6px; }
 }
 
 .side-menu.expanded ~ #map {
@@ -1154,7 +1255,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
 #gradient-container.horizontal-mode.embedded.bottom-floating {
   position: fixed; /* Asegura que no se mueva */
   top: 85%; /* más pegado a la parte inferior */
-  left: 6%;         /* 👈 Esto es crucial */
+  left: 90px;         /* 👈 Esto es crucial */
   transform: none;
   width: 450px; /* ligeramente más compacto */
   max-width: 480px;
@@ -1567,25 +1668,25 @@ body.map-active #app #map { overscroll-behavior: contain; }
 #filter-info {
   position: absolute;
   top: calc(var(--header-height) - 45px);
-  left: 40%;
-  z-index: 3001;
+  left: 90px; /* Cambiado de 40% a 15% para mover hacia la izquierda */
+  z-index: 998;
   font-weight: 500;
   color: #333;
   text-align: center;
-  background: rgba(255, 255, 255, 0.9); 
+  background: rgba(255, 255, 255, 0.9);
   padding: 10px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); 
-  max-width: 80%; 
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-width: 80%;
   width: fit-content;
-  font-size: 1.5em; 
-  line-height: 1.4; 
+  font-size: 1.5em;
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {
   #filter-info {
     top: 110px;
-    left: 18%;
+    left: 10%; /* Cambiado de 18% a 10% para mover más hacia la izquierda en móvil */
     transform: translateX(-50%);
     max-width: 90%; 
     padding: 8px 15px; 
@@ -1798,6 +1899,41 @@ body.map-active #app #map { overscroll-behavior: contain; }
   width: 100%;
 }
 
+/* Instrucciones de uso del historial */
+.usage-instructions {
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-left: 4px solid var(--primary-brand-color);
+  border-radius: 8px;
+  padding: 20px 25px;
+  margin-bottom: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.usage-instructions h3 {
+  color: var(--primary-brand-color);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.usage-instructions ol {
+  margin: 0;
+  padding-left: 20px;
+  color: #333;
+}
+
+.usage-instructions li {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 8px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.usage-instructions li:last-child {
+  margin-bottom: 0;
+}
+
 /* Asegurar que el combobox ocupe todo el ancho disponible */
 #hist-combobox {
   width: 100%;
@@ -1963,14 +2099,28 @@ body.map-active #app #map { overscroll-behavior: contain; }
 
 @media (max-width: 768px) {
   #historial-dashboard {
-    left: 0;
-    width: 100%;
-    padding: 15px 15px 40px; /* extra bottom padding para último contenido */
+    position: relative !important;
+    top: 30 !important;
+    left: 0 !important;
+    margin: 80px 0 24px 0 !important; /* Margen superior ajustado para header móvil */
+    width: 100% !important;
+    padding: 15px 12px 36px !important; /* padding más compacto */
+    max-height: none !important; /* permitir crecer naturalmente */
+    overflow: visible !important; /* dejar que el scroll sea del body si hace falta */
+    box-shadow: none !important; /* simplificar en pantallas pequeñas */
+    border-radius: 0 !important; /* flush edges */
+    background-color: #f8f9fa !important; /* Fondo visible */
+    display: block !important; /* Asegurar visibilidad */
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1 !important;
   }
   
   .dashboard-header {
     flex-direction: column;
     gap: 15px;
+    background: #ffffff !important;
+    display: grid !important;
   }
   
   .variables-grid {
@@ -1980,6 +2130,8 @@ body.map-active #app #map { overscroll-behavior: contain; }
   
   .dashboard-content {
     padding: 15px;
+    background: #ffffff !important;
+    display: block !important;
   }
 }
 
@@ -2111,6 +2263,7 @@ body.map-active #app #map { overscroll-behavior: contain; }
   min-height: 300px;
   display: flex;
   flex-direction: column;
+  position: relative; /* asegurar posicionamiento para pseudo overrides */
 }
 @keyframes fadeInUp{
   from{opacity:0; transform:translateY(8px)}
@@ -2125,24 +2278,33 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 @media (max-width: 768px){
   .charts-grid{
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important; /* Forzar una sola columna en móvil */
     gap: 20px;
     padding: 15px 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   .chart-card{ 
     padding: 15px; 
     min-height: 280px;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
   }
   .chart-card canvas{
     height: 240px !important;
     min-height: 240px;
+    max-width: 100% !important;
+    width: 100% !important;
   }
   
   #historial-dashboard {
-    left: 10px;
-    width: calc(100% - 20px);
-    padding: 20px;
-    margin: 140px 0 20px 0;
+    left: 0 !important;
+    width: 100% !important;
+    padding: 12px 12px 32px !important;
+    margin: 120px 0 20px 0 !important;
+    overflow-x: hidden !important;
   }
 }
 
@@ -2310,6 +2472,13 @@ body.map-active #app #map { overscroll-behavior: contain; }
   position: relative;
   margin-bottom: 20px;
   padding-top: 55px; /* Espacio para el botón de descarga */
+}
+
+/* Override: eliminar cualquier pseudo decorativo que interfiera visualmente */
+.modal-content .chart-card::before,
+.modal-content .chart-card::after {
+  content: none !important;
+  display: none !important;
 }
 
 .download-btn {
@@ -2582,6 +2751,28 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 /* Listas */
+
+/* ===== ICA Legend Styles (added) ===== */
+.ica-legend { width: 100%; }
+.ica-legend table { width: 100%; border-collapse: collapse; text-align: center; font-size: 14px; }
+.ica-legend td { padding: 6px 8px; }
+.ica-legend b { font-weight: 700; }
+
+/* Compact legend inside chart cards */
+.ica-legend-mini { display: block; }
+.chart-card .ica-legend-mini table { font-size: 11px; }
+.ica-legend-mini td { padding: 3px 6px; border-radius: 2px; }
+
+/* Make legend responsive: stack labels on very small screens */
+@media (max-width: 420px) {
+  .ica-legend table, .ica-legend-mini table { font-size: 12px; }
+  .ica-legend table td, .ica-legend-mini table td { padding: 6px 4px; }
+}
+
+/* Small tweak: ensure legend doesn't overflow chart card */
+.chart-card .ica-legend-mini { max-width: 100%; overflow: hidden; }
+
+/* End ICA Legend Styles */
 #map-combobox-list,
 #hist-combobox-list {
   background: white;
@@ -2710,9 +2901,9 @@ body.map-active #app #map { overscroll-behavior: contain; }
 .ol-scale-line {
   position: absolute !important;
   bottom: var(--scale-bottom-desktop) !important;
-  right: var(--scale-right-desktop) !important;
-  left: auto !important;
-  transform: none !important;
+  left: 1% !important; /* Cambiado de right a left para mover hacia la izquierda */
+  right: auto !important;
+  transform: translateX(-50%) !important; /* Centrar desde la posición left */
   padding: 4px 8px 6px 8px !important;
   background: transparent !important;
   border: none !important;
@@ -2722,15 +2913,22 @@ body.map-active #app #map { overscroll-behavior: contain; }
 }
 
 @media (max-width: 768px) {
-  :root { --scale-bottom-mobile: 160px; }
+  :root { --scale-bottom-mobile: 30px; }
 
-  /* En móvil: centrada y un poco arriba (sobre map-legend) */
+  /* En móvil: centrada en 50% para crecer desde el centro */
   #app .ol-scale-line,
   .ol-scale-line.override-position,
   .ol-scale-line {
     bottom: var(--scale-bottom-mobile) !important;
-    left: 20% !important;
-    transform: translateX(-50%) !important;
+    left: 50% !important; /* Centrar en el medio de la pantalla */
+    right: auto !important;
+    transform: translateX(-50%) !important; /* Centrar desde el punto medio */
+    transform-origin: center center !important; /* Crecer desde el centro */
+  }
+  
+  /* Asegurar que el contenido interno también crezca desde el centro */
+  .ol-scale-line-inner,
+  .ol-scale-line-body {
     transform-origin: center center !important;
   }
 }
@@ -2785,6 +2983,12 @@ body.map-active #app #map { overscroll-behavior: contain; }
     line-height:1;
     display:inline-block;
   }
+}
+
+/* Override global: en modales NO usar pseudo ::before en botones de descarga */
+.modal-content .download-btn::before {
+  content: none !important;
+  display: none !important;
 }
 
 .legend-title { 

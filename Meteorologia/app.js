@@ -222,9 +222,9 @@ var m_control = new ol.control.Control({ element: notification });
 //-------------------------------------------------------------------------------
 var m_view = new ol.View({
   projection: "EPSG:4326",
-  center: [-97.7711, 19.0105],
-  zoom: 9,
-  minZoom: 9,
+  center: [-97.5711, 19.6105],
+  zoom: 8.4,
+  minZoom: 8.4,
   maxZoom: 18,
   constrainResolution: true,
   constrainOnlyCenter: false,
@@ -287,6 +287,7 @@ function ensureCustomScaleBar() {
   const current = body.querySelectorAll('.ol-scale-line-segment').length;
   if (current !== needed) {
     body.innerHTML = '';
+    // Insertar segmentos normalmente - el CSS manejará la dirección en móvil
     for (let i = 0; i < needed; i++) {
       const seg = document.createElement('div');
       seg.className = 'ol-scale-line-segment' + (i % 2 === 1 ? ' alt' : '');
@@ -385,19 +386,36 @@ function constrainScaleLine() {
   const isMobileViewport = window.innerWidth < 768;
   inner.style.transform = 'none';
   if (isMobileViewport) {
+    // Contenedor centrado en móvil
+    el.style.left = '50%';
+    el.style.right = 'auto';
+    el.style.setProperty('transform', 'translateX(-50%)', 'important');
     // Asegurar ancho mínimo para legibilidad
     if (inner.getBoundingClientRect().width < 200) {
       inner.style.minWidth = '220px';
     }
+    // En móvil, crecer desde el centro: centrar el inner respecto al contenedor
+    inner.style.position = 'relative';
+    inner.style.left = '50%';
+    inner.style.transform = 'translateX(-50%)';
+    inner.style.transformOrigin = 'center center';
     return; // no aplicar reducción
   }
   // Desktop: limitar a 1/3 del viewport si excede
+  // Forzar anclaje a la izquierda en desktop (alineado al mapa)
+  el.style.left = 'calc(var(--sidebar-width) + 10px)';
+  el.style.right = 'auto';
+  el.style.setProperty('transform', 'none', 'important');
   const maxPx = window.innerWidth / 3;
   const actual = inner.getBoundingClientRect().width;
   if (actual > maxPx) {
     const ratio = maxPx / actual;
-    inner.style.transformOrigin = 'right center';
+    // En desktop, crecer desde la izquierda (left center)
+    inner.style.transformOrigin = 'left center';
     inner.style.transform = `scale(${ratio})`;
+  } else {
+    // Si no excede, asegurar que crece desde la izquierda
+    inner.style.transformOrigin = 'left center';
   }
 }
 
@@ -405,6 +423,72 @@ window.addEventListener('resize', constrainScaleLine);
 // Llamar después de un pequeño delay para asegurar render de OL
 setTimeout(constrainScaleLine, 800);
 m_map.on('moveend', () => setTimeout(constrainScaleLine, 50));
+
+// Relocalizar Búsqueda y Simbología en móvil (debajo de weather-controls)
+(function setupMobileRelocation(){
+  let searchOriginalParent = null;
+  let legendOriginalParent = null;
+  
+  function relocateForMobile() {
+    // Búsqueda
+    const searchControl = document.getElementById('municipio-map-control');
+    const searchSection = document.getElementById('search-section');
+    const searchSlot = document.getElementById('search-mobile-slot');
+    
+    // Leyenda
+    const legendContent = document.getElementById('legend-content');
+    const legendSection = document.getElementById('legend-section');
+    const legendSlot = document.getElementById('legend-mobile-slot');
+    
+    const isMobile = window.innerWidth < 768;
+    
+    if (isMobile) {
+      // Mover búsqueda a móvil
+      if (searchControl && searchSection && searchSlot && searchControl.parentElement !== searchSlot) {
+        if (!searchOriginalParent) searchOriginalParent = searchSection;
+        // Agregar título
+        if (!searchSlot.querySelector('h4')) {
+          const title = document.createElement('h4');
+          title.textContent = 'Buscar Municipio';
+          searchSlot.appendChild(title);
+        }
+        searchSlot.appendChild(searchControl);
+      }
+      
+      // Mover leyenda a móvil
+      if (legendContent && legendSection && legendSlot && legendContent.parentElement !== legendSlot) {
+        if (!legendOriginalParent) legendOriginalParent = legendSection;
+        // Agregar título
+        if (!legendSlot.querySelector('h4')) {
+          const title = document.createElement('h4');
+          title.textContent = 'Simbología';
+          legendSlot.appendChild(title);
+        }
+        legendSlot.appendChild(legendContent);
+      }
+    } else {
+      // Restaurar a desktop
+      if (searchOriginalParent && searchControl && searchControl.parentElement !== searchOriginalParent) {
+        searchOriginalParent.appendChild(searchControl);
+        // Limpiar título del slot
+        const searchTitle = searchSlot?.querySelector('h4');
+        if (searchTitle) searchTitle.remove();
+      }
+      
+      if (legendOriginalParent && legendContent && legendContent.parentElement !== legendOriginalParent) {
+        legendOriginalParent.appendChild(legendContent);
+        // Limpiar título del slot
+        const legendTitle = legendSlot?.querySelector('h4');
+        if (legendTitle) legendTitle.remove();
+      }
+    }
+  }
+  
+  window.addEventListener('resize', relocateForMobile);
+  document.addEventListener('DOMContentLoaded', relocateForMobile);
+  // Ejecutar también tras un pequeño retardo por si el panel aún no existe
+  setTimeout(relocateForMobile, 600);
+})();
 
 // Función para aplicar el recorte a una capa
 const clipLayer = (layer) => {
@@ -559,19 +643,19 @@ m_map.on("postcompose", function (event) {
 $(function () {
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_runs",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_runs,
     showDialog_Error
   );
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=cabeceras",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_cabeceras,
     showDialog_Error
   );
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=estaciones",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     list_estaciones,
     showDialog_Error
   );
@@ -579,11 +663,32 @@ $(function () {
   pollForNewRuns();
   setInterval(pollForNewRuns, 43200000);
   
-  // NUEVO SISTEMA: Event listener para cambio de fecha de pronóstico
+  // Event listeners para cambios en los selects
   $(document).on('change', '#select_run', function() {
-    console.log('🎯 Cambio de fecha detectado:', $(this).val());
-    loadHoursForSelectedDay();
+    console.log('Cambio de run detectado');
+    change_run();
   });
+  
+  $(document).on('change', '#select_var', function() {
+    console.log('Cambio de variable detectado');
+    var select = document.getElementById('select_var');
+    if (select && select.selectedIndex >= 0) {
+      selectedVariable = select.value;
+      window.currentVariableLabel = select.options[select.selectedIndex].text;
+      updateFilterInfoVariable();
+      procesa_var();
+    }
+  });
+  
+  $(document).on('change', '#selectHora', function() {
+    console.log('Cambio de hora detectado');
+    update_var();
+  });
+  
+  // Inicializar con modo atmosférico por defecto después de cargar runs
+  setTimeout(function() {
+    set_atmos();
+  }, 500);
 });
 //-------------------------------------------------------------------------------
 function pollForNewRuns() {
@@ -593,7 +698,7 @@ function pollForNewRuns() {
   // Volvemos a pedir el listado
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_runs",
-    "fecha=" + "20240131",
+    "fecha=" + "2025103012",
     function (datos) {
       list_runs(datos);
       const newHtml = $("#select_run").html();
@@ -671,323 +776,116 @@ var make_animation = function (datos) {
 var m_dir_runs = "";
 
 var list_runs = function (datos) {
-  // En lugar de mostrar runs, vamos a mostrar fechas de pronóstico
   var dir_runs = "";
   var list_files = datos.split("|");
-  
-  // Obtener fechas objetivo: hoy, mañana y pasado mañana
-  var today = new Date(); // Fecha fija para pruebas
-  
-  var tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-  var dayAfterTomorrow = new Date(today);
-  dayAfterTomorrow.setDate(today.getDate() + 2);
-  
-  // Función para verificar si una run contiene pronósticos para nuestras fechas objetivo
-  function runCoversTargetDates(runDate) {
-    var runEndDate = new Date(runDate);
-    runEndDate.setDate(runDate.getDate() + 3);
-    return (runDate <= dayAfterTomorrow && runEndDate >= today);
-  }
-  
-  // Encontrar la run más reciente que cubra nuestro período
-  var bestRun = null;
-  var bestRunData = null;
-  
+
   for (var i = 0; i < list_files.length; i++) {
     var str_file = list_files[i];
-    
+
     if (str_file != "") {
       var pos = str_file.lastIndexOf("/");
       var str_name = str_file.substring(pos + 1);
       
-      var runYear = parseInt(str_name.substring(0, 4));
-      var runMonth = parseInt(str_name.substring(4, 6));
-      var runDay = parseInt(str_name.substring(6, 8));
-      var runHour = parseInt(str_name.substring(8, 10));
+      var year = str_name.substring(0, 4);
+      var month = str_name.substring(4, 6);
+      var day = str_name.substring(6, 8);
+      var hour = str_name.substring(8, 10);
       
-      var runDate = new Date(runYear, runMonth - 1, runDay);
+      var label = day + "-" + month + "-" + year + " " + hour + ":00";
       
-      if (runCoversTargetDates(runDate)) {
-        var runScore = runDate.getTime() + (runHour * 60 * 60 * 1000); // Preferir runs más recientes y horas más tardías
-        
-        if (!bestRun || runScore > bestRun) {
-          bestRun = runScore;
-          bestRunData = {
-            file: str_file,
-            date: runDate,
-            year: runYear,
-            month: runMonth,
-            day: runDay,
-            hour: runHour,
-            name: str_name
-          };
-        }
-      }
+      dir_runs += "<option value='" + str_file + "'>" + label + "</option>";
     }
-  }
-  
-  // Guardar la run seleccionada globalmente para usar en otras funciones
-  window.selectedRunData = bestRunData;
-  
-  if (bestRunData) {
-    // Ahora crear opciones para fechas de pronóstico (no runs)
-    var dayLabels = [
-      { date: today, label: "Hoy", offset: 0 },
-      { date: tomorrow, label: "Mañana", offset: 24 }, 
-      { date: dayAfterTomorrow, label: "Pasado mañana", offset: 48 }
-    ];
-    
-    dayLabels.forEach(function(dayInfo) {
-      var dateStr = String(dayInfo.date.getDate()).padStart(2, '0') + "-" + 
-                    String(dayInfo.date.getMonth() + 1).padStart(2, '0') + "-" + 
-                    dayInfo.date.getFullYear();
-      
-      var fullLabel = dayInfo.label + " (" + dateStr + ")";
-      
-      // El value incluye tanto el archivo base como el offset de horas
-      var valueData = bestRunData.file + "|" + dayInfo.offset;
-      
-      dir_runs += "<option value='" + valueData + "'>" + fullLabel + "</option>";
-    });
-  } else {
-    dir_runs = "<option value=''>No hay pronósticos disponibles</option>";
   }
 
   $("#select_run").html(dir_runs);
+  change_run();
+};
+
+//-------------------------------------------------------------------------------
+var change_run = function() {
+  // Extraer información de la run seleccionada
+  var selectedRun = $("#select_run").val();
+  if (selectedRun) {
+    var pos = selectedRun.lastIndexOf("/");
+    var str_name = selectedRun.substring(pos + 1);
+    
+    var year = parseInt(str_name.substring(0, 4));
+    var month = parseInt(str_name.substring(4, 6));
+    var day = parseInt(str_name.substring(6, 8));
+    var hour = parseInt(str_name.substring(8, 10));
+    
+    // Actualizar window.selectedRunData para que el historial funcione
+    window.selectedRunData = {
+      name: str_name,
+      year: year,
+      month: month,
+      day: day,
+      hour: hour
+    };
+    
+    console.log('🔄 Run seleccionada actualizada:', window.selectedRunData);
+  }
   
-  // Trigger para cargar las horas del primer día seleccionado
-  if (bestRunData) {
-    loadHoursForSelectedDay();
+  // Recargar los parámetros cuando cambie la run
+  // Detectar si estamos en modo atmos o chem según el parámetro activo
+  if (selectedParameter) {
+    // Si hay un parámetro seleccionado, recargar ese tipo
+    var currentType = selectedParameter.substring(0, selectedParameter.indexOf('/'));
+    if (currentType === 'meteo') {
+      set_atmos();
+    } else if (currentType === 'chem') {
+      set_chem();
+    }
   }
 };
 
 //-------------------------------------------------------------------------------
-// NUEVA FUNCIÓN: Cargar horas para el día seleccionado
-function loadHoursForSelectedDay() {
-  var selectedValue = $("#select_run").val();
-  if (!selectedValue || !selectedValue.includes("|")) return;
-  
-  var parts = selectedValue.split("|");
-  var runFile = parts[0];
-  var hourOffset = parseInt(parts[1]);
-  
-  if (!window.selectedRunData || !selectedVariable) {
-    console.log('⚠️ Faltan datos: selectedRunData o selectedVariable');
-    return;
-  }
-  
-  // Construir la ruta de la variable actual
-  var varPath = runFile + "/" + selectedVariable + "/";
-  
-  console.log('🔄 Cargando horas para:', {
-    dia: selectedValue,
-    variable: selectedVariable,
-    offset: hourOffset,
-    path: varPath
-  });
-  
-  // Hacer petición para obtener archivos de esa variable
-  make_transaction(
-    mUrl_api + "api.php?tipo_solicitud=listado_var",
-    "variable=" + varPath,
-    function(datos) {
-      console.log('📁 Archivos recibidos:', datos);
-      loadHoursForDay(datos, hourOffset);
-    },
-    function() {
-      console.error('❌ Error cargando archivos para:', varPath);
-      showDialog_Error();
-    }
-  );
-}
-
-// NUEVA FUNCIÓN: Procesar archivos y filtrar por día
-function loadHoursForDay(datos, hourOffset) {
-  var dir_var = "";
-  var list_files = datos.split("|");
-  
-  console.log('🕐 Procesando archivos para offset:', hourOffset, 'Total archivos:', list_files.length);
-  console.log('📁 Variable actual:', selectedVariable);
-  
-  // Detectar si es una variable de resumen diario (24h, 48h, 72h)
-  var isDailySummaryVariable = selectedVariable && (
-    selectedVariable.includes('temmax') || 
-    selectedVariable.includes('temmin') || 
-    selectedVariable.includes('precacum')
-  );
-  
-  var validHours = [];
-  
-  if (isDailySummaryVariable) {
-    console.log('📊 Variable de resumen diario detectada');
-    
-    // Para variables diarias, mapear correctamente los días a las horas de resumen
-    var targetHour;
-    var dayName = "";
-    
-    if (hourOffset === 0) {
-      // Hoy = resumen a las 24 horas
-      targetHour = 24;
-      dayName = "Hoy";
-    } else if (hourOffset === 24) {
-      // Mañana = resumen a las 48 horas  
-      targetHour = 48;
-      dayName = "Mañana";
-    } else if (hourOffset === 48) {
-      // Pasado mañana = resumen a las 72 horas
-      targetHour = 72;
-      dayName = "Pasado mañana";
-    } else {
-      console.error('❌ Offset no válido para variable diaria:', hourOffset);
-      return;
-    }
-    
-    // Buscar archivo - probar con y sin ceros al inicio
-    var targetHourStr = String(targetHour).padStart(3, '0'); // "072", "048", "024"
-    var targetHourStr2 = String(targetHour); // "72", "48", "24"
-    
-    var foundFile = null;
-    for (var i = 0; i < list_files.length; i++) {
-      var str_file = list_files[i];
-      if (str_file && (str_file.includes('_' + targetHourStr + '.png') || str_file.includes('_' + targetHourStr2 + '.png'))) {
-        foundFile = str_file.substring(1); // Quitar ../
-        break;
-      }
-    }
-    
-    if (foundFile) {
-      validHours.push({
-        hour: targetHour,
-        file: foundFile,
-        label: `Resumen de ${dayName.toLowerCase()}`
-      });
-      console.log('✅ Encontrado resumen diario:', targetHourStr, 'o', targetHourStr2, '→', foundFile);
-    } else {
-      console.log('❌ No encontrado resumen diario:', targetHourStr, 'ni', targetHourStr2);
-    }
-    
-  } else {
-    console.log('⏰ Variable horaria detectada (cada 3 horas)');
-    
-    // Para variables horarias normales (cada 3 horas)
-    for (var h = 0; h < 24; h += 3) {
-      var targetHour = hourOffset + h;
-      var targetHourStr = String(targetHour).padStart(3, '0');
-      
-      // Buscar archivo que coincida con esta hora
-      var foundFile = null;
-      for (var i = 0; i < list_files.length; i++) {
-        var str_file = list_files[i];
-        if (str_file && str_file.includes('_' + targetHourStr + '.png')) {
-          foundFile = str_file.substring(1); // Quitar ../
-          break;
-        }
-      }
-      
-      if (foundFile) {
-        validHours.push({
-          hour: h,
-          file: foundFile,
-          label: String(h).padStart(2, '0') + ':00'
-        });
-        console.log('✅ Encontrado:', targetHourStr, '→', foundFile);
-      } else {
-        console.log('❌ No encontrado:', targetHourStr);
-      }
-    }
-  }
-  
-  console.log('📊 Horas válidas encontradas:', validHours.length);
-  
-  if (validHours.length === 0) {
-    console.error('❌ No se encontraron archivos válidos para este día/variable');
-    $("#selectHora").html("<option value=''>No hay datos disponibles para este día</option>");
-    return;
-  }
-  
-  // Crear dropdown de horas
-  validHours.forEach(function(hourData) {
-    dir_var += "<option value='" + hourData.file + "'>" + hourData.label + "</option>";
-  });
-  
-  // ARREGLO: Preparar frames para animación usando las horas válidas del día
-  m_frames = [];
-  validHours.forEach(function(hourData) {
-    var frame_kms = new CDataLayer(m_map, "create", hourData.file);
-    
-    // Cargar imagen para filtros si es necesario
-    frame_kms.img = new Image();
-    frame_kms.img.crossOrigin = "anonymous";
-    frame_kms.img.src = hourData.file;
-    
-    m_frames.push(frame_kms);
-  });
-  
-  console.log('🎬 Frames de animación creados para el día:', m_frames.length);
-  
-  // ==========================================
-  // Selector de horas del día / resumen
-  /*
-  // Crear el select de horas si no existe
-  var hoursContainer = document.getElementById('hours-container');
-  if (!hoursContainer) {
-    // Buscar dónde insertar el selector de horas
-    var variablesContainer = document.getElementById('variables-container');
-    if (variablesContainer) {
-      hoursContainer = document.createElement('div');
-      hoursContainer.className = 'control-group';
-      hoursContainer.id = 'hours-container';
-      hoursContainer.innerHTML = `
-        <label for="selectHora">${isDailySummaryVariable ? 'Resumen' : 'Hora del día'}</label>
-        <select id="selectHora"></select>
-      `;
-      
-      // Insertar después del contenedor de variables
-      variablesContainer.parentNode.insertBefore(hoursContainer, variablesContainer.nextSibling);
-    }
-  } else {
-    // Actualizar label si ya existe
-    var label = hoursContainer.querySelector('label');
-    if (label) {
-      label.textContent = isDailySummaryVariable ? 'Resumen' : 'Hora del día';
-    }
-  }
-  
-  $("#selectHora").html(dir_var);
-  
-  // Agregar event listener para cuando cambie la hora
-  $("#selectHora").off('change.dayHours').on('change.dayHours', function() {
-    update_var();
-  });
-  */
-  // ==========================================
-  
-  // Cargar la primera hora automáticamente
-  if (validHours.length > 0) {
-    // Llamar check_loaded para habilitar botón de animación
-    check_loaded();
-    
-    // TEMPORAL: Cargar directamente la primera hora disponible (sin selector)
-    var firstFile = validHours[0].file;
-    set_layer(m_map, firstFile, "add", m_dlayer);
-    var img = new Image();
-    img.onload = function () {
-      m_lienzo = new CLienzo(img);
-      if (filter_color) {
-        const filteredLayer = applyFilterToImage(m_lienzo.img);
-        put_FilteredImage(filteredLayer);
-      }
-    };
-    img.src = firstFile;
-    
-    console.log('📷 Cargando imagen directamente:', firstFile);
-  }
-}
-
-//-------------------------------------------------------------------------------
 var selectedParameter = null;
 var selectedVariable = null;
+
+// Mapeo de unidades para cada variable
+var variableUnits = {
+  'temmax': '°C',
+  'temmin': '°C',
+  'temp/700': '°C',
+  'temp/600': '°C',
+  'temp/500': '°C',
+  'temp/400': '°C',
+  'temp/300': '°C',
+  'temp/200': '°C',
+  'temp/sfc': '°C',
+  'hum/sfc': '%',
+  'precacum': 'mm',
+  'radsw/sfc': 'W/m²',
+  'radlw/sfc': 'W/m²',
+  'wnd/sfc': 'km/h',
+  'wnd/700': 'km/h',
+  'wnd/600': 'km/h',
+  'wnd/500': 'km/h',
+  'wnd/400': 'km/h',
+  'wnd/300': 'km/h',
+  'wnd/200': 'km/h',
+  'psfc': 'hPa',
+  'CO/sfc': 'ppm',
+  'NO2/sfc': 'ppb',
+  'O3/sfc': 'ppb',
+  'SO2/sfc': 'ppb',
+  'PM25/sfc': 'µg/m³',
+  'PM10/sfc': 'µg/m³'
+};
+
+// Función para actualizar la información de la variable en filter-info
+function updateFilterInfoVariable() {
+  const variableElement = document.querySelector("#filter-info .filter-info-variable");
+  if (!variableElement) return;
+  
+  if (window.currentVariableLabel && selectedVariable) {
+    const unit = variableUnits[selectedVariable] || '';
+    variableElement.textContent = window.currentVariableLabel + (unit ? ' (' + unit + ')' : '');
+  } else {
+    variableElement.textContent = '';
+  }
+}
 
 // Crear botones de parámetros principales
 var createParameterButtons = function(parameterData) {
@@ -1120,29 +1018,24 @@ var updateVariableSelect = function(variableData) {
   var select = document.getElementById('select_var');
   var selectContainer = document.getElementById('variables-container');
   
-  // Si solo hay una variable, ocultar el select y usar directamente
-  if (variableData.length <= 1) {
-    // Aun cuando lo ocultemos, creamos la opción para que otras funciones puedan leer su label
-    select.innerHTML = '';
-    if (variableData.length === 1) {
-      const single = variableData[0];
-      const option = document.createElement('option');
-      option.value = single.value;
-      option.textContent = single.label;
-      select.appendChild(option);
-      select.selectedIndex = 0;
-      selectedVariable = single.value;
-      window.currentVariableLabel = single.label; // almacenar etiqueta actual
-    } else {
-      selectedVariable = null;
-      window.currentVariableLabel = null;
-    }
-    selectContainer.style.display = 'none';
-  } else {
-    // Múltiples variables: mostrar select
-    selectContainer.style.display = 'block';
-    select.innerHTML = '';
-    
+  // Siempre mantener oculto el select de variables
+  selectContainer.style.display = 'none';
+  
+  select.innerHTML = '';
+  
+  if (variableData.length === 1) {
+    // Una sola variable: crear opción y seleccionar automáticamente
+    const single = variableData[0];
+    const option = document.createElement('option');
+    option.value = single.value;
+    option.textContent = single.label;
+    select.appendChild(option);
+    select.selectedIndex = 0;
+    selectedVariable = single.value;
+    window.currentVariableLabel = single.label;
+    updateFilterInfoVariable();
+  } else if (variableData.length > 1) {
+    // Múltiples variables: crear opciones y seleccionar la primera
     variableData.forEach(function(variable, index) {
       var option = document.createElement('option');
       option.value = variable.value;
@@ -1153,8 +1046,14 @@ var updateVariableSelect = function(variableData) {
       if (index === 0) {
         selectedVariable = variable.value;
         window.currentVariableLabel = variable.label;
+        updateFilterInfoVariable();
       }
     });
+  } else {
+    // Sin variables
+    selectedVariable = null;
+    window.currentVariableLabel = null;
+    updateFilterInfoVariable();
   }
   
   // Procesar la primera variable automáticamente
@@ -1243,8 +1142,6 @@ var m_lienzo = null;
 var m_barra = null;
 
 //-------------------------------------------------------------------------------
-// COMENTADO TEMPORALMENTE: update_var que dependía del selectHora
-/*
 async function update_var() {
   m_lienzo = null;
   m_barra = null;
@@ -1281,24 +1178,15 @@ async function update_var() {
       const filteredLayer = applyFilterToImage(m_lienzo.img);
       put_FilteredImage(filteredLayer);
     }
+    
+    // Actualizar la fecha en filter-info
+    const permanentDateElement = document.querySelector("#filter-info .permanent-date");
+    if (permanentDateElement && m_dlayer && m_dlayer.fecha_loc) {
+      permanentDateElement.textContent = m_dlayer.fecha_loc;
+    }
   };
   img.src = str_file;
-  if (m_dlayer.img_escala.complete) {
-    switch (m_dlayer.tipo_barra) {
-      case TEMP:
-        //loadGradientDataFromCSV("./color_scale.csv","TEMP");
-        //m_barra = new CBarra(m_dlayer.img_escala, -12, 50, 2, 22);
-        break;
-      case WIND:
-        //loadGradientDataFromCSV("./color_scale.csv", "WIND");
-        //m_barra = new CBarra(m_dlayer.img_escala, 0, 160, 10, 22);
-        break;
-    }
-  } else {
-    showDialog_Error();
-  }
 }
-*/
 
 //-------------------------------------------------------------------------------
 var procesa_var = function () {
@@ -1312,36 +1200,22 @@ var procesa_var = function () {
     window.currentVariableLabel = selectVar.options[selectVar.selectedIndex].text;
   }
   
-  // NUEVO SISTEMA: Usar datos de fecha seleccionada en lugar de run directa
-  var selectedDayValue = $("#select_run").val();
-  if (!selectedDayValue || !selectedDayValue.includes("|")) {
-    console.error('No hay día seleccionado válido');
-    return;
-  }
-  
-  var parts = selectedDayValue.split("|");
-  var str_run = parts[0]; // Archivo base de la run
-  var hourOffset = parseInt(parts[1]); // Offset de horas para el día
-  
+  var str_run = $("#select_run").val();
   var str_var = selectedVariable;
   
-  // Actualizar variable global para mantener compatibilidad
+  // Actualizar variable global
   m_dir_runs = str_run.substring(1);
   
   var str_dat = "variable=" + str_run + "/" + str_var + "/";
-  console.log('🚀 NUEVO SISTEMA - Cargando variable:', str_dat, 'Offset de horas:', hourOffset);
   
   if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
   filter_color = null;
   hideInfo();
   
-  // En lugar de llamar list_var, llamamos la nueva función que filtra por día
   make_transaction(
     mUrl_api + "api.php?tipo_solicitud=listado_var",
     str_dat,
-    function(datos) {
-      loadHoursForDay(datos, hourOffset);
-    },
+    list_var,
     showDialog_Error
   );
 };
@@ -1400,7 +1274,7 @@ $(function () {
 });
 
 //-------------------------------------------------------------------------------
-var m_rango = 250;
+var m_rango = 3000; //milisegundos entre frames
 var m_animate = false;
 var m_id_animation = 0;
 
@@ -1815,14 +1689,19 @@ m_view.on("propertychange", function (e) {
   if (e.key == "resolution") {
     //Cuando cambia el zoom
     var zoom = m_view.getZoom();
+    console.log(`Resolution changed: old zoom=${m_zoom}, new zoom=${zoom}`);
 
-    if (m_zoom == zoom || zoom % 1 != 0) {
+    // Solo saltamos si el zoom es exactamente igual (sin cambios fraccionarios)
+    if (Math.abs(m_zoom - zoom) < 0.01) {
+      console.log("Skipping zoom update - minimal change");
       return;
     }
 
     m_zoom = zoom;
+    console.log(`Zoom updated to: ${m_zoom}`);
     var scale = get_scale();
     var features = m_vectorSource.getFeatures(); //Obtener el arreglo de iconos
+    console.log(`Updating ${features.length} features`);
 
     for (var i = 0; i < features.length; i++) {
       var feature = features[i];
@@ -1845,9 +1724,12 @@ function get_scale() {
 
 //------------------------------------------------------------------------
 function set_text(feature) {
+  console.log(`set_text called: m_zoom=${m_zoom}, ZOOMREF=${ZOOMREF}, feature=${feature.get("nombre")}`);
   if (m_zoom < ZOOMREF) {
+    console.log(`Hiding text for ${feature.get("nombre")} (zoom ${m_zoom} < ${ZOOMREF})`);
     feature.getStyle().getText().setText("");
   } else {
+    console.log(`Showing text for ${feature.get("nombre")} (zoom ${m_zoom} >= ${ZOOMREF})`);
     feature.getStyle().getText().setText(feature.get("nombre"));
   }
 }
@@ -1886,7 +1768,7 @@ function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
   if (runBase && !runBase.endsWith('/')) runBase += '/';
   // dirFragment comienza y termina con slash? aseguramos solo uno al final
   if (dirFragment.startsWith('/')) dirFragment = dirFragment.substring(1);
-  if (!dirFragment.endsWith('/')) dirFragment += '';// ya incluye la barra inicial en concatenación final
+  if (!dirFragment.endsWith('/')) dirFragment += '/'; // asegurar barra final
   if (typeFragment.startsWith('/')) typeFragment = typeFragment.substring(1);
   console.log('[buildJsonUrl]', {runBase, dirFragment, typeFragment, clave, fech, hor});
   return runBase + dirFragment + typeFragment + clave + '_' + fech + '_' + hor + 'z.json';
@@ -1895,13 +1777,35 @@ function buildJsonUrl(runBase, dirFragment, typeFragment, clave, fech, hor){
 //-------------------------------------------------------------------------------
 function show_feature(tipo, dir_dat, show_dialog) {
   var dirProp = m_feature.get("dir") || '';
+  // Si la feature es una cabecera, preferimos leer desde la carpeta 'meteogramas'
+  // para que el popup y el historial apunten al mismo archivo producido.
+  try {
+    if (m_feature.get && m_feature.get('local') === 'cabecera') {
+      // Forzar uso de archivos en 'cabeceras' (valores interpolados por municipio)
+      dirProp = 'cabeceras/';
+    }
+  } catch (e) {
+    // fallback: usar el valor original
+  }
   // Normalizar para evitar doble slash o faltante
   var dir = dirProp + dir_dat;
   var clave = m_feature.get("clave");
-  var name = m_feature.get("nombre");
+  var nombreMunicipio = m_feature.get("nombre");
 
-  var fech = m_dir_runs.substring(7, 15);
-  var hor = m_dir_runs.substring(15, 17);
+  // Extraer fecha y hora de la run de forma robusta tomando el segmento final
+  // Ejemplo esperado: 'runs/2025103000' -> name = '2025103000' -> fech='20251030', hor='00'
+  var fech = '';
+  var hor = '';
+  try {
+    var parts = m_dir_runs.split('/').filter(Boolean);
+    var runName = parts.length ? parts[parts.length - 1] : m_dir_runs;
+    if (runName && runName.length >= 10) {
+      fech = runName.substring(0, 8);
+      hor = runName.substring(8, 10);
+    }
+  } catch (e) {
+    console.warn('Unable to parse run date/hour from m_dir_runs:', m_dir_runs, e);
+  }
 
   var tipo_ext;
 
@@ -1914,9 +1818,15 @@ function show_feature(tipo, dir_dat, show_dialog) {
   var dir_json = buildJsonUrl(m_dir_runs, dirProp, dir_dat, clave, fech, hor);
   console.log('[show_feature] JSON URL ->', dir_json);
 
-  m_str_file_csv = name + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
+  m_str_file_csv = (nombreMunicipio || clave) + "_" + fech + "_" + hor + "_" + tipo_ext + ".csv";
 
   var contenDialog = $("<div></div>");
+  // Indicar la fuente de datos para mayor claridad
+  try {
+    if (m_feature.get && m_feature.get('local') === 'cabecera') {
+      contenDialog.append('<div class="data-source" style="font-size:0.95em;color:#444;margin-bottom:8px;">Fuente: <strong>cabeceras</strong> (valores interpolados por municipio)</div>');
+    }
+  } catch (e) {}
 
   if (tipo == "meteo") {
     set_chart_meteo(dir_json, contenDialog, show_dialog);
@@ -1930,7 +1840,7 @@ function show_feature(tipo, dir_dat, show_dialog) {
   if (show_dialog) {
     BootstrapDialog.show({
       cssClass: "modal-dialog",
-      title: `<span style="font-size: 1.7em; font-weight: bold;">${name}</span>`,
+      title: `<span style="font-size: 1.7em; font-weight: bold;">${nombreMunicipio || clave}</span>`,
       closable: true,
       message: contenDialog,
     });
@@ -1958,6 +1868,25 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
         console.log('[set_chart_meteo] datos OK', str_file, Object.keys(djson));
         set_csv_atmos(djson, str_file);
         if (show_dialog) {
+          
+          // --- INICIO DE MODIFICACIÓN ---
+          // Calcular promedios
+          const avgT2M = avg(djson["t2m"]);
+          const avgRH = avg(djson["rh"]);
+          const avgPRE = avg(djson["pre"]);
+          const avgSW = avg(djson["sw"]);
+          const avgWND = avg(djson["wnd"]);
+          const avgPSL = avg(djson["psl"]);
+
+          // Obtener colores de riesgo
+          const bandT2M = getWeatherRiskBand('t2m', avgT2M);
+          // (Suponiendo que no hay bandas para otros, usar default)
+          const bandRH = getWeatherRiskBand('rh', avgRH); 
+          const bandPRE = getWeatherRiskBand('pre', avgPRE);
+          const bandSW = getWeatherRiskBand('sw', avgSW);
+          const bandWND = getWeatherRiskBand('wnd', avgWND);
+          const bandPSL = getWeatherRiskBand('psl', avgPSL);
+
           const resumenHTML = `
   <div class="summary-block">
     <div class="summary-header">
@@ -1965,50 +1894,54 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
       <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
     </div>
     <div class="summary-grid" id="pollutantSummary">
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandT2M.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-temperature-half"></i></div>
         <div class="summary-body">
           <div class="summary-name">Temperatura</div>
-          <div class="summary-value">${avg(djson["t2m"]) } °C</div>
+          <div class="summary-value">${avgT2M} °C</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandRH.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-droplet"></i></div>
         <div class="summary-body">
           <div class="summary-name">Humedad</div>
-          <div class="summary-value">${avg(djson["rh"]) } %</div>
+          <div class="summary-value">${avgRH} %</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandPRE.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-cloud-rain"></i></div>
         <div class="summary-body">
           <div class="summary-name">Precipitación</div>
-          <div class="summary-value">${avg(djson["pre"]) } mm</div>
+          <div class="summary-value">${avgPRE} mm</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandSW.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-sun"></i></div>
         <div class="summary-body">
           <div class="summary-name">Radiación</div>
-          <div class="summary-value">${avg(djson["sw"]) } w/m²</div>
+          <div class="summary-value">${avgSW} w/m²</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandWND.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-wind"></i></div>
         <div class="summary-body">
           <div class="summary-name">Viento</div>
-          <div class="summary-value">${avg(djson["wnd"]) } km/h</div>
+          <div class="summary-value">${avgWND} km/h</div>
         </div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card" style="background-color: ${bandPSL.color};">
         <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-gauge"></i></div>
         <div class="summary-body">
           <div class="summary-name">Presión</div>
-          <div class="summary-value">${avg(djson["psl"]) } hPa</div>
+          <div class="summary-value">${avgPSL} hPa</div>
         </div>
       </div>
     </div>
   </div>`;
+          // --- FIN DE MODIFICACIÓN ---
+
+          // Nota: la leyenda ICA no se muestra en la vista de clima.
+          // (Se muestra sólo en calidad del aire - `set_chart_chem`).
           contenDialog.append(resumenHTML);
           set_canva(contenDialog, djson["t2m"], "line", str_file, "Temperatura", "°C", "rgb(255, 0, 0)");
           set_canva(contenDialog, djson["rh"],  "line", str_file, "Humedad", "%", "rgb(0, 0, 255)");
@@ -2042,7 +1975,6 @@ function set_chart_meteo(str_file, contenDialog, show_dialog) {
     }
   });
 }
-
 function set_chart_chem(str_file, contenDialog, show_dialog) {
   m_str_cvs = "Fecha, Monóxido de Carbono (ppm), Dióxido de Nitrógeno (ppb), Ozono (ppb), Dióxido de Azufre (ppb), Partículas PM 10 (µg/m³), Partículas PM 2.5 (µg/m³)\r\n";
   $.ajax({
@@ -2054,58 +1986,83 @@ function set_chart_chem(str_file, contenDialog, show_dialog) {
         console.log('[set_chart_chem] datos OK', str_file, Object.keys(djson));
         set_csv_chem(djson, str_file);
         if (show_dialog) {
+          
+          // --- INICIO DE MODIFICACIÓN ---
+          // Calcular promedios ICA
+          const avgCO = avgICA("CO", djson["CO"]);
+          const avgNO2 = avgICA("NO2", djson["NO2"]);
+          const avgO3 = avgICA("O3", djson["O3"]);
+          const avgSO2 = avgICA("SO2", djson["SO2"]);
+          const avgPM10 = avgICA("PM10", djson["PM10"]); // Corregido
+          const avgPM25 = avgICA("PM25", djson["PM25"]); // Corregido
+          
+          // Obtener colores de riesgo
+          const bandCO = getICAColorForValue(avgCO);
+          const bandNO2 = getICAColorForValue(avgNO2);
+          const bandO3 = getICAColorForValue(avgO3);
+          const bandSO2 = getICAColorForValue(avgSO2);
+          const bandPM10 = getICAColorForValue(avgPM10);
+          const bandPM25 = getICAColorForValue(avgPM25);
+
+                    // --- INICIO DE MODIFICACIÓN ---
           const resumenHTML = `
         <div class="summary-block">
           <div class="summary-header">
-            <h4 class="summary-title">Resumen de Promedios</h4>
+            <h4 class="summary-title">Resumen de Promedios (Puntos ICA)</h4>
             <button onclick="downloadFileCSV()" class="download-btn csv-btn-simple"><i class="fa-solid fa-download"></i> Descargar Datos</button>
           </div>
           <div class="summary-grid" id="pollutantSummaryChem">
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+            <div class="summary-card" style="background-color: ${bandCO.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgCO > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Monóxido de Carbono</div>
-                <div class="summary-value">${avg(djson["CO"]) } ppm</div>
+                <div class="summary-value">${avgCO.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+            <div class="summary-card" style="background-color: ${bandNO2.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgNO2 > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Nitrógeno</div>
-                <div class="summary-value">${avg(djson["NO2"]) } ppb</div>
+                <div class="summary-value">${avgNO2.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+            <div class="summary-card" style="background-color: ${bandO3.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgO3 > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Ozono</div>
-                <div class="summary-value">${avg(djson["O3"]) } ppb</div>
+                <div class="summary-value">${avgO3.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-smog"></i></div>
+            <div class="summary-card" style="background-color: ${bandSO2.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgSO2 > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-smog"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Dióxido de Azufre</div>
-                <div class="summary-value">${avg(djson["SO2"]) } ppb</div>
+                <div class="summary-value">${avgSO2.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle"></i></div>
+            <div class="summary-card" style="background-color: ${bandPM10.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgPM10 > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-circle"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 10</div>
-                <div class="summary-value">${avg(djson["PM10"]) } µg/m³</div>
+                <div class="summary-value">${avgPM10.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
-            <div class="summary-card">
-              <div class="summary-icon" style="color:#5a1b30"><i class="fa-solid fa-circle-dot"></i></div>
+            <div class="summary-card" style="background-color: ${bandPM25.color.replace(/, *0\.\d+\)/, ', 1)')}; color: ${avgPM25 > 150 ? '#fff' : '#000'};">
+              <div class="summary-icon"><i class="fa-solid fa-circle-dot"></i></div>
               <div class="summary-body">
                 <div class="summary-name">Partículas PM 2.5</div>
-                <div class="summary-value">${avg(djson["PM25"]) } µg/m³</div>
+                <div class="summary-value">${avgPM25.toFixed(0)} Pts. ICA</div>
               </div>
             </div>
           </div>
         </div>`;
+          // --- FIN DE MODIFICACIÓN ---
+          // --- FIN DE MODIFICACIÓN ---
+
+          // Añadir leyenda ICA antes del resumen de contaminantes
+          try { contenDialog.append(createICALegend()); } catch(e){ console.warn('createICALegend error', e); }
           contenDialog.append(resumenHTML);
+          // (Los datos originales de concentración se siguen pasando a set_canva)
           set_canva(contenDialog, djson["CO"],   "line", str_file, "Monóxido de Carbono", "ppm",   "#8B4513");
           set_canva(contenDialog, djson["NO2"],  "line", str_file, "Dióxido de Nitrógeno", "ppb", "#6A5ACD");
           set_canva(contenDialog, djson["O3"],   "line", str_file, "Ozono", "ppb", "#32CD32");
@@ -2207,6 +2164,7 @@ function updateHistoricalChart() {
 }
 
 // Function to update the stats table
+// Function to update the stats table
 function updateStatsTable(tipo) {
   if (!currentHistData) return;
   
@@ -2244,6 +2202,20 @@ function updateStatsTable(tipo) {
       
       const row = document.createElement('tr');
       row.setAttribute('data-variable', key); // Para debugging y control
+
+      // --- INICIO DE MODIFICACIÓN ---
+      // Colorear la fila según el riesgo del promedio
+      let riskBand;
+      if (tipo === 'meteo') {
+        riskBand = getWeatherRiskBand(key, stats.avg);
+      } else {
+        // Es 'chem', calcular el promedio en ICA
+        const avgIcaValue = avgICA(key, values);
+        riskBand = getICAColorForValue(avgIcaValue);
+      }
+      row.className = riskBand.class || ""; // Asignar la clase CSS (ej. "riesgo-buena")
+      // --- FIN DE MODIFICACIÓN ---
+
       row.innerHTML = `
         <td><i class="${icon}" style="margin-right: 8px"></i>${label}</td>
         <td>${stats.avg.toFixed(2)}</td>
@@ -2259,27 +2231,6 @@ function updateStatsTable(tipo) {
   tbody.appendChild(fragment);
 }
 
-// Event handler for tipo-select changes
-$("#hist-tipo-select").on('change', function() {
-  const tipo = $(this).val();
-  
-  // Limpiar estado anterior
-  destroyHistCharts();
-  
-  // Limpiar tabla de estadísticas
-  const tbody = document.getElementById('histStatsTable');
-  if (tbody) tbody.innerHTML = '';
-  
-  // Crear nuevos toggles para el tipo seleccionado - SELECCIONAR TODAS las variables al cambiar modo
-  createVariableToggles(tipo, true);
-  
-  // Si hay datos, regenerar gráficas y tabla con TODAS las variables
-  if (currentHistData) {
-    updateHistoricalChart();
-    updateStatsTable(tipo);
-  }
-});
-
 //-------------------------------------------------------------------------------
 function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   // Buscar o crear el contenedor de gráficas
@@ -2291,7 +2242,7 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
 
   const card = $('<div class="chart-card"></div>');
 
-  // Mapa de iconos FontAwesome (mismos que en summary-icon)
+  // Mapa de iconos FontAwesome
   const iconMapFA = {
     'temperatura': 'fa-temperature-half',
     'humedad': 'fa-droplet',
@@ -2302,7 +2253,6 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
     'viento': 'fa-wind',
     'presión': 'fa-gauge',
     'presion': 'fa-gauge',
-    // Contaminantes (gases) – usar mismo ícono que en summary (fa-smog)
     'monóxido de carbono': 'fa-smog',
     'monoxido de carbono': 'fa-smog',
     'dióxido de nitrógeno': 'fa-smog',
@@ -2310,7 +2260,6 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
     'ozono': 'fa-smog',
     'dióxido de azufre': 'fa-smog',
     'dioxido de azufre': 'fa-smog',
-    // Partículas
     'partículas pm 10': 'fa-circle',
     'particulas pm 10': 'fa-circle',
     'partículas pm 2.5': 'fa-circle-dot',
@@ -2321,31 +2270,149 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
   const normTitle = (title||'').toLowerCase().trim();
   const iconClass = iconMapFA[normTitle] || 'fa-chart-line';
 
+  // --- INICIO DE MODIFICACIÓN ---
+
+  // 1. Determinar el varKey (clave de contaminante o clima)
+  let varKey = null;
+  const lowerTitle = (title || '').toLowerCase().trim();
+  
+  // Lógica específica para PM10 y PM2.5, que es donde falla
+  if (lowerTitle.includes('pm 10')) {
+    varKey = 'PM10';
+  } else if (lowerTitle.includes('pm 2.5')) {
+    varKey = 'PM25';
+  } else {
+    // Lógica general para el resto de las variables
+    Object.entries(airQualityVariables).forEach(([k, cfg]) => {
+      if (!varKey && cfg.label && cfg.label.toLowerCase() === lowerTitle) {
+        varKey = k;
+      }
+    });
+  }
+  
+  let isChem = !!varKey; // Es un contaminante
+  let isMeteo = false; // Es de clima
+  
+  // Buscar en clima
+  if (!varKey) {
+    Object.entries(meteorologicalVariables).forEach(([k, cfg]) => {
+      if (!varKey && cfg.label && cfg.label.toLowerCase() === lowerTitle) {
+        varKey = k;
+      }
+    });
+    isMeteo = !!varKey;
+  }
+
+  // 2. Preparar etiquetas (labs) y datos (dats)
+  const labs = [];
+  const dats = [];
+  let hs = 0;
+  let finalUnid = unid; // Unidad final para la gráfica
+  let finalTitle = title;
+  let bgZones = []; // Zonas de fondo para la gráfica
+
+  if (isChem) {
+    // Es un contaminante: Convertir datos a ICA
+    finalUnid = "Puntos ICA";
+    finalTitle = `${title}`;
+    
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      const concentration = round10(dataset[dat]);
+      const icaPoint = convertConcentrationToICA(varKey, concentration);
+      dats.push(icaPoint);
+    }
+    // Usar las bandas estáticas de ICA (0-50, 51-100, etc.)
+    const staticZones = getStaticICAZones();
+bgZones = window.filterZonesByData ? window.filterZonesByData(staticZones, dats) : staticZones;
+
+  } else if (isMeteo) {
+    // Es de clima: Usar datos originales
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      dats.push(round10(dataset[dat]));
+    }
+    // Obtener bandas de riesgo de clima (ej. temperatura)
+    bgZones = getWeatherRiskZones(varKey);
+
+  } else {
+    // Variable desconocida: Usar datos originales
+    for (const dat in dataset) {
+      labs.push(setLabel(str_file, (hs += 3)));
+      dats.push(round10(dataset[dat]));
+    }
+  }
+  
+  // Actualizar el título en el header (ahora que sabemos la unidad final)
   const header = $(`
     <div class="chart-header">
       <div class="summary-icon"><i class="fa-solid ${iconClass}"></i></div>
-      <div class="chart-title-text">${title} (${unid})</div>
+      <div class="chart-title-text">${finalTitle} (${finalUnid})</div>
     </div>
   `);
   card.append(header);
 
+  // 3. Añadir la leyenda MINI dentro de cada gráfica (si aplica).
+  // Para contaminantes reutilizamos la mini-leyenda ICA existente; para clima
+  // generamos una mini-leyenda que muestra las bandas (rango y etiqueta)
+  // encima de la tabla/canvas para que el usuario vea qué significa cada color.
+  if (isMeteo && bgZones && bgZones.length) {
+    // Helper local: convertir color (rgb/rgba/#hex) a tono pastel (rgba con alpha)
+    // y calcular color de texto apropiado mezclando contra blanco (background).
+    function solidAndContrast(colorStr) {
+      const alpha = 0.55; // grado de transparencia para efecto pastel
+      if (!colorStr) return { solid: `rgba(200,200,200,${alpha})`, text: '#000' };
+      let r,g,b;
+      const rgbaMatch = colorStr.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+      if (rgbaMatch) {
+        r = parseInt(rgbaMatch[1],10); g = parseInt(rgbaMatch[2],10); b = parseInt(rgbaMatch[3],10);
+      } else {
+        const hexMatch = colorStr.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+        if (hexMatch) {
+          let hex = hexMatch[1];
+          if (hex.length === 3) hex = hex.split('').map(h=>h+h).join('');
+          r = parseInt(hex.substring(0,2),16);
+          g = parseInt(hex.substring(2,4),16);
+          b = parseInt(hex.substring(4,6),16);
+        }
+      }
+      // Fallback a gris si no parsea
+      if (r === undefined) { r=200; g=200; b=200; }
+      const pastel = `rgba(${r},${g},${b},${alpha})`;
+      // Calcular color resultante al mezclar sobre blanco: blended = alpha*rgb + (1-alpha)*255
+      const blend = (c) => Math.round(alpha * c + (1 - alpha) * 255);
+      const br = blend(r), bg = blend(g), bb = blend(b);
+      // Luminancia aproximada del color mezclado
+      const luminance = 0.2126 * br + 0.7152 * bg + 0.0722 * bb;
+      const text = luminance > 150 ? '#000' : '#fff';
+      return { solid: pastel, text };
+    }
+
+    let weatherLegendHTML = '<div class="clima-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
+    weatherLegendHTML += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;"><tr>';
+    weatherLegendHTML += `<td style="font-weight:700;text-align:left;padding:4px 2px;">${finalTitle}</td>`;
+    bgZones.forEach(b => {
+      const label = b.label || (b.min + '-' + b.max);
+      const col = b.color || 'rgba(200,200,200,0.6)';
+      const parsed = solidAndContrast(col);
+      weatherLegendHTML += `<td style="padding:4px 2px;background:${parsed.solid};color:${parsed.text};">${label}</td>`;
+    });
+    weatherLegendHTML += '</tr></table></div>';
+    card.append($(weatherLegendHTML));
+  }
+  
+  // --- FIN DE MODIFICACIÓN ---
+
   const canva = document.createElement('canvas');
   card.append(canva);
 
-  const labs = [];
-  const dats = [];
-  let hs = 0;
-  for (const dat in dataset) {
-    labs.push(setLabel(str_file, (hs += 3)));
-    dats.push(round10(dataset[dat]));
-  }
-
-  grafico(canva, tipo, labs, dats, title, unid, color);
-  chartsContainer.append(card); // Añadir al contenedor de gráficas, no al dialog principal
+  // 4. Llamar a grafico() con los datos (convertidos o no) y las zonas de fondo
+  grafico(canva, tipo, labs, dats, finalTitle, finalUnid, color, bgZones);
+  
+  chartsContainer.append(card); // Añadir al contenedor de gráficas
 }
 
-//-------------------------------------------------------------------------------
-function grafico(canva, tipo, labels, dats, title, unid, color) {
+function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones = []) {
   const baseColor = color || 'rgb(90,27,48)';
   let rgbaFill;
 
@@ -2420,11 +2487,20 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
     clip: 8
   };
 
+  // Calcular rango y padding para ajustar a los datos
+  const values = dats.filter(v => Number.isFinite(v));
+  const gmin = values.length ? Math.min(...values) : 0;
+  const gmax = values.length ? Math.max(...values) : 0;
+  const range = Math.max(1e-9, gmax - gmin);
+  const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1));
+
   const ctx = canva.getContext('2d', { willReadFrequently: true });
-  const chart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
     type: tipo,
     data: { labels, datasets: [dataset] },
     options: {
+        // Zonas de fondo (ej. bandas ICA o Clima)
+        backgroundZones: (Array.isArray(backgroundZones) && backgroundZones.length) ? backgroundZones : undefined,
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 650, easing: 'easeOutQuart' },
@@ -2447,9 +2523,16 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
           }
         }
       },
+      // --- INICIO DE MODIFICACIÓN ---
       scales: {
         y: {
-          beginAtZero: false,
+          // --- INICIO DE MODIFICACIÓN ---
+          // Si la unidad es "Puntos ICA", calcular límites dinámicos
+          ...((unid === "Puntos ICA" && window.getDynamicScaleLimits) ? 
+              window.getDynamicScaleLimits(dats) : 
+              { beginAtZero: true }), // Comportamiento original para otras gráficas
+          // --- FIN DE MODIFICACIÓN ---
+          
           ticks: {
             padding: 6,
             color: '#555',
@@ -2477,8 +2560,9 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
           },
           ticks: {
             autoSkip: true,
-            maxRotation: 45,
-            minRotation: 45,
+            maxTicksLimit: 8,
+            maxRotation: 0,
+            minRotation: 0,
             autoSkipPadding: 8,
             color: '#666',
             font: { family: 'Poppins', size: 11 }
@@ -2491,6 +2575,7 @@ function grafico(canva, tipo, labels, dats, title, unid, color) {
           }
         }
       },
+      // --- FIN DE MODIFICACIÓN ---
       elements: {
         line: { borderJoinStyle: 'round', capBezierPoints: true },
         point: { hoverBorderWidth: 2 }
@@ -2616,7 +2701,7 @@ $("#meteo").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Pronóstico Meteorológico del Estado de Puebla";
+  h1.textContent = "Pronóstico de Clima del Estado de Puebla";
 });
 
 $("#cali").click(function () {
@@ -2639,7 +2724,7 @@ $("#cali").click(function () {
 
   const h1 = document.getElementById("panel-header-text");
   // Cambia el contenido del h1
-  h1.textContent = "Calidad del Aire del Estado de Puebla";
+  h1.textContent = "Pronóstico de Calidad del Aire del Estado de Puebla";
   // Activar botón lateral de calidad del aire y sincronizar título del header
   try {
     document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -2668,16 +2753,11 @@ function show_datos(datos) {
 
   //texthtml.append('<tbody>');
   texthtml.append("<div>");
-  // Determinar modo actual: si existe #select_dat y su valor, usarlo; fallback según m_glosario
+  // Determinar modo actual según m_glosario
   let modo = 'meteo';
-  try {
-    const sel = document.getElementById('select_dat');
-    if (sel && sel.value) {
-      modo = sel.value === 'quim' ? 'chem' : 'meteo';
-    } else if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
-      modo = 'chem';
-    }
-  } catch(e) {}
+  if (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) {
+    modo = 'chem';
+  }
 
   // Bloque de acciones masivas (solo un botón según modo)
   if (modo === 'meteo') {
@@ -2751,9 +2831,8 @@ async function bulkDownloadCabeceras(features){
     return;
   }
   
-  // Determinar tipo según select_dat
-  const sel = document.getElementById('select_dat');
-  const modo = sel ? sel.value : 'meteo';
+  // Determinar tipo según m_glosario
+  const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
   const tipo = modo === 'quim' ? 'chem' : 'meteo';
   const sufijo = tipo === 'meteo' ? 'meteorologicos' : 'contaminantes';
   
@@ -2892,7 +2971,11 @@ function downladCSV(clave) {
 
     if (feature.get("clave") == clave && feature.get("local") == "cabecera") {
       m_feature = feature;
-      if ($("#select_dat").val() == "quim") {
+      
+      // Determinar modo según m_glosario
+      const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
+      
+      if (modo === 'quim') {
         show_chem(false);
       } else {
         show_meteo(false);
@@ -2914,8 +2997,10 @@ function downloadCSV(clave) {
       if (feature.get('clave') == clave && feature.get('local') == 'cabecera') {
         m_feature = feature;
         m_pendingDirectDownload = true;
-        const sel = document.getElementById('select_dat');
-        const modo = sel ? sel.value : 'meteo';
+        
+        // Determinar modo según m_glosario
+        const modo = (typeof m_glosario === 'string' && /chem/i.test(m_glosario)) ? 'quim' : 'meteo';
+        
         if (modo === 'quim') {
           show_chem(false);
         } else {
@@ -3216,7 +3301,9 @@ async function createHistoricalView(jsonPath, container, tipo) {
   try {
     const response = await fetch(jsonPath);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Extraer información del archivo para un mensaje más claro
+      const fileName = jsonPath.split('/').pop();
+      throw new Error(`HTTP error! status: ${response.status}\n\nArchivo: ${jsonPath}\n\nEste punto no tiene datos de meteograma disponibles. Solo las estaciones de monitoreo tienen datos históricos.`);
     }
     
     const data = await response.json();
@@ -3314,6 +3401,475 @@ const airQualityVariables = {
   PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: 'fa-solid fa-circle-dot' }
 };
 
+// Función para obtener zonas ICA (valores en unidades de concentración según la variable)
+// --- LÓGICA DE CÁLCULO ICA Y CLIMA ---
+
+// Bandas de concentración y sus puntos ICA equivalentes
+const ICABands = {
+  // 8-hour avg
+  O3: {
+    C: [0, 54, 70, 85, 105, 200],
+    I: [0, 50, 100, 150, 200, 300]
+  },
+  // 24-hour avg
+  PM25: {
+    C: [0.0, 12.0, 35.4, 55.4, 150.4, 250.4, 500.4],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 24-hour avg
+  PM10: {
+    C: [0, 54, 154, 254, 354, 424, 604],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 8-hour avg
+  CO: {
+    C: [0.0, 4.4, 9.4, 12.4, 15.4, 30.4, 50.4],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 1-hour avg
+  SO2: {
+    C: [0, 35, 75, 185, 304, 604, 1004],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  },
+  // 1-hour avg
+  NO2: {
+    C: [0, 53, 100, 360, 649, 1249, 2049],
+    I: [0, 50, 100, 150, 200, 300, 500]
+  }
+};
+
+// Bandas de "Confort Térmico" para Clima (ej. Temperatura)
+const WeatherRiskBands = {
+  t2m: [ // Temperatura en °C
+    { min: -Infinity, max: 10, label: "Frío", color: "rgba(0, 150, 255, 0.2)", class: "clima-frio" },
+    { min: 10, max: 25, label: "Templado", color: "rgba(0, 200, 150, 0.2)", class: "clima-templado" },
+    { min: 25, max: 30, label: "Calor", color: "rgba(255, 220, 0, 0.2)", class: "clima-calor" },
+    { min: 30, max: Infinity, label: "Muy Caluroso", color: "rgba(255, 100, 0, 0.25)", class: "clima-muy-caluroso" }
+  ],
+  rh: [ // Humedad Relativa en %
+    { min: -Infinity, max: 30, label: "Seco", color: "rgba(210, 180, 140, 0.2)", class: "clima-seco" },
+    { min: 30, max: 60, label: "Confortable", color: "rgba(173, 216, 230, 0.2)", class: "clima-confortable" },
+    { min: 60, max: 100, label: "Húmedo", color: "rgba(100, 149, 237, 0.25)", class: "clima-humedo" }
+  ],
+  wnd: [ // Viento en km/h
+    { min: -Infinity, max: 10, label: "Calma", color: "rgba(240, 248, 255, 0.15)", class: "clima-calma" },
+    { min: 10, max: 30, label: "Ligero", color: "rgba(135, 206, 250, 0.2)", class: "clima-ligero" },
+    { min: 30, max: 60, label: "Fuerte", color: "rgba(70, 130, 180, 0.25)", class: "clima-fuerte" },
+    { min: 60, max: Infinity, label: "Muy Fuerte", color: "rgba(25, 25, 112, 0.3)", class: "clima-muy-fuerte" }
+  ],
+  sw: [ // Radiación Solar en W/m²
+    { min: -Infinity, max: 300, label: "Baja", color: "rgba(200, 200, 200, 0.2)", class: "clima-baja" },
+    { min: 300, max: 700, label: "Moderada", color: "rgba(255, 255, 0, 0.2)", class: "clima-moderada" },
+    { min: 700, max: 1000, label: "Alta", color: "rgba(255, 165, 0, 0.25)", class: "clima-alta" },
+    { min: 1000, max: Infinity, label: "Extrema", color: "rgba(255, 69, 0, 0.3)", class: "clima-extrema" }
+  ],
+  psl: [ // Presión a Nivel del Mar en hPa
+    { min: -Infinity, max: 1010, label: "Baja", color: "rgba(255, 100, 100, 0.2)", class: "clima-baja" },
+    { min: 1010, max: 1020, label: "Normal", color: "rgba(144, 238, 144, 0.2)", class: "clima-normal" },
+    { min: 1020, max: Infinity, label: "Alta", color: "rgba(135, 206, 250, 0.25)", class: "clima-alta" }
+  ],
+  pre: [ // Bandas para Precipitación en mm
+    { min: 0, max: 0.1, label: "Sin Lluvia", color: "rgba(240, 240, 240, 0.4)", class: "precip-sin" },
+    { min: 0.1, max: 2.5, label: "Llovizna", color: "rgba(0, 228, 0, 0.4)", class: "precip-llovizna" },
+    { min: 2.5, max: 10, label: "Lluvia Ligera", color: "rgba(0, 150, 255, 0.4)", class: "precip-ligera" },
+    { min: 10, max: 50, label: "Lluvia Moderada", color: "rgba(255, 255, 0, 0.4)", class: "precip-moderada" },
+    { min: 50, max: Infinity, label: "Lluvia Fuerte", color: "rgba(255, 0, 0, 0.4)", class: "precip-fuerte" }
+  ]
+};
+
+// Bandas de colores ICA (para fondos de tarjeta/tabla)
+const ICAColors = [
+    { max: 50, color: "rgba(0, 228, 0, 0.4)", class: "riesgo-buena" },
+    { max: 100, color: "rgba(255, 255, 0, 0.4)", class: "riesgo-regular" },
+    { max: 150, color: "rgba(255, 126, 0, 0.4)", class: "riesgo-mala" },
+    { max: 200, color: "rgba(255, 0, 0, 0.4)", class: "riesgo-muy-mala" },
+    { max: 300, color: "rgba(143, 63, 151, 0.4)", class: "riesgo-extremadamente-mala" },
+    { max: Infinity, color: "rgba(153, 0, 51, 0.4)", class: "riesgo-peligrosa" }
+];
+
+/**
+ * Devuelve el color de fondo y la clase CSS para un valor ICA.
+ */
+function getICAColorForValue(icaValue) {
+  for (const band of ICAColors) {
+    if (icaValue <= band.max) {
+      return band;
+    }
+  }
+  return { color: "rgba(240, 240, 240, 0.4)", class: "riesgo-desconocido" }; // Default
+}
+
+/**
+ * Construye el HTML de la leyenda ICA para insertar en popups/modales.
+ * Usa la constante `ICAColors` para generar segmentos y etiquetas.
+ */
+function createICALegend() {
+  // Definir etiquetas legibles y rangos basados en ICAColors
+  const labels = [
+    { title: 'Buena', range: '0-50' },
+    { title: 'Regular', range: '51-100' },
+    { title: 'Mala', range: '101-150' },
+    { title: 'Muy mala', range: '151-200' },
+    { title: 'Extremadamente Mala', range: '201-300' },
+    { title: 'Peligrosa', range: '301-500' }
+  ];
+
+  // Estimar ancho relativo de cada banda (usar 50/50/50/50/100/200 => total 500)
+  const spans = [50,50,50,50,50,50];
+  const total = spans.reduce((a,b)=>a+b,0);
+
+  let segmentsHTML = '';
+  for (let i=0;i<ICAColors.length;i++){
+    const band = ICAColors[i];
+    const weight = spans[i] || 50;
+    // Usar color con opacidad mayor para la barra (sin alpha transparente)
+    let color = band.color;
+    // Si el color tiene rgba con alpha, intentar forzar alpha a 1
+    color = color.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/,'rgba($1,$2,$3,1)');
+    // Usar flex con sintaxis completa para evitar inconsistencias en algunos navegadores
+    segmentsHTML += `<div class="ica-segment" title="${labels[i].title} (${labels[i].range})" style="flex: ${weight} 1 0%; background: ${color};"></div>`;
+  }
+
+  let labelsHTML = '';
+  for (let i=0;i<labels.length;i++){
+    const weight = spans[i] || 50;
+    labelsHTML += `<div class="ica-label" style="flex: ${weight} 1 0%; text-align:center;">` +
+                  `<strong>${labels[i].title}</strong>` +
+                  `<div class="ica-range">${labels[i].range}</div>` +
+                  `</div>`;
+  }
+
+  const html = `
+    <div class="ica-legend">
+      <h2><i class="fa-solid fa-wind"></i> Índice de Calidad del Aire (ICA)</h2>
+      <div class="ica-legend-bar" aria-hidden="true">${segmentsHTML}</div>
+      <div class="ica-legend-labels">${labelsHTML}</div>
+      <div class="ica-legend-actions" style="margin-top:0px;text-align:right;">
+        <a href="#" class="ver-riesgos-link" style="font-size:0.95rem;color:var(--primary-brand-color);"> <i class="fa-solid fa-circle-info"></i> Ver más</a>
+      </div>
+    </div>
+  `;
+
+  return html;
+}
+
+/**
+ * Devuelve el color de fondo y la clase CSS para una variable de clima.
+ */
+function getWeatherRiskBand(variableKey, value) {
+  const bands = WeatherRiskBands[variableKey];
+  if (!bands) {
+    return { color: "rgba(240, 240, 240, 0.4)", class: "clima-desconocido" }; // Default
+  }
+  
+  for (const band of bands) {
+    if (value >= band.min && value < band.max) {
+      return band;
+    }
+  }
+  return { color: "rgba(240, 240, 240, 0.4)", class: "clima-desconocido" }; // Default
+}
+
+/**
+ * Aplica interpolación lineal para calcular el Punto ICA.
+ * I = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low
+ */
+function calculateICA(C, C_low, C_high, I_low, I_high) {
+  if (C_high === C_low) return I_low; // Evitar división por cero
+  let ica = ((I_high - I_low) / (C_high - C_low)) * (C - C_low) + I_low;
+  return Math.round(ica);
+}
+
+/**
+ * Convierte un valor de concentración a su Punto ICA equivalente.
+ */
+function convertConcentrationToICA(variableKey, concentration) {
+  const key = variableKey.toUpperCase();
+  if (!ICABands[key]) {
+    return concentration; // Si no es un contaminante ICA, devuelve el valor original
+  }
+
+  const bands = ICABands[key];
+  const C_p = parseFloat(concentration);
+
+  // Encontrar el rango correcto
+  for (let i = 1; i < bands.C.length; i++) {
+    const C_low = bands.C[i - 1];
+    const C_high = bands.C[i];
+    
+    if (C_p >= C_low && C_p <= C_high) {
+      const I_low = bands.I[i - 1];
+      const I_high = bands.I[i];
+      return calculateICA(C_p, C_low, C_high, I_low, I_high);
+    }
+  }
+  
+  // Si está por encima del rango más alto, usa la última banda
+  if (C_p > bands.C[bands.C.length - 1]) {
+      const C_low = bands.C[bands.C.length - 2];
+      const C_high = bands.C[bands.C.length - 1];
+      const I_low = bands.I[bands.I.length - 2];
+      const I_high = bands.I[bands.I.length - 1];
+      return calculateICA(C_p, C_low, C_high, I_low, I_high);
+  }
+
+  return 0; // Por defecto
+}
+  
+/**
+ * Devuelve las bandas estáticas para el fondo de la gráfica ICA (0-500).
+ */
+function getStaticICAZones() {
+  const colors = [
+    'rgb(0,228,0)',    // 0-50 verde
+    'rgb(255,255,0)',  // 51-100 amarillo
+    'rgb(255,126,0)',  // 101-150 naranja
+    'rgb(255,0,0)',    // 151-200 rojo
+    'rgb(143,63,151)', // 201-300 morado
+    'rgb(153,0,51)'    // 301-500 vino
+  ];
+  const labels = ['0-50','51-100','101-150','151-200','201-300','301-500'];
+  const zones = [
+      { min: 0, max: 50 },
+      { min: 50, max: 100 },
+      { min: 100, max: 150 },
+      { min: 150, max: 200 },
+      { min: 200, max: 300 },
+      { min: 300, max: 500 } // Rango extendido para la última banda
+  ];
+
+  return zones.map((b, i) => ({ 
+    min: b.min, 
+    max: b.max, 
+    color: colors[i] || 'rgba(0,0,0,0.12)', 
+    label: labels[i] 
+  }));
+}
+
+// Helper: filtra zonas (p. ej. ICA) manteniendo sólo aquellas que contienen valores presentes
+if (typeof window.filterZonesByData !== 'function') {
+  window.filterZonesByData = function(zones, dataArray){
+    if (!Array.isArray(zones) || !zones.length || !Array.isArray(dataArray) || !dataArray.length) {
+        return []; // Devuelve un array vacío si no hay datos o zonas
+    }
+    const dataMin = Math.min(...dataArray);
+    const dataMax = Math.max(...dataArray);
+    // Devuelve zonas que se superponen con el rango de datos
+    return zones.filter(z => z.max >= dataMin && z.min <= dataMax);
+  };
+}
+
+// Helper: genera el HTML de la mini-leyenda ICA de forma dinámica.
+if (typeof window.renderICAMiniHTML !== 'function') {
+  window.renderICAMiniHTML = function(zonesWithData){
+    const allZones = getStaticICAZones();
+    let html = '<div class="ver-riesgos-link-wrapper">';
+    html += '<div class="ica-legend-mini" style="width:100%;">';
+    html += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:10px;"><tr>';
+    html += '<td style="font-weight:700;text-align:left;padding:4px 2px;font-size:11px;">ICA</td>';
+    
+    allZones.forEach(z => {
+      // Comprueba si alguna de las zonas con datos coincide con la zona actual de la leyenda completa
+      const isPresent = zonesWithData.some(presentZone => presentZone.label === z.label);
+      // Reemplaza la transparencia para que el color de la leyenda sea sólido
+      const color = z.color.replace(/,0.18\)/, ',1)'); 
+      const textColor = (z.max > 150) ? '#fff' : '#000';
+      // Si la zona está presente, opacidad 1; si no, 0.3
+      const style = `padding:4px 2px;background:${color};color:${textColor};opacity:${isPresent ? 1 : 0.3};`;
+      html += `<td style="${style}">${z.label}</td>`;
+    });
+
+    html += '</tr></table></div>';
+    html += '<a href="#" class="ver-riesgos-link"><i class="fa-solid fa-circle-info"></i> Ver más</a>';
+    html += '</div>';
+    return html;
+  };
+}
+
+// Helper: Calcula los límites (min/max) para la escala del eje Y de forma dinámica.
+if (typeof window.getDynamicScaleLimits !== 'function') {
+  window.getDynamicScaleLimits = function(dataArray) {
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      return { suggestedMin: 0, suggestedMax: 50 }; // Valores por defecto
+    }
+    
+    const dataMin = Math.min(...dataArray);
+    const dataMax = Math.max(...dataArray);
+    
+    // 1. Calcular el rango de los datos
+    const range = dataMax - dataMin;
+    
+    // 2. Añadir un "padding" o "aire" para que la línea no toque los bordes
+    // Si el rango es muy pequeño (ej. < 10), usamos un padding fijo.
+    // Si es más grande, usamos un porcentaje del rango.
+    let padding;
+    if (range < 10) {
+      padding = 5;
+    } else {
+      padding = range * 0.15; // 15% del rango como padding
+    }
+
+    // 3. Calcular los nuevos límites
+    let suggestedMin = Math.floor(dataMin - padding);
+    let suggestedMax = Math.ceil(dataMax + padding);
+
+    // 4. Asegurarse de que el mínimo no sea menor que 0 para los puntos ICA
+    if (suggestedMin < 0) {
+      suggestedMin = 0;
+    }
+    
+    return { suggestedMin, suggestedMax };
+  };
+}
+/**
+ * Devuelve las bandas estáticas para el fondo de la gráfica de Clima.
+ */
+function getWeatherRiskZones(variableKey) {
+  const bands = WeatherRiskBands[variableKey];
+  if (!bands) return [];
+  
+  // Mapea las bandas al formato que espera la gráfica
+  return bands.map(band => ({
+    min: band.min === -Infinity ? -10 : band.min, // Ajusta -Infinity para la gráfica
+    max: band.max === Infinity ? 50 : band.max,   // Ajusta Infinity para la gráfica
+    color: band.color,
+    label: band.label
+  }));
+}
+
+/**
+ * Calcula el promedio de un array de concentraciones en Puntos ICA.
+ */
+function avgICA(variableKey, concentrationArray) {
+  if (!concentrationArray || concentrationArray.length === 0) return 0; // Devuelve 0 en lugar de "-"
+  
+  let icaSum = 0;
+  for (const conc of concentrationArray) {
+    icaSum += convertConcentrationToICA(variableKey, conc);
+  }
+  
+  return (icaSum / concentrationArray.length); // Devuelve el número
+}
+
+function getICAZones(variableKey) {
+  if (!variableKey) return [];
+  const k = variableKey.toString().toUpperCase();
+
+  const bands = {
+    PM25: [
+      { min: 0.0, max: 12.0 },
+      { min: 12.1, max: 35.4 },
+      { min: 35.5, max: 55.4 },
+      { min: 55.5, max: 150.4 },
+      { min: 150.5, max: 250.4 },
+      { min: 250.5, max: 500.4 }
+    ],
+    PM10: [
+      { min: 0, max: 54 },
+      { min: 55, max: 154 },
+      { min: 155, max: 254 },
+      { min: 255, max: 354 },
+      { min: 355, max: 424 },
+      { min: 425, max: 604 }
+    ],
+    O3: [
+      { min: 0, max: 54 },
+      { min: 55, max: 70 },
+      { min: 71, max: 85 },
+      { min: 86, max: 105 },
+      { min: 106, max: 200 },
+      { min: 201, max: 604 }
+    ],
+    NO2: [
+      { min: 0, max: 53 },
+      { min: 54, max: 100 },
+      { min: 101, max: 360 },
+      { min: 361, max: 649 },
+      { min: 650, max: 1249 },
+      { min: 1250, max: 2049 }
+    ],
+    SO2: [
+      { min: 0, max: 35 },
+      { min: 36, max: 75 },
+      { min: 76, max: 185 },
+      { min: 186, max: 304 },
+      { min: 305, max: 604 },
+      { min: 605, max: 1004 }
+    ],
+    CO: [
+      { min: 0.0, max: 4.4 },
+      { min: 4.5, max: 9.4 },
+      { min: 9.5, max: 12.4 },
+      { min: 12.5, max: 15.4 },
+      { min: 15.5, max: 30.4 },
+      { min: 30.5, max: 50.4 }
+    ]
+  };
+
+  const colors = [
+    'rgb(0,228,0)',    // 0-50 verde
+    'rgb(255,255,0)',  // 51-100 amarillo
+    'rgb(255,126,0)',  // 101-150 naranja
+    'rgb(255,0,0)',    // 151-200 rojo
+    'rgb(143,63,151)', // 201-300 morado
+    'rgb(153,0,51)'    // 301-500 vino
+  ];
+
+  const labels = ['0-50','51-100','101-150','151-200','201-300','301-500'];
+
+  const def = bands[k] || bands['PM25'];
+  return def.map((b, i) => ({ min: b.min, max: b.max, color: colors[i] || 'rgba(0,0,0,0.12)', label: labels[i] }));
+}
+
+// Plugin global para dibujar zonas de fondo (backgroundZones) en cualquier Chart.js
+Chart.register({
+  id: 'globalBackgroundZones',
+  beforeDatasetsDraw: function(chart) {
+    const zones = chart.config && chart.config.options && chart.config.options.backgroundZones;
+    if (!zones || !zones.length) return;
+    const ctx = chart.ctx;
+    const chartArea = chart.chartArea;
+    if (!chartArea) return;
+    // Preferir escala Y explícita
+    const yScale = chart.scales && (chart.scales.y || Object.values(chart.scales)[0]);
+    if (!yScale) return;
+
+    zones.forEach(zone => {
+      // Evitar valores no numéricos (pero Infinity es válido)
+      if (typeof zone.min !== 'number' || typeof zone.max !== 'number') return;
+      
+      // Manejar Infinity usando los límites de la escala
+      const actualMax = zone.max === Infinity ? yScale.max : zone.max;
+      const actualMin = zone.min === -Infinity ? yScale.min : zone.min;
+      
+      const yTop = yScale.getPixelForValue(actualMax);
+      const yBottom = yScale.getPixelForValue(actualMin);
+
+      // Recortar al área del gráfico
+      const top = Math.max(yTop, chartArea.top);
+      const bottom = Math.min(yBottom, chartArea.bottom);
+      const height = bottom - top;
+      if (height <= 0) return;
+
+      ctx.save();
+      ctx.fillStyle = zone.color || 'rgba(0,0,0,0.12)';
+      ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, height);
+
+      // Etiqueta pequeña a la izquierda dentro de la franja
+      if (zone.label) {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.font = "600 12px 'Poppins', sans-serif";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const labelY = top + height / 2;
+        ctx.fillText(zone.label, chartArea.left + 8, labelY);
+      }
+
+      ctx.restore();
+    });
+  }
+});
+
 let currentHistChart = null;
 let currentHistData = null;
 let selectedVariables = new Set();
@@ -3355,14 +3911,30 @@ function renderGroupedCharts(groups, labels, titlePrefix){
   groups.forEach((grp, idx) => {
     const card = document.createElement('div');
     card.className = 'chart-card';
+        // Añadir mini-leyenda ICA en charts agrupados (si aplica)
+
+    // Determinar zonas (ICA) para este grupo y filtrarlas
+    const groupValues = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
+    const zonesForVar = (grp && grp.length && grp[0].variableKey && (Object.keys(airQualityVariables).includes(grp[0].variableKey))) ? getICAZones(grp[0].variableKey) : [];
+    const filteredZones = window.filterZonesByData ? window.filterZonesByData(zonesForVar, groupValues) : zonesForVar;
+
+    // Añadir mini-leyenda ICA dinámica
+    const icaMini = document.createElement('div');
+    icaMini.className = 'ica-legend-mini-container';
+    icaMini.innerHTML = window.renderICAMiniHTML ? window.renderICAMiniHTML(filteredZones) : '';
+    card.appendChild(icaMini);
+
     const cv = document.createElement('canvas');
     card.appendChild(cv);
     host.appendChild(card);
 
-    const allY = grp.flatMap(d => d.data).filter(v => Number.isFinite(v));
-const gmin = Math.min(...allY), gmax = Math.max(...allY);
-const range = Math.max(1e-9, gmax - gmin);
-const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
+    const allY = groupValues;
+    const gmin = allY.length ? Math.min(...allY) : 0;
+    const gmax = allY.length ? Math.max(...allY) : 0;
+    // Usar las zonas ya filtradas para el fondo de la gráfica
+    const zones = filteredZones;
+    const range = Math.max(1e-9, gmax - gmin);
+    const pad = Math.max(range * 0.1, 0.05 * Math.abs(gmax || 1)); // 10% ó mínimo razonable
 
 // paso “bonito” (1–2–5 * 10^n) para ~5–6 ticks
 const niceStep = (() => {
@@ -3372,10 +3944,12 @@ const niceStep = (() => {
   return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
 })();
 
-const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
+    const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
   type: 'line',
   data: { labels, datasets: grp },
   options: {
+    // Si alguno de los datasets es de calidad del aire, agregar zonas ICA
+        backgroundZones: zones,
     responsive: true,
     animation: { duration: 650, easing: 'easeInOutQuart' },
     maintainAspectRatio: false,
@@ -3398,7 +3972,7 @@ const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
         callbacks: { label: c => ` ${c.dataset.label}: ${(+c.parsed.y).toFixed(2)}` }
       }
     },
-    scales: {
+      scales: {
       y: {
         beginAtZero: false,
         suggestedMin: gmin - pad,
@@ -3488,6 +4062,7 @@ function renderIndividualChartsFromSelectedVariables(tipo) {
 }
 
 // Función para crear gráficas individuales por variable (estilo MeteorologiaGit)
+// Función para renderizar gráficas individuales por variable (estilo MeteorologiaGit)
 function renderIndividualCharts(datasets, labels, type) {
   const host = document.getElementById('chartsHost');
   if (!host) return;
@@ -3500,17 +4075,93 @@ function renderIndividualCharts(datasets, labels, type) {
     return;
   }
 
+  // Función para obtener zonas de colores basadas en valores de temperatura
+  function getTemperatureZones(variableKey) {
+    // Solo aplicar a variables de temperatura
+    if (!variableKey || !variableKey.toLowerCase().includes('t2m')) { // Solo 't2m'
+      return []; // Sin zonas para otras variables
+    }
+    
+    // (Usar las bandas de la función global)
+    return getWeatherRiskZones(variableKey);
+  }
+
+  // (El plugin global de 'backgroundZones' ya está registrado)
+
   // Crear una gráfica individual para cada variable
   datasets.forEach((dataset, idx) => {
     const card = document.createElement('div');
     card.className = 'chart-card individual-chart';
+
+    // --- INICIO DE MODIFICACIÓN ---
+
+    // 1. Determinar el varKey y si es 'chem' o 'meteo'
+    let variableKey = dataset.variableKey;
+    const isChem = (type === 'chem');
+    const isMeteo = (type === 'meteo');
+
+    // 2. Preparar datos (dats), unidad (finalUnid) y título (finalTitle)
+    let dats = dataset.data;
+    let finalUnid = dataset.config.unit;
+    let finalTitle = dataset.config.label;
+    let backgroundZones = [];
     
+    if (isChem && variableKey) {
+      // Es un contaminante: Convertir datos a ICA
+      finalUnid = "Puntos ICA";
+      finalTitle = dataset.config.label; // El título ya es correcto
+      
+      dats = dataset.data.map(concentration => {
+        return convertConcentrationToICA(variableKey, concentration);
+      });
+      
+      // Usar las bandas estáticas de ICA (0-50, 51-100, etc.)
+      const staticZones = getStaticICAZones();
+      backgroundZones = window.filterZonesByData ? window.filterZonesByData(staticZones, dats) : staticZones;
+
+    } else if (isMeteo && variableKey) {
+      // Es de clima: Usar datos originales y obtener bandas de riesgo
+      dats = dataset.data; // Ya están en el formato correcto
+      backgroundZones = getWeatherRiskZones(variableKey);
+    }
+
+    // 3. Crear Header con la unidad final
+    const header = document.createElement('div');
+    header.className = 'chart-header';
+    header.innerHTML = `
+      <div class="summary-icon"><i class="fa-solid ${dataset.config.icon}"></i></div>
+      <div class="chart-title-text">${finalTitle} (${finalUnid})</div>
+    `;
+    card.appendChild(header);
+
+    // 4. Añadir la leyenda MINI (ICA o Clima) y el enlace "Ver más"
+    if (isChem) {
+  // Contaminante: Añadir leyenda ICA dinámica
+      const legendHTML = window.renderICAMiniHTML ? window.renderICAMiniHTML(backgroundZones) : '';
+      card.append($(legendHTML));
+
+    } else if (isMeteo && WeatherRiskBands[variableKey]) {
+      // Clima (con bandas definidas): Añadir leyenda de clima
+      let weatherLegendHTML = '<div class="ica-legend-mini" style="width:100%;margin:6px 0 10px 0;">';
+      weatherLegendHTML += '<table style="width:100%;border-collapse:collapse;text-align:center;font-size:11px;"><tr>';
+      weatherLegendHTML += `<td style="font-weight:700;text-align:left;padding:4px 2px;">${finalTitle}</td>`;
+      
+      WeatherRiskBands[variableKey].forEach(band => {
+        weatherLegendHTML += `<td style="padding:4px 2px; background-color: ${band.color};">${band.label}</td>`;
+      });
+      
+      weatherLegendHTML += '</tr></table></div>';
+      card.insertAdjacentHTML('beforeend', weatherLegendHTML);
+    }
+    // --- FIN DE MODIFICACIÓN ---
+
+
     // Crear canvas para la gráfica
     const cv = document.createElement('canvas');
     card.appendChild(cv);
 
     // Calcular rango y escalas para esta variable específica
-    const values = dataset.data.filter(v => Number.isFinite(v));
+    const values = dats.filter(v => Number.isFinite(v));
     if (!values.length) return;
 
     const gmin = Math.min(...values);
@@ -3526,32 +4177,43 @@ function renderIndividualCharts(datasets, labels, type) {
       return cand.reduce((a,b)=> Math.abs(b-target) < Math.abs(a-target) ? b : a);
     })();
 
+      // Determinar opciones de escala Y reutilizando la lógica del popup
+      // Para ICA usamos el helper `getDynamicScaleLimits` (si existe)
+      let yScaleOptions = {};
+      if (finalUnid === 'Puntos ICA' && typeof window.getDynamicScaleLimits === 'function') {
+        yScaleOptions = window.getDynamicScaleLimits(dats);
+      } else {
+        // Para variables meteorológicas y otras, proponemos límites con padding
+        yScaleOptions = {
+          suggestedMax: gmax + pad,
+          suggestedMin: Math.max(gmin - pad, Number.isFinite(gmin) ? gmin - pad : 0),
+          beginAtZero: false
+        };
+      }
+
+    // (El plugin 'backgroundColorPlugin' ya está registrado globalmente)
+
     // Crear la gráfica individual
     const chart = new Chart(cv.getContext('2d', { willReadFrequently: true }), {
       type: 'line',
       data: { 
         labels, 
-        datasets: [dataset] // Solo un dataset por gráfica
+        // Usar los datos (convertidos o no) y el dataset original
+        datasets: [{ ...dataset, data: dats, label: `${finalTitle} (${finalUnid})` }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 650, easing: 'easeInOutQuart' },
+        // Zonas de colores de fondo (ICA o Clima)
+        backgroundZones: backgroundZones,
         plugins: {
           legend: { 
-            display: true,
-            position: 'top',
-            onClick: () => {}, // Desactiva toggle
-            labels: { 
-              padding: 10, 
-              usePointStyle: true, 
-              font: { size: 12, family: "'Poppins', sans-serif" } 
-            }
+            display: false, // Ocultar leyenda, el título ya la describe
+            onClick: () => {}, 
           },
           title: { 
-            display: true, 
-            text: dataset.label,
-            font: { size: 15, weight: 'bold', family: "'Poppins', sans-serif" }
+            display: false, // Ocultar título, ya está en el header
           },
           tooltip: {
             mode: 'index', 
@@ -3569,25 +4231,27 @@ function renderIndividualCharts(datasets, labels, type) {
           }
         },
         scales: {
-          y: {
-            beginAtZero: false,
-            suggestedMin: gmin - pad,
-            suggestedMax: gmax + pad,
-            title: {
-              display: true,
-              text: dataset.label.split('(')[1]?.replace(')', '') || 'Valor',
-              color: '#666',
-              font: { family: "'Poppins', sans-serif" }
+            y: {
+              // Reusar opciones calculadas arriba (para mantener consistencia con popup)
+              ...yScaleOptions,
+              // Si hay bandas de fondo, asegurar que sugeridos incluyan las bandas
+              suggestedMax: (yScaleOptions.suggestedMax !== undefined) ? yScaleOptions.suggestedMax : (backgroundZones.length > 0 ? Math.max(gmax + pad, backgroundZones[backgroundZones.length - 1].max) : gmax + pad),
+              suggestedMin: (yScaleOptions.suggestedMin !== undefined) ? yScaleOptions.suggestedMin : (backgroundZones.length > 0 ? Math.min(gmin - pad, backgroundZones[0].min) : gmin - pad),
+              title: {
+                display: true,
+                text: finalUnid,
+                color: '#666',
+                font: { family: "'Poppins', sans-serif" }
+              },
+              ticks: {
+                stepSize: (finalUnid === "Puntos ICA") ? 50 : niceStep,
+                maxTicksLimit: (finalUnid === "Puntos ICA") ? 11 : 6,
+                padding: 6,
+                callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
+                font: { family: "'Poppins', sans-serif" }
+              },
+              grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
             },
-            ticks: {
-              stepSize: niceStep,
-              maxTicksLimit: 6,
-              padding: 6,
-              callback: v => (Math.abs(v) >= 1000 ? v.toFixed(0) : parseFloat(v.toFixed(2))),
-              font: { family: "'Poppins', sans-serif" }
-            },
-            grid: { color:'rgba(0,0,0,0.06)', drawBorder:false }
-          },
           x: {
             title: {
               display: true,
@@ -3610,19 +4274,16 @@ function renderIndividualCharts(datasets, labels, type) {
       }
     });
 
-    // Crear botón de descarga estilo MeteorologiaGit
+    // Crear botón de descarga
     const btn = document.createElement('button');
     btn.innerHTML = '<i class="fa-solid fa-download"></i> Descargar Gráfica';
     btn.className = 'download-btn';
     btn.onclick = () => {
       const a = document.createElement('a');
       a.href = chart.toBase64Image();
-      
-      // Crear nombre de archivo basado en la variable
-      const variableName = dataset.label.split(' ')[1] || 'variable'; // Extraer nombre de variable
-      const timestamp = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+      const variableName = dataset.config.label || 'variable';
+      const timestamp = new Date().toISOString().slice(0,10);
       a.download = `${slug(variableName)}_${timestamp}.png`;
-      
       a.click();
     };
     card.appendChild(btn);
@@ -3738,6 +4399,9 @@ function createMeteoHistoricalChart(data) {
         pointBackgroundColor: cfg.color,
         pointBorderColor: '#fff',
         pointBorderWidth: 1.2
+        ,
+        variableKey: key,
+        config: cfg
       });
     }
   });
@@ -3796,6 +4460,9 @@ function createChemHistoricalChart(data) {
         pointBackgroundColor: cfg.color,
         pointBorderColor: '#fff',
         pointBorderWidth: 1.2
+        ,
+        variableKey: key,
+        config: cfg
       });
     }
   });
@@ -3871,6 +4538,9 @@ function calculateStats(values) {
   
   return { avg, max, min };
 }
+
+// Devuelve las zonas ICA (intervalos y colores) para calidad del aire
+// NOTE: ICA zones are implemented above as getICAZones(variableKey)
 
 // === COMBOBOX for municipality selection in historial ===
 (function makeHistComboboxRobusto(){
@@ -4278,11 +4948,17 @@ async function loadMapSearchMunicipios() {
 
 // Función para centrar el mapa en un municipio
 function centerMapOnMunicipioSearch(municipioClave) {
+  console.log(`centerMapOnMunicipioSearch called with: ${municipioClave}`);
   const municipio = mapSearchMunicipiosData.find(m => m.clave === municipioClave);
-  if (!municipio || !m_map) return;
+  if (!municipio || !m_map) {
+    console.log("Municipio not found or map not available");
+    return;
+  }
   
   const [lng, lat] = municipio.coordinates;
   const view = m_map.getView();
+  
+  console.log(`Centering map on: ${municipio.nombre} [${lng}, ${lat}] with zoom 12`);
   
   // Centrar el mapa en las coordenadas del municipio
   view.animate({
@@ -4608,248 +5284,795 @@ function safeVal(arr, idx){
   return Number.parseFloat(v).toFixed(2);
 }
 
-// Error handling for missing resources
-window.addEventListener('error', (e) => {
-    console.error('Error loading resource:', e.filename, e.message);
-    if (e.filename && (e.filename.includes('images/') || e.filename.includes('.svg'))) {
-        showNotification('Algunas imágenes no se pudieron cargar', 'error');
+// ---------------------------------------------------------------
+// ZIP por municipio (cada CSV separado) usando JSZip dinámico
+// ---------------------------------------------------------------
+async function ensureJSZip(){
+  if (window.JSZip) return window.JSZip;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = () => res();
+    s.onerror = (e) => rej(e);
+    document.head.appendChild(s);
+  });
+  return window.JSZip;
+}
+
+async function downloadZIPPerMunicipio(btn, tipo, sufijo){
+  if (!m_dir_runs){ alert('No hay ejecución seleccionada.'); return; }
+  if (btn){ btn.disabled = true; var original = btn.textContent; btn.textContent = 'Preparando ZIP...'; }
+  try {
+    const JSZipLib = await ensureJSZip();
+    const zip = new JSZipLib();
+    const feats = (m_vectorSource && m_vectorSource.getFeatures) ? m_vectorSource.getFeatures() : [];
+    const cabeceras = feats.filter(f => f.get && f.get('local') === 'cabecera');
+    if (!cabeceras.length){ alert('No se encontraron cabeceras.'); return; }
+
+    const fech = m_dir_runs.substring(7, 15);
+    const hor = m_dir_runs.substring(15, 17);
+    const dir_dat = tipo === 'meteo' ? 'meteo/wrf_meteo_' : 'chem/wrf_chem_';
+
+    // Encabezados según tipo
+    const headerM = 'Fecha,Temperatura (°C),Humedad (%),Precipitación (mm),Radiación (w/m2),Viento (km/h),Presión (hPa)';
+    const headerC = 'Fecha,CO (ppm),NO2 (ppb),O3 (ppb),SO2 (ppb),PM10 (µg/m³),PM2.5 (µg/m³)';
+
+    for (const f of cabeceras){
+      const clave = f.get('clave');
+      const nombre = (f.get('nombre')||'').replace(/[\r\n]+/g,' ').trim();
+      const safeName = nombre.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'').replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+      const jsonUrl = m_dir_runs + f.get('dir') + dir_dat + clave + '_' + fech + '_' + hor + 'z.json';
+      try {
+        const resp = await fetch(jsonUrl);
+        if (!resp.ok) { console.warn('No se pudo leer', jsonUrl); continue; }
+        const data = await resp.json();
+        const keys = Object.keys(data);
+        if (!keys.length) continue;
+        const len = Array.isArray(data[keys[0]]) ? data[keys[0]].length : 0;
+        let hs = 0;
+        const lines = [ tipo === 'meteo' ? headerM : headerC ];
+        for (let i=0;i<len;i++){
+          hs += 3;
+          const fechaLabel = setLabel(jsonUrl, hs).replace(/[,\r\n]+/g,' ');
+          if (tipo === 'meteo'){
+            lines.push([
+              fechaLabel,
+              safeVal(data.t2m,i), safeVal(data.rh,i), safeVal(data.pre,i),
+              safeVal(data.sw,i), safeVal(data.wnd,i), safeVal(data.psl,i)
+            ].join(','));
+          } else {
+            lines.push([
+              fechaLabel,
+              safeVal(data.CO,i), safeVal(data.NO2,i), safeVal(data.O3,i), safeVal(data.SO2,i),
+              safeVal(data.PM10,i), safeVal(data.PM25,i)
+            ].join(','));
+          }
+        }
+        const csvContent = '\uFEFF' + lines.join('\r\n') + '\r\n';
+        const fileName = `${clave}_${safeName}_${fech}_${hor}z.csv`;
+        zip.file(fileName, csvContent);
+      } catch(e){ console.warn('Error procesando', jsonUrl, e); }
     }
-});
 
-// Add notification for filter usage
-let filterNotificationShown = false;
-document.getElementById('legend-gradient').addEventListener('mouseenter', () => {
-    if (!filterNotificationShown) {
-        showNotification('Haz clic y arrastra para filtrar por rangos de color. Presiona F para limpiar filtros.', 'info');
-        filterNotificationShown = true;
-    }
-});
-
-// ===================================================================
-// START: New History Dashboard Functions
-// ===================================================================
-
-// --- 1. Data Definitions & State ---
-// These objects define the properties for each variable, making the code cleaner.
-const meteorologicalVariables = {
-    t2m: { label: 'Temperatura', color: '#FF6384', unit: '°C', icon: '🌡️' },
-    rh: { label: 'Humedad', color: '#36A2EB', unit: '%', icon: '💧' },
-    psl: { label: 'Presión', color: '#4BC0C0', unit: 'hPa', icon: '📊' },
-    wnd: { label: 'Viento', color: '#9966FF', unit: 'km/h', icon: '🌪️' },
-    pre: { label: 'Precipitación', color: '#4BC0C0', unit: 'mm', icon: '🌧️' },
-    sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: '☀️' }
-};
-
-const airQualityVariables = {
-    CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: '🟤' },
-    NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: '🟣' },
-    O3: { label: 'Ozono', color: '#4BC0C0', unit: 'ppb', icon: '🟢' },
-    SO2: { label: 'Dióxido de Azufre', color: '#9966FF', unit: 'ppb', icon: '🔵' },
-    PM10: { label: 'PM10', color: '#FF9F40', unit: 'µg/m³', icon: '⚫' },
-    PM25: { label: 'PM2.5', color: '#FFCD56', unit: 'µg/m³', icon: '⚪' }
-};
-
-let currentHistData = null; // Holds the fetched data for the selected town
-let selectedVariables = new Set(); // Tracks which variables are toggled on/off
-let currentHistCharts = []; // Holds the Chart.js instances to manage them
-
-// --- 2. Mock Data Function ---
-// Since we don't have a backend, this function simulates fetching historical data.
-function fetchHistoricalData(municipalityId, type) {
-    console.log(`Fetching mock data for ${municipalityId}, type: ${type}`);
-    // In a real app, this would be an API call: await fetch(...)
-    return new Promise(resolve => {
-        setTimeout(() => {
-            const generateData = (min, max, length = 49) => Array.from({ length }, () => min + Math.random() * (max - min));
-            
-            const labels = Array.from({length: 49}, (_, i) => `2025-08-${18 + Math.floor(i/8)} ${String(i*3 % 24).padStart(2, '0')}:00`);
-
-            let data;
-            if (type === 'meteo') {
-                data = {
-                    labels: labels,
-                    t2m: generateData(12, 22),
-                    rh: generateData(70, 100),
-                    psl: generateData(840, 860),
-                    wnd: generateData(2, 15),
-                    pre: generateData(0, 1).map(v => v > 0.8 ? v * 5 : 0), // Simulates sparse rain
-                    sw: generateData(0, 900).map(v => Math.sin((Math.random() * Math.PI)) * v) // Simulates daytime radiation
-                };
-            } else { // chem
-                data = {
-                    labels: labels,
-                    CO: generateData(0, 8),
-                    NO2: generateData(0, 6),
-                    O3: generateData(0, 60),
-                    SO2: generateData(0, 0.2),
-                    PM10: generateData(0, 1),
-                    PM25: generateData(0, 0.6)
-                };
-            }
-            resolve(data);
-        }, 250); // Simulate network delay
-    });
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.download = `todos_${sufijo}_${fech}_${hor}z.zip`;
+    a.href = URL.createObjectURL(blob);
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  } catch(err){
+    alert('No se pudo generar el ZIP: ' + err);
+  } finally {
+    if (btn){ btn.disabled = false; btn.textContent = original; }
+  }
 }
 
-
-// --- 3. Charting Logic ---
-// **The key function**: Groups variables onto different charts based on their value range.
-function groupDatasetsByRange(datasets, threshold = 30) {
-    const groups = [];
-    datasets.forEach(ds => {
-        let placed = false;
-        for (const group of groups) {
-            const allValues = group.concat([ds]).flatMap(d => d.data);
-            const min = Math.min(...allValues);
-            const max = Math.max(...allValues);
-            if ((max - min) <= threshold) {
-                group.push(ds);
-                placed = true;
-                break;
-            }
-        }
-        if (!placed) {
-            groups.push([ds]);
-        }
-    });
-    return groups;
-}
-
-// Renders the charts based on the groups generated above.
-function renderGroupedCharts(groups, labels, titlePrefix) {
-    const host = document.getElementById('chartsHost');
-    host.innerHTML = '';
-    currentHistCharts.forEach(chart => chart.destroy());
-    currentHistCharts = [];
-
-    groups.forEach(group => {
-        const card = document.createElement('div');
-        card.className = 'chart-card';
-        const canvas = document.createElement('canvas');
-        card.appendChild(canvas);
-        host.appendChild(card);
-
-        const chart = new Chart(canvas, {
-            type: 'line',
-            data: { labels, datasets: group },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    title: { display: true, text: titlePrefix }
-                },
-                scales: { y: { beginAtZero: false } }
-            }
-        });
-        currentHistCharts.push(chart);
-    });
-}
-
-// --- 4. Statistical Logic ---
-function calculateStats(values) {
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    return { avg, max, min };
-}
-
-function updateStatsTable(type) {
-    const tbody = document.getElementById('histStatsTable');
-    tbody.innerHTML = '';
-    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
-
-    selectedVariables.forEach(key => {
-        if (currentHistData[key] && variables[key]) {
-            const stats = calculateStats(currentHistData[key]);
-            const config = variables[key];
-            const row = tbody.insertRow();
-            row.innerHTML = `
-                <td>${config.icon} ${config.label}</td>
-                <td>${stats.avg.toFixed(2)}</td>
-                <td>${stats.max.toFixed(2)}</td>
-                <td>${stats.min.toFixed(2)}</td>
-                <td>${config.unit}</td>
-            `;
-        }
-    });
-}
-
-// --- 5. UI Functions ---
-function createVariableToggles(type) {
-    const container = document.getElementById('variable-toggles');
-    container.innerHTML = '';
-    selectedVariables.clear();
-    const variables = type === 'meteo' ? meteorologicalVariables : airQualityVariables;
-
-    Object.entries(variables).forEach(([key, config]) => {
-        const toggle = document.createElement('div');
-        toggle.className = 'variable-toggle active'; // Active by default
-        toggle.dataset.variable = key;
-        toggle.innerHTML = `<div class="icon">${config.icon}</div><div class="label">${config.label}</div>`;
-        toggle.addEventListener('click', () => {
-            toggle.classList.toggle('active');
-            toggle.classList.contains('active') ? selectedVariables.add(key) : selectedVariables.delete(key);
-            updateHistoricalChart();
-        });
-        container.appendChild(toggle);
-        selectedVariables.add(key); // Start with all variables selected
-    });
-}
-
-function createMeteoHistoricalChart(data) {
-    const datasets = [];
-    Object.entries(meteorologicalVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key]) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.4
-            });
-        }
-    });
-    // Group Pressure (psl) separately because its range is huge
-    const pslDataset = datasets.find(d => d.label.includes('Presión'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Presión'));
-    const groups = groupDatasetsByRange(otherDatasets, 50);
-    if (pslDataset) groups.push([pslDataset]);
+// Nueva función para manejar la leyenda horizontal
+function setupLegendClickFilter() {
+  // Preferencia: div tradicional de leyenda; fallback: canvas dinámico
+  const legendGradient = document.getElementById('legend-gradient') || document.getElementById('dynamic-gradient-canvas');
+  let filterIndicator = document.getElementById('filter-indicator');
+  const gradientContainer = document.getElementById('gradient-container');
     
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Variables Meteorológicas');
-}
+  if (!legendGradient) return;
+    
+    let isSelecting = false;
+    let startX = 0;
 
-function createChemHistoricalChart(data) {
-    const datasets = [];
-    Object.entries(airQualityVariables).forEach(([key, cfg]) => {
-        if (selectedVariables.has(key) && data[key]) {
-            datasets.push({
-                label: `${cfg.icon} ${cfg.label} (${cfg.unit})`,
-                data: data[key],
-                borderColor: cfg.color,
-                backgroundColor: `${cfg.color}20`,
-                borderWidth: 2,
-                tension: 0.4
-            });
+  // Crear indicador si no existe para evitar null
+  if (!filterIndicator && gradientContainer) {
+    filterIndicator = document.createElement('div');
+    filterIndicator.id = 'filter-indicator';
+    filterIndicator.className = 'filter-indicator';
+    filterIndicator.style.display = 'none';
+    gradientContainer.appendChild(filterIndicator);
+  }
+    
+  legendGradient.addEventListener('mousedown', (e) => {
+        isSelecting = true;
+    // offsetX puede ser 0 en algunos navegadores si hay scaling; usar bounding rect
+    const rect = legendGradient.getBoundingClientRect();
+    startX = (e.clientX - rect.left);
+        if (filterIndicator) {
+          filterIndicator.style.display = 'block';
+          filterIndicator.style.left = startX + 'px';
+          filterIndicator.style.width = '2px';
+        }
+        e.preventDefault();
+    });
+    
+  legendGradient.addEventListener('mousemove', (e) => {
+        if (!isSelecting) return;
+    const rect = legendGradient.getBoundingClientRect();
+    const currentX = (e.clientX - rect.left);
+        const width = Math.abs(currentX - startX);
+        const left = Math.min(startX, currentX);
+        if (filterIndicator) {
+          filterIndicator.style.left = left + 'px';
+          filterIndicator.style.width = width + 'px';
         }
     });
-    // Group Ozone (O3) separately
-    const o3Dataset = datasets.find(d => d.label.includes('Ozono'));
-    const otherDatasets = datasets.filter(d => !d.label.includes('Ozono'));
-    const groups = [otherDatasets];
-    if (o3Dataset) groups.push([o3Dataset]);
+    
+  legendGradient.addEventListener('mouseup', (e) => {
+        if (!isSelecting) return;
+        isSelecting = false;
+        
+    const rect = legendGradient.getBoundingClientRect();
+    const endX = (e.clientX - rect.left);
+    const gradientWidth = rect.width || legendGradient.offsetWidth;
+        
+        const minPercent = Math.min(startX, endX) / gradientWidth;
+        const maxPercent = Math.max(startX, endX) / gradientWidth;
+        
+        if (Math.abs(endX - startX) > 5) {
+            // Aplicar filtro basado en el rango seleccionado
+            applyLegendFilter(minPercent, maxPercent);
+        } else {
+            // Click simple - obtener valor puntual
+            const percent = startX / gradientWidth;
+            applyLegendFilter(percent - 0.05, percent + 0.05);
+        }
+    });
+    
 
-    renderGroupedCharts(groups, data.labels, 'Tendencias de Calidad del Aire');
+    //no quieor borrar esto porque siento que igualmente puede ser util aunque no funcione para nada ahora
+    // Doble click en la leyenda para limpiar filtro
+  /*legendGradient.addEventListener('dblclick', (e) => {
+    const btn = document.getElementById('btn_recarga');
+    if (btn) {
+      btn.click();
+    } else {
+      // fallback si el botón no existe todavía
+      clearLegendFilter();
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });*/
+
+    // Añadir soporte a barras alternativas (gradiente vertical / horizontal incrustado)
+    /*const extraSelectors = ['.gradient-bar-horizontal', '.gradient-bar'];
+    extraSelectors.forEach(sel => {
+      document.querySelectorAll(sel).forEach(el => {
+        el.addEventListener('dblclick', (e) => {
+          const btn = document.getElementById('btn_recarga');
+          if (btn) { btn.click(); } else { clearLegendFilter(); }
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    });*/
+
+    // Doble clic en cualquier zona interna del contenedor para limpiar (máxima tolerancia)
+    /*if (gradientContainer) {
+      gradientContainer.addEventListener('dblclick', (e) => {
+        const btn = document.getElementById('btn_recarga');
+        if (btn) { btn.click(); } else { clearLegendFilter(); }
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }*/
 }
 
-function updateHistoricalChart() {
-    if (!currentHistData) return;
-    const type = document.getElementById('hist-tipo-select').value;
-    type === 'meteo' ? createMeteoHistoricalChart(currentHistData) : createChemHistoricalChart(currentHistData);
-    updateStatsTable(type);
+function applyLegendFilter(minPercent, maxPercent) {
+    if (!window.gradientLookup || !window.gradientLookup.length) return;
+    
+    const totalSteps = window.gradientLookup.length;
+    const minIndex = Math.floor(minPercent * totalSteps);
+    const maxIndex = Math.ceil(maxPercent * totalSteps);
+    
+    if (minIndex >= 0 && maxIndex < totalSteps) {
+        const minValue = window.gradientLookup[minIndex].value;
+        const maxValue = window.gradientLookup[maxIndex].value;
+        const avgValue = (minValue + maxValue) / 2;
+        
+        // Simular el color para el filtrado
+        const colorEntry = window.gradientLookup[Math.floor((minIndex + maxIndex) / 2)];
+        if (colorEntry && colorEntry.hex) {
+            const hex = colorEntry.hex.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            
+            filter_color = [r, g, b];
+            const range = `${minValue.toFixed(1)} - ${maxValue.toFixed(1)}`;
+            showInfo(range);
+          notifyFiltering('Filtrando: ' + range);
+            const filteredLayer = applyFilterToImage(m_lienzo.img);
+            put_FilteredImage(filteredLayer);
+        }
+    }
 }
 
-// ===================================================================
-// END: New History Dashboard Functions
-// ===================================================================
+function clearLegendFilter() {
+    const filterIndicator = document.getElementById('filter-indicator');
+    if (filterIndicator) {
+        filterIndicator.classList.remove('active');
+    }
+    filter_color = null;          // filtro raster (canvas)
+    filter_range_active = false;   // filtro de rango numérico
+    filter_range_min = null;
+    filter_range_max = null;
+    colorFilter = null;           // filtro de heatmap (mapbox / data-layer)
+    hideInfo();
+    if (window.filtered_layer) {  // capa filtrada generada por applyFilterToImage
+      try { m_map.removeLayer(window.filtered_layer); } catch(e) {}
+      window.filtered_layer = null;
+    }
+    if (m_dlayer && m_dlayer.layer) {
+      try { m_dlayer.layer.setVisible(true); } catch(e) {}
+    }
+    // Si hay una capa activa de heatmap regenerarla sin filtro
+    if (typeof activeLayer === 'string' && activeLayer && typeof addEnhancedWeatherLayer === 'function') {
+      try { addEnhancedWeatherLayer(activeLayer); } catch(e) {}
+    }
+}
+
+// Función para actualizar la leyenda con nueva variable
+function updateLegend(title, gradient, minValue, maxValue, unit) {
+    const legend = document.getElementById('legend');
+    const legendTitle = document.getElementById('legend-title');
+    const legendGradient = document.getElementById('legend-gradient');
+    const legendLabels = document.getElementById('legend-labels');
+    
+    if (!legend || !legendTitle || !legendGradient || !legendLabels) return;
+    
+    legend.style.display = 'block';
+    legendTitle.textContent = title;
+    legendGradient.style.background = gradient;
+    
+    // Crear etiquetas - CORREGIDAS: de mayor a menor (invertido)
+    legendLabels.innerHTML = '';
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+        // Invertir los valores: empezar por el máximo y bajar al mínimo
+        const value = maxValue - (maxValue - minValue) * (i / steps);
+        const span = document.createElement('span');
+        span.textContent = `${value.toFixed(0)}${i === steps ? " " + unit : ''}`;
+        legendLabels.appendChild(span);
+    }
+}
+
+// Inicializar la leyenda cuando se carga la página
+document.addEventListener('DOMContentLoaded', () => {
+    setupLegendClickFilter();
+  initDualRangeFilter();
+});
+
+function showInfo(value) {
+  hideInfo();
+  const info = document.getElementById("filter-info");
+  
+  // Obtener unidades del título de la leyenda o usar valor por defecto
+  const legendTitle = document.getElementById("legend-title");
+  let units = "";
+  if (legendTitle) {
+    const titleText = legendTitle.textContent;
+    // Extraer unidades comunes del título
+    if (titleText.includes("Temperatura")) units = "°C";
+    else if (titleText.includes("Humedad")) units = "%";
+    else if (titleText.includes("Precipitación")) units = "mm";
+    else if (titleText.includes("Viento")) units = "km/h";
+    else if (titleText.includes("Presión")) units = "hPa";
+  }
+  
+  const existingRange = info.querySelector(".dynamic-range");
+  const rangeElement = document.createElement("div");
+  rangeElement.className = "dynamic-range";
+  rangeElement.innerHTML = `<strong>Rango aproximado: ${value} ${units}</strong>`;
+  info.appendChild(rangeElement);
+}
+
+function hideInfo() {
+  const info = document.getElementById("filter-info");
+  if (!info) return; // Guard: si no existe el contenedor, abortar silenciosamente
+  const rangeElement = info.querySelector(".dynamic-range");
+  if (rangeElement) {
+    rangeElement.remove();
+  }
+}
+
+// Notificación breve al usuario al modificar filtros (throttle)
+let _filterNtfTimer = null;
+function notifyFiltering(message){
+  // Función deshabilitada - no mostrar mensaje "Filtrando:"
+  return;
+  
+  // if (!message) message = 'Aplicando filtro…';
+  // const el = document.getElementById('filter-info');
+  // if (!el) return;
+  // // crear o reusar una banda sutil en filter-info
+  // let badge = el.querySelector('.modifying-badge');
+  // if (!badge){
+  //   badge = document.createElement('div');
+  //   badge.className = 'modifying-badge';
+  //   badge.style.cssText = 'margin-top:4px;font-size:12px;color:#555;background:rgba(193,152,98,.12);border:1px solid rgba(193,152,98,.4);border-radius:6px;padding:4px 8px;display:inline-block;';
+  //   el.appendChild(badge);
+  // }
+  // badge.textContent = message;
+  // if (_filterNtfTimer) clearTimeout(_filterNtfTimer);
+  // _filterNtfTimer = setTimeout(()=>{
+  //   if (badge && badge.parentNode) badge.parentNode.removeChild(badge);
+  //   _filterNtfTimer = null;
+  // }, 1200);
+}
+
+// ================= Rango dual con sliders INTEGRADOS (no overlay) =================
+function initDualRangeFilter(){
+  // Usar el contenedor de la nueva leyenda (#legend-gradient) en lugar de #gradient-container
+  const container = document.getElementById('legend-gradient') || document.getElementById('gradient-container');
+  const bar = document.getElementById('dynamic-gradient-canvas');
+  if (!container || !bar) {
+    console.warn('[initDualRangeFilter] No se encontró contenedor (#legend-gradient) o canvas.');
+    return;
+  }
+  // Reusar si ya existe
+  let wrap = container.querySelector('.legend-dual-slider-wrapper');
+  if (!wrap) {
+    // Crear wrapper para sliders DEBAJO del canvas (integrado, no flotante)
+    wrap = document.createElement('div');
+    wrap.className = 'legend-dual-slider-wrapper';
+    wrap.style.cssText = 'width:100%; margin-top:8px;';
+    
+    // Insertar DESPUÉS del canvas (no envolverlo)
+    const parent = bar.parentNode;
+    parent.insertBefore(wrap, bar.nextSibling);
+    
+    // Barra de sliders (layout horizontal integrado)
+    const sliderContainer = document.createElement('div');
+    sliderContainer.className = 'dual-slider-container';
+    sliderContainer.style.cssText = 'position:relative; width:100%; height:30px; margin-bottom:6px;';
+    
+    // Sliders (uno encima del otro, pero ahora SIN overlay visual flotante)
+    const rLow = document.createElement('input');
+    Object.assign(rLow, {type:'range', min:0, max:1000, value:0});
+    rLow.className='dual-range low';
+    rLow.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
+    
+    const rHigh = document.createElement('input');
+    Object.assign(rHigh, {type:'range', min:0, max:1000, value:1000});
+    rHigh.className='dual-range high';
+    rHigh.style.cssText='position:absolute; left:0; top:0; width:100%; height:30px; background:transparent;';
+    
+    sliderContainer.appendChild(rLow);
+    sliderContainer.appendChild(rHigh);
+    wrap.appendChild(sliderContainer);
+    
+    // Inputs numéricos (SIN botón limpiar - ya existe "Limpiar Filtro" en footer)
+    const inputsRow = document.createElement('div');
+    inputsRow.className='dual-inputs';
+    inputsRow.style.cssText='display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; margin-top:4px;';
+    inputsRow.innerHTML = `
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Mín
+        <input type="number" step="0.1" class="dual-min" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>
+      <label style="display:flex; flex-direction:column; gap:2px; font-size:11px; color:#555;">Máx
+        <input type="number" step="0.1" class="dual-max" style="width:85px; padding:4px; border:1px solid #ccc; border-radius:4px;" />
+      </label>`;
+    wrap.appendChild(inputsRow);
+  }
+
+  const rLow = wrap.querySelector('.dual-range.low');
+  const rHigh = wrap.querySelector('.dual-range.high');
+  const inpMin = wrap.querySelector('.dual-min');
+  const inpMax = wrap.querySelector('.dual-max');
+  const sliderContainer = wrap.querySelector('.dual-slider-container');
+
+  // Variables para rastrear el estado de arrastre
+  let isDragging = false;
+  let activeSlider = null;
+  let dragStarted = false;
+  let initialValue = null;
+
+  // Función para ajustar z-index basado en qué slider está más cerca del mouse
+  function updateZIndexByMousePosition(event) {
+    const rect = sliderContainer.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+    
+    const lowVal = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+    
+    // Determinar qué slider está más cerca del mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow < distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }
+
+  function clamp(v, lo, hi){ return Math.min(hi, Math.max(lo, v)); }
+  function slidersToValues(){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return {lo:0,hi:0};
+    const gmin = window.gradientMin, gmax = window.gradientMax;
+    const lo = gmin + (gmax-gmin)*(parseInt(rLow.value,10)/1000);
+    const hi = gmin + (gmax-gmin)*(parseInt(rHigh.value,10)/1000);
+    return {lo: Math.min(lo,hi), hi: Math.max(lo,hi)};
+  }
+  function valuesToSliders(lo,hi){
+    if (typeof window.gradientMin !== 'number' || typeof window.gradientMax !== 'number') return;
+    const gmin = window.gradientMin, gmax = window.gradientMax, span = (gmax-gmin)||1;
+    rLow.value  = Math.round(((lo-gmin)/span)*1000);
+    rHigh.value = Math.round(((hi-gmin)/span)*1000);
+  }
+  
+  function syncInputsFromSliders(){
+    const {lo,hi} = slidersToValues();
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    inpMin.value = lo.toFixed(1);
+    inpMax.value = hi.toFixed(1);
+  }
+  
+  function syncSlidersFromInputs(){
+    let lo = parseFloat(inpMin.value), hi = parseFloat(inpMax.value);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    if (lo>hi) [lo,hi]=[hi,lo];
+    if (typeof window.gradientMin === 'number'){ 
+      lo = clamp(lo, window.gradientMin, window.gradientMax); 
+      hi = clamp(hi, window.gradientMin, window.gradientMax); 
+    }
+    valuesToSliders(lo,hi);
+    scheduleApply(); 
+    showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+  }
+
+  // Inicializar rangos a full
+  (function init(){
+    if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+      inpMin.value = window.gradientMin.toFixed(1);
+      inpMax.value = window.gradientMax.toFixed(1);
+      valuesToSliders(window.gradientMin, window.gradientMax);
+      // Z-index inicial: LOW arriba para que sea accesible desde el inicio
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      setTimeout(init,300);
+    }
+  })();
+  
+  // Función global para actualizar dual-inputs cuando cambien gradientMin/Max
+  window.updateDualInputs = function() {
+    if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+      inpMin.value = window.gradientMin.toFixed(1);
+      inpMax.value = window.gradientMax.toFixed(1);
+      valuesToSliders(window.gradientMin, window.gradientMax);
+      // Resetear sliders a posición inicial
+      rLow.value = 0;
+      rHigh.value = 1000;
+    }
+  };
+
+  let applyTimer=null;
+  function scheduleApply(){
+    if (applyTimer) clearTimeout(applyTimer);
+    applyTimer = setTimeout(()=>{
+      const {lo,hi}=slidersToValues();
+      if (isFinite(lo) && isFinite(hi)) {
+        applyRangeMask(lo,hi);
+        showInfo(lo.toFixed(1)+' - '+hi.toFixed(1));
+        notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+      }
+    },150);
+  }
+
+  // Eventos: actualizar z-index cuando el mouse/touch se mueva sobre el contenedor
+  ['pointerdown','pointermove'].forEach(ev => {
+  sliderContainer.addEventListener(ev, (e) => {
+    const rect = sliderContainer.getBoundingClientRect();
+    let clientX;
+    
+    // Obtener coordenada X según el tipo de evento
+    if (e.touches && e.touches[0]) {
+      clientX = e.touches[0].clientX;
+    } else {
+      clientX = e.clientX !== undefined ? e.clientX : 0;
+    }
+    
+    const mouseX = clientX - rect.left;
+    const mousePercent = mouseX / rect.width;
+    const mouseValue = mousePercent * 1000;
+
+    const lowVal  = parseInt(rLow.value, 10);
+    const highVal = parseInt(rHigh.value, 10);
+
+    // Elevar el slider que esté más cerca del toque/mouse
+    const distToLow = Math.abs(mouseValue - lowVal);
+    const distToHigh = Math.abs(mouseValue - highVal);
+    
+    if (distToLow <= distToHigh) {
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    } else {
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }
+  }, {passive: true});
+});
+  
+  // Función para detectar si el clic está en el thumb
+  function isClickOnThumb(slider, event) {
+    const rect = slider.getBoundingClientRect();
+    const sliderWidth = rect.width;
+    const thumbWidth = 16; // Ancho del thumb
+    
+    // Calcular posición del thumb basada en el valor del slider
+    const sliderValue = parseInt(slider.value, 10);
+    const thumbPosition = (sliderValue / 1000) * sliderWidth;
+    
+    // Obtener posición del clic/touch
+    let clickX;
+    if (event.touches && event.touches[0]) {
+      clickX = event.touches[0].clientX - rect.left;
+    } else {
+      clickX = event.clientX - rect.left;
+    }
+    
+    // Verificar si el clic está dentro del área del thumb (con un poco de margen)
+    const thumbStart = thumbPosition - (thumbWidth / 2) - 5; // 5px de margen
+    const thumbEnd = thumbPosition + (thumbWidth / 2) + 5;
+    
+    return clickX >= thumbStart && clickX <= thumbEnd;
+  }
+
+  // Eventos simples para rastrear arrastre - SOLO ARRASTRE, NO CLICS
+  ['mousedown', 'touchstart', 'pointerdown'].forEach(event => {
+    rLow.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rLow, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rLow.value, 10);
+      isDragging = true;
+      activeSlider = 'low';
+      rLow.style.zIndex = '5';
+      rHigh.style.zIndex = '4';
+    }, { passive: false });
+    
+    rHigh.addEventListener(event, (e) => {
+      // Solo proceder si el clic está en el thumb
+      if (!isClickOnThumb(rHigh, e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+      
+      dragStarted = true;
+      initialValue = parseInt(rHigh.value, 10);
+      isDragging = true;
+      activeSlider = 'high';
+      rLow.style.zIndex = '4';
+      rHigh.style.zIndex = '5';
+    }, { passive: false });
+  });
+
+  // Prevenir clics directos en el track que cambiarían el valor
+  rLow.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  
+  rHigh.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // Interceptar eventos de input para validar que solo vengan de arrastre
+  rLow.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rLow.value = initialValue;
+      }
+      return;
+    }
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  rHigh.addEventListener('input', (e) => {
+    if (!isDragging && !dragStarted) {
+      // Si no estamos arrastrando, revertir al valor inicial
+      if (initialValue !== null) {
+        rHigh.value = initialValue;
+      }
+      return;
+    }
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  // Eventos para finalizar el arrastre
+  ['mouseup', 'touchend', 'pointerup'].forEach(event => {
+    document.addEventListener(event, () => {
+      if (isDragging) {
+        // Solo actualizar si realmente hubo arrastre
+        syncInputsFromSliders();
+        scheduleApply();
+      }
+      isDragging = false;
+      activeSlider = null;
+      dragStarted = false;
+      initialValue = null;
+    });
+  });
+
+  // Eventos change como respaldo para móvil
+  rLow.addEventListener('change', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  rHigh.addEventListener('change', () => { 
+    syncInputsFromSliders(); 
+    scheduleApply(); 
+    const {lo,hi}=slidersToValues();
+    if (isFinite(lo)&&isFinite(hi)) notifyFiltering('Filtrando: ' + lo.toFixed(1) + ' – ' + hi.toFixed(1));
+  });
+  
+  inpMin.addEventListener('change', syncSlidersFromInputs);
+  inpMax.addEventListener('change', syncSlidersFromInputs);
+  inpMin.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+  inpMax.addEventListener('keyup', e=>{ if (e.key==='Enter') syncSlidersFromInputs(); });
+}
+
+function applyRangeMask(minVal, maxVal){
+  if (!m_lienzo || !m_lienzo.img || typeof window.gradientMin !== 'number') return;
+  
+  // Activar filtro de rango y guardar valores
+  filter_range_active = true;
+  filter_range_min = minVal;
+  filter_range_max = maxVal;
+  
+  // Construir un mapa rápido valor->RGBA usando gradientLookup ordenado por value
+  // Para performance mantenemos el mismo método que applyFilterToImage pero revisando rango
+  try {
+    const baseImg = m_lienzo.img;
+    const canvas = document.getElementById('filter-canvas');
+    if (!canvas) return;
+    canvas.width = baseImg.width; canvas.height = baseImg.height;
+    const ctx = canvas.getContext('2d',{willReadFrequently:true});
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(baseImg,0,0);
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    // Estrategia: convertir RGB de cada pixel a valor aproximado buscando color más cercano en gradientLookup.
+    // Si dataset es grande podría optimizarse con clustering; por ahora brute force con caching.
+    const cache = new Map(); // key r,g,b -> value
+    const lookup = window.gradientLookup||[];
+    function nearestVal(r,g,b){
+      const key = (r<<16)|(g<<8)|b;
+      if (cache.has(key)) return cache.get(key);
+      let bestD=1e9, bestV=null;
+      for (const c of lookup){
+        const hx = c.hex.replace('#','');
+        const cr = parseInt(hx.substring(0,2),16);
+        const cg = parseInt(hx.substring(2,4),16);
+        const cb = parseInt(hx.substring(4,6),16);
+        const d = (r-cr)*(r-cr)+(g-cg)*(g-cg)+(b-cb)*(b-cb);
+        if (d<bestD){ bestD=d; bestV=c.value; if (d===0) break; }
+      }
+      cache.set(key,bestV);
+      return bestV;
+    }
+
+    for (let i=0;i<data.length;i+=4){
+      const r=data[i], g=data[i+1], b=data[i+2];
+      const v = nearestVal(r,g,b);
+      if (v < minVal || v > maxVal){
+        data[i+3]=0; // transparencia
+      }
+    }
+    ctx.putImageData(imageData,0,0);
+    const extent = m_dlayer ? m_dlayer.imageExtent : [-98.8, 17.9, -96.4, 20.8];
+    const filteredLayer = new ol.layer.Image({
+      opacity:0.7,
+      source:new ol.source.ImageStatic({ url: canvas.toDataURL(), imageExtent: extent })
+    });
+    clipLayer(filteredLayer);
+    if (window.filtered_layer) m_map.removeLayer(window.filtered_layer);
+    if (m_dlayer && m_dlayer.layer) m_dlayer.layer.setVisible(false);
+    m_map.getLayers().insertAt(1, filteredLayer);
+    window.filtered_layer = filteredLayer;
+  } catch(e){ console.error('applyRangeMask error', e); }
+}
+
+// Llama esto cada vez que cambies de variable (después de updateLegend)
+function resetFilterUIForNewVariable() {
+  // 1) limpiar cualquier filtro aplicado y ocultar etiqueta
+  clearLegendFilter(); // ya hace: filter_color=null, quita capa filtrada, muestra original, etc.
+
+  // 2) resetear sliders e inputs del rango
+  const wrap =
+    document.querySelector('#legend .legend-dual-slider-wrapper') ||
+    document.querySelector('#gradient-container .legend-dual-slider-wrapper');
+
+  if (wrap) {
+    const rLow  = wrap.querySelector('.dual-range.low');
+    const rHigh = wrap.querySelector('.dual-range.high');
+    const inpMin = wrap.querySelector('.dual-min');
+    const inpMax = wrap.querySelector('.dual-max');
+
+    if (rLow)  rLow.value  = 0;
+    if (rHigh) rHigh.value = 1000;
+    
+    // Esperar un momento para que se establezcan los nuevos gradientMin/Max, luego establecer valores
+    setTimeout(() => {
+      if (typeof window.gradientMin === 'number' && typeof window.gradientMax === 'number') {
+        if (inpMin) inpMin.value = window.gradientMin.toFixed(1);
+        if (inpMax) inpMax.value = window.gradientMax.toFixed(1);
+      } else {
+        // Si no hay valores disponibles, limpiar
+        if (inpMin) inpMin.value = '';
+        if (inpMax) inpMax.value = '';
+      }
+    }, 100);
+  }
+
+  // 3) quitar el texto de rango debajo del mapa
+  hideInfo();
+}
+
+// --- Lógica para el Modal de Riesgos ---
+
+// Usar delegación de eventos en un contenedor padre (ej. 'body' o '#app')
+// para que el enlace funcione también en el dashboard de historial.
+$(document).on('click', '.ver-riesgos-link', function(e) {
+  e.preventDefault(); // Evitar que el enlace navegue
+  openRiesgosModal();
+});
+
+function openRiesgosModal() {
+  const modal = document.getElementById('riesgosModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+function closeRiesgosModal() {
+  const modal = document.getElementById('riesgosModal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
+
+// Opcional: Cerrar el modal si se hace clic fuera del contenido
+$(document).on('click', '#riesgosModal', function(e) {
+  if (e.target.id === 'riesgosModal') {
+    closeRiesgosModal();
+  }
+});

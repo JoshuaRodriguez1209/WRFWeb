@@ -290,18 +290,23 @@ $("#toggle-controls-btn").click(function (e) {
 
 $("#close-controls-btn").click(function (e) {
   e.stopPropagation();
+  if (window.matchMedia("(max-width: 768px)").matches) {
   $("#weather-controls").removeClass("is-open");
+  }
 });
 
-// Close panel when clicking outside
+// Close panel when clicking outside (solo en móvil)
 $(document).click(function (e) {
-  const panel = $("#weather-controls");
-  const toggleBtn = $("#toggle-controls-btn");
-  if (
-    !panel.is(e.target) && panel.has(e.target).length === 0 &&
-    !toggleBtn.is(e.target) && toggleBtn.has(e.target).length === 0
-  ) {
-    panel.removeClass("is-open");
+  // Solo cerrar al hacer clic fuera en pantallas móviles (menor a 768px)
+  if (window.matchMedia("(max-width: 768px)").matches) {
+    const panel = $("#weather-controls");
+    const toggleBtn = $("#toggle-controls-btn");
+    if (
+      !panel.is(e.target) && panel.has(e.target).length === 0 &&
+      !toggleBtn.is(e.target) && toggleBtn.has(e.target).length === 0
+    ) {
+      panel.removeClass("is-open");
+    }
   }
 });
 $(document).on("click", "#btn_atmos", function () {
@@ -311,10 +316,14 @@ $(document).on("click", "#btn_atmos", function () {
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   
+  // Mostrar side-menu-right y filter-info cuando se vuelve al mapa
+  $(".side-menu-right").show();
+  $("#filter-info").show();
+  
   // Activar modo mapa
   document.body.classList.add('map-active');
   
-  $("#panel-header-text").text("Pronóstico meteorológico del Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico de Clima del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gatmos.html";
@@ -355,10 +364,14 @@ $(document).on("click", "#btn_aire", function () {
   $("#historial-dashboard").hide();
   $("#banner, #botones1").hide();
   
+  // Mostrar side-menu-right y filter-info cuando se vuelve al mapa
+  $(".side-menu-right").show();
+  $("#filter-info").show();
+  
   // Activar modo mapa
   document.body.classList.add('map-active');
 
-  $("#panel-header-text").text("Pronóstico de calidad del aire del Estado de Puebla");
+  $("#panel-header-text").text("Pronóstico de Calidad del Aire del Estado de Puebla");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
   m_glosario = "gchem.html";
@@ -399,6 +412,19 @@ $(document).on("click", "#btn_hist", function () {
   $("#banner, #botones1").hide();
   $("#hist").show();
   $("#historial-dashboard").show();
+  
+  // Ocultar side-menu-right y filter-info cuando se muestra el historial
+  $(".side-menu-right").hide();
+  $("#filter-info").hide();
+  
+  // Cerrar weather-controls en móvil cuando se abre el historial
+
+  
+  $("#weather-controls").removeClass("is-open");
+  
+  // Desactivar el modo mapa para que el historial tenga espacio completo
+  document.body.classList.remove('map-active');
+  
   $("#panel-header-text").text("Historial de Datos");
   const t = $("#panel-header-text").text();
   $("#controls-header-title").text(t);
@@ -530,10 +556,11 @@ function updateHistoricalView() {
     const runHour = String(runData.hour).padStart(2, '0');
     const runDir = runData.name; // Nombre completo como "2025103000"
     
-    // Construct the correct file path
+    // Construct the correct file path for cabeceras
     const basePath = 'runs';
     const fileName = `wrf_${tipo === 'meteo' ? 'meteo' : 'chem'}_${cabeceraId}_${runDate}_${runHour}z.json`;
-    const path = `${basePath}/${runDir}/meteogramas/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
+    // Usar la carpeta 'cabeceras' como fuente canónica de datos por municipio
+    const path = `${basePath}/${runDir}/cabeceras/${tipo === 'meteo' ? 'meteo' : 'chem'}/${fileName}`;
 
     console.log('🔍 Loading historical data from:', path);
     console.log('📊 Using run data:', runData);
@@ -755,3 +782,127 @@ $(document).ready(function() {
     }
   });
 });
+
+// Inicializar tooltips flotantes globalmente (clon-based) para evitar clipping por el mapa
+(function attachFloatingTooltipsGlobal(){
+  function getTooltipTextFromButton(btn){
+    const attr = btn.getAttribute('data-tooltip') || btn.getAttribute('title') || btn.getAttribute('aria-label') || btn.dataset.name;
+    if(attr && attr.trim()) return attr.trim();
+    // Fallback to visible label inside the button (avoid icon-only markup)
+    const inner = btn.querySelector('.menu-tooltip')?.innerText || btn.innerText || '';
+    return inner.trim();
+  }
+
+  function createFloatingTip(btn){
+    // Try to reuse an existing .menu-tooltip if available
+    const tip = btn.querySelector('.menu-tooltip');
+
+    // If a clone already exists and is inside the root, return it
+    if(tip && tip._clone && document.getElementById('floating-tooltips-root') && document.getElementById('floating-tooltips-root').contains(tip._clone)) return tip._clone;
+
+    // Ensure a root container exists
+    let root = document.getElementById('floating-tooltips-root');
+    if(!root){
+      root = document.createElement('div');
+      root.id = 'floating-tooltips-root';
+      document.body.appendChild(root);
+    }
+
+    // Create clone element
+    const clone = document.createElement('div');
+    clone.className = 'floating-tooltip-clone';
+    // Ensure tooltip is positioned above everything and doesn't block pointer events
+    clone.style.position = 'absolute';
+    clone.style.zIndex = '2147483647';
+    clone.style.pointerEvents = 'none';
+    clone.style.display = 'block';
+    // Minimal styling fallback so tooltip is readable when no CSS exists
+    clone.style.background = clone.style.background || 'rgba(0,0,0,0.85)';
+    clone.style.color = clone.style.color || '#fff';
+    clone.style.padding = clone.style.padding || '6px 10px';
+    clone.style.borderRadius = clone.style.borderRadius || '4px';
+    clone.style.whiteSpace = 'nowrap';
+    clone.style.boxShadow = clone.style.boxShadow || '0 2px 8px rgba(0,0,0,0.2)';
+
+    // Content: prefer existing .menu-tooltip HTML, otherwise use derived text
+    if(tip && tip.innerHTML && tip.innerHTML.trim()){
+      clone.innerHTML = tip.innerHTML;
+    } else {
+      const text = getTooltipTextFromButton(btn) || '';
+      clone.textContent = text;
+    }
+
+    // Attach references for later removal
+    if(tip) tip._clone = clone;
+    else btn._generatedTooltipClone = clone;
+
+    root.appendChild(clone);
+    return clone;
+  }
+
+  function showFloating(evt){
+    const btn = evt.currentTarget;
+    // Ensure we have some text to show
+    const txt = getTooltipTextFromButton(btn);
+    if(!txt) return;
+    const clone = createFloatingTip(btn);
+    if(!clone) return;
+
+    // Put the clone offscreen & hidden for measurement
+    clone.style.left = '-9999px';
+    clone.style.top = '-9999px';
+    clone.style.visibility = 'hidden';
+    clone.classList.add('show');
+
+    // Force a reflow to ensure offsetWidth/Height are available
+    const rectBtn = btn.getBoundingClientRect();
+    const w = clone.offsetWidth || clone.getBoundingClientRect().width;
+    const h = clone.offsetHeight || clone.getBoundingClientRect().height;
+
+    // Use smaller gaps so the tooltip sits closer to the button
+    const GAP = 6;       // horizontal distance in px
+    const VERT_GAP = 4;  // vertical min distance in px
+
+    // Compute preferred position to the right of the button, fallback to left
+    const docLeft = rectBtn.right + GAP + window.pageXOffset;
+    const altLeft = rectBtn.left - w - GAP + window.pageXOffset;
+    let left = docLeft;
+    if (docLeft + w + GAP - window.pageXOffset > window.innerWidth) left = altLeft;
+    left = Math.max(GAP + window.pageXOffset, Math.min((document.documentElement.scrollWidth - w - GAP), left));
+
+    // Center vertically relative to the button
+    let top = rectBtn.top + (rectBtn.height - h) / 2 + window.pageYOffset;
+    top = Math.max(VERT_GAP + window.pageYOffset, Math.min(document.documentElement.scrollHeight - h - VERT_GAP, top));
+
+    clone.style.left = left + 'px';
+    clone.style.top = top + 'px';
+    clone.style.visibility = 'visible';
+  }
+
+  function hideFloating(evt){
+    const btn = evt.currentTarget;
+    const tip = btn.querySelector ? btn.querySelector('.menu-tooltip') : null;
+    const clone = (tip && tip._clone) ? tip._clone : btn._generatedTooltipClone;
+    if(!clone) return;
+    clone.classList.remove('show');
+    // remove after short delay to allow CSS hide transition if any
+    setTimeout(()=>{ try { if(clone.parentNode) clone.parentNode.removeChild(clone); } catch(e){}; if(tip) tip._clone = null; delete btn._generatedTooltipClone; }, 160);
+  }
+
+  function init(){
+    const buttons = document.querySelectorAll('.side-menu .menu-btn, .side-menu .play-btn, .side-menu .back-btn');
+    buttons.forEach(b => {
+      if(b._tooltipInit) return; b._tooltipInit = true;
+      b.addEventListener('mouseenter', showFloating);
+      b.addEventListener('focus', showFloating);
+      b.addEventListener('mouseleave', hideFloating);
+      b.addEventListener('blur', hideFloating);
+      b.addEventListener('touchstart', function(e){ showFloating({ currentTarget: b }); });
+      b.addEventListener('touchend', function(e){ hideFloating({ currentTarget: b }); });
+    });
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  const obs = new MutationObserver(() => init());
+  obs.observe(document.body, { childList: true, subtree: true });
+})();
