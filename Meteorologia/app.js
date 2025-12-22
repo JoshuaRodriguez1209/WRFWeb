@@ -1824,7 +1824,7 @@ function show_feature(tipo, dir_dat, show_dialog) {
   // Indicar la fuente de datos para mayor claridad
   try {
     if (m_feature.get && m_feature.get('local') === 'cabecera') {
-      contenDialog.append('<div class="data-source" style="font-size:0.95em;color:#444;margin-bottom:8px;">Fuente: <strong>cabeceras</strong> (valores interpolados por municipio)</div>');
+      contenDialog.append('');
     }
   } catch (e) {}
 
@@ -2299,7 +2299,20 @@ function set_canva(contenDialog, dataset, tipo, str_file, title, unid, color) {
       if (!varKey && cfg.label && cfg.label.toLowerCase() === lowerTitle) {
         varKey = k;
       }
+      // Coincidencia por inclusión (ej. "Humedad Relativa" debe mapear a rh)
+      if (!varKey && cfg.label && lowerTitle.includes(cfg.label.toLowerCase())) {
+        varKey = k;
+      }
     });
+    // Sinonimos adicionales por título genérico
+    if (!varKey) {
+      if (lowerTitle.includes('humedad')) varKey = 'rh';
+      else if (lowerTitle.includes('temperatura')) varKey = 't2m';
+      else if (lowerTitle.includes('viento') || lowerTitle.includes('wind')) varKey = 'wnd';
+      else if (lowerTitle.includes('presion') || lowerTitle.includes('presión')) varKey = 'psl';
+      else if (lowerTitle.includes('precipit')) varKey = 'pre';
+      else if (lowerTitle.includes('radiacion') || lowerTitle.includes('radiación')) varKey = 'sw';
+    }
     isMeteo = !!varKey;
   }
 
@@ -2347,10 +2360,15 @@ bgZones = window.filterZonesByData ? window.filterZonesByData(staticZones, dats)
   const header = $(`
     <div class="chart-header">
       <div class="summary-icon"><i class="fa-solid ${iconClass}"></i></div>
-      <div class="chart-title-text">${finalTitle} (${finalUnid})</div>
+      <div class="chart-title-text">Pronóstico de ${finalTitle}</div>
     </div>
   `);
   card.append(header);
+
+  // Fuente solo para variables de clima
+  if (isMeteo && varKey && WeatherSources[varKey]) {
+    card.append(`<div class="chart-source">${WeatherSources[varKey]}</div>`);
+  }
 
   // 3. Añadir la leyenda MINI dentro de cada gráfica (si aplica).
   // Para contaminantes reutilizamos la mini-leyenda ICA existente; para clima
@@ -2413,63 +2431,8 @@ bgZones = window.filterZonesByData ? window.filterZonesByData(staticZones, dats)
 }
 
 function grafico(canva, tipo, labels, dats, title, unid, color, backgroundZones = []) {
-  const baseColor = color || 'rgb(90,27,48)';
-  let rgbaFill;
-
-  // Si es formato rgb(...), reemplazar por rgba(..., alpha)
-  if (/^rgb\s*\(/i.test(baseColor)) {
-    rgbaFill = baseColor.replace(/rgb\(([^)]+)\)/i, 'rgba($1,0.12)');
-  } else if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(baseColor)) {
-    // Convertir HEX a rgba con alpha 0.12 para lograr el mismo efecto tenue
-    const hex = baseColor.substring(1);
-    let r, g, b;
-    if (hex.length === 3) {
-      r = parseInt(hex[0] + hex[0], 16);
-      g = parseInt(hex[1] + hex[1], 16);
-      b = parseInt(hex[2] + hex[2], 16);
-    } else {
-      r = parseInt(hex.substring(0, 2), 16);
-      g = parseInt(hex.substring(2, 4), 16);
-      b = parseInt(hex.substring(4, 6), 16);
-    }
-    rgbaFill = `rgba(${r},${g},${b},0.12)`;
-  } else if (/^hsl\s*\(/i.test(baseColor)) {
-    // Intentar convertir HSL a RGB y luego aplicar alpha
-    try {
-      const match = baseColor.match(/hsl\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/i);
-      if (match) {
-        let h = parseInt(match[1], 10) / 360;
-        let s = parseInt(match[2], 10) / 100;
-        let l = parseInt(match[3], 10) / 100;
-        const hue2rgb = (p, q, t) => {
-          if (t < 0) t += 1;
-          if (t > 1) t -= 1;
-          if (t < 1/6) return p + (q - p) * 6 * t;
-          if (t < 1/2) return q;
-          if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-          return p;
-        };
-        let r, g, b;
-        if (s === 0) {
-          r = g = b = l; // gris
-        } else {
-          const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-          const p = 1 - q;
-          r = hue2rgb(p, q, h + 1/3);
-          g = hue2rgb(p, q, h);
-          b = hue2rgb(p, q, h - 1/3);
-        }
-        rgbaFill = `rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},0.12)`;
-      } else {
-        rgbaFill = baseColor; // fallback
-      }
-    } catch(e){
-      rgbaFill = baseColor;
-    }
-  } else {
-    // Cualquier otro formato se deja tal cual (sin transparencia)
-    rgbaFill = baseColor;
-  }
+  const baseColor = '#000000'; // Forzar todas las líneas a negro
+  const rgbaFill = 'rgba(0,0,0,0.25)'; // Sombreado más oscuro bajo la línea
 
   const dataset = {
     label: `${title} (${unid})`,
@@ -3392,6 +3355,16 @@ const meteorologicalVariables = {
   sw: { label: 'Radiación', color: '#FFCD56', unit: 'w/m²', icon: 'fa-solid fa-sun' }
 };
 
+// Fuentes oficiales para variables de clima (se usan en el card de cada gráfica)
+const WeatherSources = {
+  t2m: 'Fuente: OMS / OMM',
+  rh: 'Fuente: ASHRAE 55',
+  wnd: 'Fuente: OMM - Escala Beaufort',
+  sw: 'Fuente: Irradiancia solar global (estándar)',
+  psl: 'Fuente: OACI / ISA',
+  pre: 'Fuente: AEMET / NOAA'
+};
+
 const airQualityVariables = {
   CO: { label: 'Monóxido de Carbono', color: '#FF6384', unit: 'ppm', icon: 'fa-solid fa-industry' },
   NO2: { label: 'Dióxido de Nitrógeno', color: '#36A2EB', unit: 'ppb', icon: 'fa-solid fa-car' },
@@ -3438,42 +3411,44 @@ const ICABands = {
   }
 };
 
-// Bandas de "Confort Térmico" para Clima (ej. Temperatura)
+// Bandas de riesgo para clima (umbrales solicitados + fuentes oficiales en README/doc)
 const WeatherRiskBands = {
-  t2m: [ // Temperatura en °C
-    { min: -Infinity, max: 10, label: "Frío", color: "rgba(0, 150, 255, 0.2)", class: "clima-frio" },
-    { min: 10, max: 25, label: "Templado", color: "rgba(0, 200, 150, 0.2)", class: "clima-templado" },
-    { min: 25, max: 30, label: "Calor", color: "rgba(255, 220, 0, 0.2)", class: "clima-calor" },
-    { min: 30, max: Infinity, label: "Muy Caluroso", color: "rgba(255, 100, 0, 0.25)", class: "clima-muy-caluroso" }
+  t2m: [ // Temperatura en °C (OMS/OMM)
+    { min: -Infinity, max: 0, label: "Muy Frío", color: "rgba(0, 90, 200, 0.22)", class: "clima-muy-frio" },
+    { min: 0, max: 15, label: "Frío", color: "rgba(0, 140, 230, 0.22)", class: "clima-frio" },
+    { min: 15, max: 24, label: "Templado", color: "rgba(0, 200, 150, 0.22)", class: "clima-templado" },
+    { min: 24, max: 32, label: "Calor", color: "rgba(255, 200, 0, 0.22)", class: "clima-calor" },
+    { min: 32, max: Infinity, label: "Muy Caluroso", color: "rgba(255, 90, 0, 0.26)", class: "clima-muy-caluroso" }
   ],
-  rh: [ // Humedad Relativa en %
-    { min: -Infinity, max: 30, label: "Seco", color: "rgba(210, 180, 140, 0.2)", class: "clima-seco" },
-    { min: 30, max: 60, label: "Confortable", color: "rgba(173, 216, 230, 0.2)", class: "clima-confortable" },
-    { min: 60, max: 100, label: "Húmedo", color: "rgba(100, 149, 237, 0.25)", class: "clima-humedo" }
+  rh: [ // Humedad Relativa en % (ASHRAE 55)
+    { min: -Infinity, max: 30, label: "Seco", color: "rgba(210, 180, 140, 0.22)", class: "clima-seco" },
+    { min: 30, max: 60, label: "Confortable", color: "rgba(173, 216, 230, 0.22)", class: "clima-confortable" },
+    { min: 60, max: Infinity, label: "Húmedo", color: "rgba(100, 149, 237, 0.26)", class: "clima-humedo" }
   ],
-  wnd: [ // Viento en km/h
-    { min: -Infinity, max: 10, label: "Calma", color: "rgba(240, 248, 255, 0.15)", class: "clima-calma" },
-    { min: 10, max: 30, label: "Ligero", color: "rgba(135, 206, 250, 0.2)", class: "clima-ligero" },
-    { min: 30, max: 60, label: "Fuerte", color: "rgba(70, 130, 180, 0.25)", class: "clima-fuerte" },
-    { min: 60, max: Infinity, label: "Muy Fuerte", color: "rgba(25, 25, 112, 0.3)", class: "clima-muy-fuerte" }
+  wnd: [ // Viento en km/h (Escala Beaufort / OMM)
+    { min: -Infinity, max: 2, label: "Calma", color: "rgba(235, 245, 255, 0.18)", class: "clima-calma" },
+    { min: 2, max: 28, label: "Ligero", color: "rgba(135, 206, 250, 0.22)", class: "clima-ligero" },
+    { min: 28, max: 38, label: "Moderado", color: "rgba(100, 180, 220, 0.24)", class: "clima-moderado" },
+    { min: 38, max: 61, label: "Fuerte", color: "rgba(70, 130, 180, 0.26)", class: "clima-fuerte" },
+    { min: 61, max: Infinity, label: "Muy Fuerte", color: "rgba(25, 25, 112, 0.30)", class: "clima-muy-fuerte" }
   ],
-  sw: [ // Radiación Solar en W/m²
-    { min: -Infinity, max: 300, label: "Baja", color: "rgba(200, 200, 200, 0.2)", class: "clima-baja" },
-    { min: 300, max: 700, label: "Moderada", color: "rgba(255, 255, 0, 0.2)", class: "clima-moderada" },
+  sw: [ // Radiación Solar en W/m² (irradiancia global)
+    { min: -Infinity, max: 300, label: "Baja", color: "rgba(200, 200, 200, 0.22)", class: "clima-baja" },
+    { min: 300, max: 700, label: "Moderada", color: "rgba(255, 255, 0, 0.22)", class: "clima-moderada" },
     { min: 700, max: 1000, label: "Alta", color: "rgba(255, 165, 0, 0.25)", class: "clima-alta" },
-    { min: 1000, max: Infinity, label: "Extrema", color: "rgba(255, 69, 0, 0.3)", class: "clima-extrema" }
+    { min: 1000, max: Infinity, label: "Extrema", color: "rgba(255, 69, 0, 0.30)", class: "clima-extrema" }
   ],
-  psl: [ // Presión a Nivel del Mar en hPa
-    { min: -Infinity, max: 1010, label: "Baja", color: "rgba(255, 100, 100, 0.2)", class: "clima-baja" },
-    { min: 1010, max: 1020, label: "Normal", color: "rgba(144, 238, 144, 0.2)", class: "clima-normal" },
-    { min: 1020, max: Infinity, label: "Alta", color: "rgba(135, 206, 250, 0.25)", class: "clima-alta" }
+  psl: [ // Presión a Nivel del Mar en hPa (ISA/OACI)
+    { min: -Infinity, max: 1013, label: "Baja", color: "rgba(255, 120, 120, 0.22)", class: "clima-baja" },
+    { min: 1013, max: 1014, label: "Normal", color: "rgba(144, 238, 144, 0.22)", class: "clima-normal" },
+    { min: 1014, max: Infinity, label: "Alta", color: "rgba(135, 206, 250, 0.24)", class: "clima-alta" }
   ],
-  pre: [ // Bandas para Precipitación en mm
-    { min: 0, max: 0.1, label: "Sin Lluvia", color: "rgba(240, 240, 240, 0.4)", class: "precip-sin" },
-    { min: 0.1, max: 2.5, label: "Llovizna", color: "rgba(0, 228, 0, 0.4)", class: "precip-llovizna" },
-    { min: 2.5, max: 10, label: "Lluvia Ligera", color: "rgba(0, 150, 255, 0.4)", class: "precip-ligera" },
-    { min: 10, max: 50, label: "Lluvia Moderada", color: "rgba(255, 255, 0, 0.4)", class: "precip-moderada" },
-    { min: 50, max: Infinity, label: "Lluvia Fuerte", color: "rgba(255, 0, 0, 0.4)", class: "precip-fuerte" }
+  pre: [ // Precipitación en mm/h (AEMET/NOAA)
+    { min: 0, max: 2, label: "Débil", color: "rgba(0, 228, 0, 0.28)", class: "precip-debil" },
+    { min: 2, max: 15, label: "Moderada", color: "rgba(0, 150, 255, 0.28)", class: "precip-moderada" },
+    { min: 15, max: 30, label: "Fuerte", color: "rgba(255, 200, 0, 0.30)", class: "precip-fuerte" },
+    { min: 30, max: 60, label: "Muy Fuerte", color: "rgba(255, 120, 0, 0.30)", class: "precip-muy-fuerte" },
+    { min: 60, max: Infinity, label: "Torrencial", color: "rgba(255, 0, 0, 0.32)", class: "precip-torrencial" }
   ]
 };
 
@@ -3730,8 +3705,9 @@ function getWeatherRiskZones(variableKey) {
   
   // Mapea las bandas al formato que espera la gráfica
   return bands.map(band => ({
-    min: band.min === -Infinity ? -10 : band.min, // Ajusta -Infinity para la gráfica
-    max: band.max === Infinity ? 50 : band.max,   // Ajusta Infinity para la gráfica
+    // Mantener -Infinity/Infinity; el plugin las resuelve con los límites de la escala
+    min: band.min,
+    max: band.max,
     color: band.color,
     label: band.label
   }));
